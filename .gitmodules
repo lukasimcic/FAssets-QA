@@ -1,0 +1,4 @@
+[submodule "fasset-bots"]
+	path = fasset-bots
+	url = https://gitlab.com/flarenetwork/fassets/fasset-bots
+	branch = code-cleanup
