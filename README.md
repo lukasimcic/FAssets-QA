@@ -6,7 +6,7 @@ Some introductory simple tests are stored in folder `simple_tests`.
 Contents include:
 
   - `mint_redeem_flow.py`
-    This function will demonstrate a mint and redeem flow of a user.
+    When running this file, a flow of user actions will be simulated.
     It will repeatedly choose at random one of the following actions, if possible:
     - mint: Mint a random amount of lots from the underlying token.
     - redeem: Redeem a random amount of lots from the fasset token.
