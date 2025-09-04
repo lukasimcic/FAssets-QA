@@ -3,7 +3,7 @@ from utils.config import *
 
 executor = UserBot(token_fasset)
 
-executor.exit_pool("FCPT-TXRP-BIFROST", print_result=True, timeout=None)
-pool_holdings = executor.withdraw_pool_fees(print_result=True, timeout=None)
-
+pools = executor.get_pools()
+pool_holdings = executor.get_pool_holdings()
+print(pools)
 print(pool_holdings)

@@ -2,6 +2,7 @@ import subprocess
 from utils.config import *
 import re
 from contextlib import suppress
+import logging
 
 
 class UserBot:
@@ -9,14 +10,23 @@ class UserBot:
     A class to interact with the user bot command line interface.
     It provides methods to execute commands and parse their output.
     """
-    def __init__(self, token):
+    def __init__(self, token, num=1, config=None):
         self.token = token
-        self.command_prefix = f"yarn user-bot -f {token} "
 
-    def _execute(self, command, print_result, timeout):
+        secrets_snippet = f"-s {secrets_files[num]}"
+        config_snippet = f"-c {config}" if config else ""
+        self.command_prefix = f"yarn user-bot {secrets_snippet} {config_snippet} -f {token} "
+
+        self.logger = logging.getLogger(f"userbot-{num}")
+        self.logger.setLevel(logging.INFO)
+        file_handler = logging.FileHandler(log_folder / f"user-bot-{num}.log")
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        self.logger.addHandler(file_handler)
+
+    def _execute(self, command, log_steps, timeout):
+        self.logger.info(f"Executing command: {command}")
         full_command = self.command_prefix + command
-        print("---")
-        print(f"Executing command: {full_command}")
         p = subprocess.Popen(
             full_command,
             shell=True,
@@ -32,39 +42,39 @@ class UserBot:
             for line in p.stdout:
                 line = line.strip()
                 lines.append(line)
-                if print_result:
-                    print(line)
+                if log_steps:
+                    self.logger.info(line)
             p.wait(timeout=timeout)
         except Exception as e:
-            print(f"Error executing command: {e}")
+            self.logger.error(f"Error while executing command:\n{e}")
             return lines
-        if not print_result:
-            print(f"Command finished.")
+        if not log_steps:
+            self.logger.info(f"Command finished.")
         return lines
 
-    def help(self, print_result=False, timeout=None):
+    def help(self, log_steps=False, timeout=None):
         """
         Returns the help message for the user bot.
         """
-        return self._execute("help", print_result, timeout)
+        return self._execute("help", log_steps, timeout)
 
-    def get_balances(self, print_result=False, timeout=None):
+    def get_balances(self, log_steps=False, timeout=None):
         """
         Returns the balance of the user bot.
         """
-        output = self._execute("balances", print_result, timeout)
+        output = self._execute("balances", log_steps, timeout)
         balances = {}
         for line in output:
             amount, token = line.split(":")[1].strip().split(" ")
             balances[token] = float(amount)
         return balances
 
-    def get_agents(self, print_result=False, timeout=None):
+    def get_agents(self, log_steps=False, timeout=None):
         """
         Returns a list of parsed agent dicts.
         Each dict contains the agent's address, max_lots and fee.
         """
-        output = self._execute("agents", print_result, timeout)
+        output = self._execute("agents", log_steps, timeout)
         agents = []
         for line in output[1:]:  # Skip the header line
             try:
@@ -77,46 +87,46 @@ class UserBot:
                     }
                 )
             except Exception as e:
-                print(f"Error parsing agent line '{line}': {e}")
+                self.logger.error(f"Error parsing agent line '{line}': {e}")
         return agents
 
     # Mint and redeem actions
 
-    def mint(self, amount, agent=None, print_result=False, timeout=None):
+    def mint(self, amount, agent=None, log_steps=False, timeout=None):
         """
         Mints the specified amount from agent if it is provided.
         Otherwise the agent with lowest fee that has the capacity for minting enough lots is chosen.
         The minting will not be automatically split between agents.
         """
         command = f"mint {f'-a {agent}' if agent else ''} {amount}"
-        return self._execute(command, print_result, timeout)
+        return self._execute(command, log_steps, timeout)
 
-    def redeem(self, amount, print_result=False, timeout=None):
+    def redeem(self, amount, log_steps=False, timeout=None):
         """
         Redeems the specified amount.
         """
         command = f"redeem {amount}"
-        return self._execute(command, print_result, timeout)
+        return self._execute(command, log_steps, timeout)
 
-    def execute_mint(self, mint_id, print_result=False, timeout=None):
+    def execute_mint(self, mint_id, log_steps=False, timeout=None):
         """
         Executes minting with the specified id.
         """
         command = f"mintExecute {mint_id}"
-        return self._execute(command, print_result, timeout)
+        return self._execute(command, log_steps, timeout)
 
-    def redeem_default(self, redemption_id, print_result=False, timeout=None):
+    def redeem_default(self, redemption_id, log_steps=False, timeout=None):
         """
         Redeems the default redemption with the specified id.
         """
         command = f"redemptionDefault {redemption_id}"
-        return self._execute(command, print_result, timeout)
+        return self._execute(command, log_steps, timeout)
 
-    def get_mint_status(self, print_result=False, timeout=None):
+    def get_mint_status(self, log_steps=False, timeout=None):
         """
         Returns a dictionary describing mint status of the user bot.
         """
-        output = self._execute("mintStatus", print_result, timeout)
+        output = self._execute("mintStatus", log_steps, timeout)
         mint_status = {"EXPIRED": [], "PENDING": []}
         for line in output:
             if "  " in line:
@@ -125,11 +135,11 @@ class UserBot:
                     mint_status[status] = mint_status[status] + [mint_id]
         return mint_status
 
-    def get_redemption_status(self, print_result=False, timeout=None):
+    def get_redemption_status(self, log_steps=False, timeout=None):
         """
         Returns a dictionary describing remeption status of the user bot.
         """
-        output = self._execute("redemptionStatus", print_result, timeout)
+        output = self._execute("redemptionStatus", log_steps, timeout)
         redemption_status = {"PENDING": [], "SUCCESS": [], "DEFAULT": [], "EXPIRED": []}
         for line in output:
             if "  " in line:
@@ -142,12 +152,12 @@ class UserBot:
 
     # Pool actions
 
-    def get_pools(self, print_result=False, timeout=None):
+    def get_pools(self, log_steps=False, timeout=None):
         """
         Returns a list of pools available.
         Each pool is represented as a dictionary with keys like 'Pool address', 'Token symbol' and other pool data.
         """
-        output = self._execute("pools", print_result, timeout)
+        output = self._execute("pools", log_steps, timeout)
         pools = []
         header = re.split(r"\s{2,}", output[0].strip())
         for line in output[1:]:
@@ -160,12 +170,12 @@ class UserBot:
             pools.append(pool)
         return pools
 
-    def get_pool_holdings(self, print_result=False, timeout=None):
+    def get_pool_holdings(self, log_steps=False, timeout=None):
         """
         Returns a list of pool holdings.
         Each holding is represented as a dictionary with keys 'Pool address', 'Token symbol', 'Pool tokens'.
         """
-        output = self._execute("poolHoldings", print_result, timeout)
+        output = self._execute("poolHoldings", log_steps, timeout)
         holdings = []
         header = re.split(r"\s{2,}", output[0].strip())
         for line in output[1:]:
@@ -178,24 +188,24 @@ class UserBot:
             holdings.append(holding)
         return holdings
 
-    def enter_pool(self, pool_id, amount, print_result=False, timeout=None):
+    def enter_pool(self, pool_id, amount, log_steps=False, timeout=None):
         """
         Enters the specified pool with the given amount.
         """
         command = f"enterPool {pool_id} {amount}"
-        return self._execute(command, print_result, timeout)
+        return self._execute(command, log_steps, timeout)
 
-    def exit_pool(self, pool_id, amount=None, print_result=False, timeout=None):
+    def exit_pool(self, pool_id, amount=None, log_steps=False, timeout=None):
         """
         Exits the specified pool with the given amount.
         If the amount is not specified, it exits the entire pool.
         """
         command = f"exitPool {pool_id} {amount if amount else 'all'}"
-        return self._execute(command, print_result, timeout)
+        return self._execute(command, log_steps, timeout)
 
-    def withdraw_pool_fees(self, pool_id, print_result=False, timeout=None):
+    def withdraw_pool_fees(self, pool_id, log_steps=False, timeout=None):
         """
         Withdraws the fees from the specified pool.
         """
         command = f"withdrawPoolFees {pool_id}"
-        return self._execute(command, print_result, timeout)
+        return self._execute(command, log_steps, timeout)
