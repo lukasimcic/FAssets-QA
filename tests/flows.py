@@ -4,9 +4,7 @@ import random
 import time
 import threading
 
-# TODO: Update print messages to accurately reflect the outcome of minting and redeeming actions,
-#       indicating whether each operation succeeded or failed, rather than always assuming success.
-#       This will be done with logging.
+# TODO: join all flows in one class as subclasses or organize differently
 
 def mint_redeem_flow(
     token_fasset,
