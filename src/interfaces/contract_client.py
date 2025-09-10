@@ -1,4 +1,4 @@
-from config import *
+from utils.config import rpc_url, coston2_contracts, asset_manager_name, asset_manager_abi, my_agent_vault
 from web3 import Web3
 
 class ContractClient:

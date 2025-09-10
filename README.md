@@ -1,23 +1,33 @@
 # FAssets-QA
 
-## Simple tests
+## User flow
 
-Introductory tests are stored in folder `tests`.
-Contents include:
+When running `python -m scripts.run_flow`, multiple user bots start operating in parallel.
+Each repeatedly selects a random action from the following:
+  - mint: Mint a random amount of lots against an agent with lowest fee.
+  - mint_random: Mint a random amount of lots against a random agent.
+  - redeem: Redeem a random amount of lots.
+  - mint_execute: Execute a pending mint.
+  - redeem_default: Redeem a default redemption.
+  - enter_pool: Enter a random pool with a random amount.
+  - exit_pool: Exit a random (valid) pool with a random amount.
+  - withdraw_pool_fees: Withdraws the fees from a random (valid) pool.
 
-  - `flow.py` implements different flows of user actions. 
-    When running the script, multiple user bots operate in parallel, each repeatedly selecting a random action from the following:
-    - mint: Mint a random amount of lots from the underlying token.
-    - redeem: Redeem a random amount of lots from the fasset token.
-    - mint_execute: Execute a pending mint.
-    - redeem_default: Redeem a default redemption.
-    - enter_pool: Enter a random pool with a random possible amount.
-    - exit_pool: Exit a random (valid) pool with a random possible amount.
-    - withdraw_pool_fees: Withdraw the fees from a random (valid) pool.
+## Code structure
 
-  - `utils/user_bot.py` implements a class UserBot that interacts with CLI and simulates a user on the network.
-    It provides methods to execute commands and parse their output.
+- Scripts in the `scripts/` directory serve as entry points for running flows and scenarios.
 
-  - `utils/contract_client.py` implements a class ContractClient that interacts directly with contracts in the FAsset system.
+- The `src/flow/` directory contains the main flow logic, including:
+  - `flow.py`: Defines the `Flow` class, which manages the sequence of user bot actions.
+  - `flow_conditions.py`: Encapsulates the conditions under which actions can be performed.
+  Each `Flow` instance has a `FlowConditions` instance as an attribute, which provides methods to check if specific actions are allowed based on the current state.
+  - `flow_actions.py`: Encapsulates the actions that a user bot can perform within a flow.
+  Each `Flow` instance has a `FlowActions` instance as an attribute, which provides methods to execute specific actions.
+  
+- The `src/clients/` directory contains classes for interacting with external systems:
+  - `user_bot.py`: Implements the `UserBot` class for simulating user interactions via the command line interface.
+  - `contract_client.py`: Implements the `ContractClient` class for direct interaction with smart contracts on the network.
 
-  - `utils/config.py` provides configuration constants used throughout the test scripts.
+- The `src/utils/` directory provides shared utilities and configuration:
+  - `config.py`: Stores configuration constants and parameters.
+
