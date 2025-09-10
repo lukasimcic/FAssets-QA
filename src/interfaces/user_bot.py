@@ -1,9 +1,8 @@
 import subprocess
-from utils.config import *
+from src.utils.config import secrets_files, log_path, project_path
 import re
 from contextlib import suppress
 import logging
-
 
 class UserBot:
     """
