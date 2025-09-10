@@ -19,7 +19,7 @@ class UserBot:
 
         self.logger = logging.getLogger(f"userbot-{num}")
         self.logger.setLevel(logging.INFO)
-        file_handler = logging.FileHandler(log_folder / f"user-bot-{num}.log")
+        file_handler = logging.FileHandler(log_path / f"user-bot-{num}.log")
         file_handler.setLevel(logging.INFO)
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(file_handler)
@@ -32,7 +32,7 @@ class UserBot:
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=project_folder,
+            cwd=project_path,
             restore_signals=False,
             start_new_session=True,
             text=True,
