@@ -1,8 +1,9 @@
 # My files
 my_notes.md
 send_testUSDT0.py
-scripts/test.py
 .vscode/
+scripts/test.py
+scripts/test1.py
 
 # Other
 .DS_Store

@@ -1,9 +1,14 @@
 from src.flow.flow import Flow
 from src.utils.config import num_user_bots, token_fasset
+from src.flow.flow_actions import FlowActions
+import inspect
 import threading
 
-all_actions = ["mint", "mint_random", "redeem", "mint_execute", "redeem_default", "enter_pool", "exit_pool", "withdraw_pool_fees"]
-bot_actions = [all_actions for _ in range(num_user_bots)] # can customize actions for each bot here
+all_actions = [
+    name for name, _ in inspect.getmembers(FlowActions, predicate=inspect.isfunction)
+    if not name.startswith("_")
+]
+bot_actions = [["scenario_2"] for _ in range(num_user_bots)] # can customize actions for each bot here
 
 def make_threads(bot_actions):
     threads = []

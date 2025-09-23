@@ -25,7 +25,8 @@ class Flow:
         actions=[],
         log_steps=True, config=None, total_time=None, time_wait=60, timeout=None
     ):
-        self.executor = UserBot(token_fasset, num, config)
+        self.executor = UserBot(token_fasset, num, config=config)
+        self.partner_executor = UserBot(token_fasset, num, partner=True, config=config)
         self.total_time = total_time
         self.time_wait = time_wait
         self.timeout = timeout
@@ -42,15 +43,16 @@ class Flow:
         self.actions = [(getattr(self.fc, f"can_{name}"), getattr(self.fa, f"{name}")) for name in actions] 
 
     def _step(self):
-        self.balances = self.executor.get_balances(timeout=self.timeout)
-        self.mint_status = self.executor.get_mint_status(timeout=self.timeout)
-        self.redemption_status = self.executor.get_redemption_status(timeout=self.timeout)
-        self.pools = self.executor.get_pools(timeout=self.timeout)
-        self.pool_holdings = self.executor.get_pool_holdings(timeout=self.timeout)
+        self.balances = self.executor.get_balances()
+        self.mint_status = self.executor.get_mint_status()
+        self.redemption_status = self.executor.get_redemption_status()
+        self.pools = self.executor.get_pools()
+        self.pool_holdings = self.executor.get_pool_holdings()
 
         actions = [logic for condition, logic in self.actions if condition()]
         action = random.choice(actions) if actions else None
         if action:
+            self.executor.logger.info(f"-- Executing action {action.__name__} --")
             action()
         
     def run(self):

@@ -1,4 +1,5 @@
 from src.utils.config import token_fasset, token_underlying, lot_size
+from src.flow.scenarios import *
 
 class FlowConditions:
     def __init__(self, flow):
@@ -36,4 +37,9 @@ class FlowConditions:
         return self.flow.pool_holdings
 
     def can_scenario_1(self):
-        pass  # TODO
+        s1 = Scenario1(self.flow)
+        return s1.can()
+    
+    def can_scenario_2(self):
+        s2 = Scenario2(self.flow)
+        return s2.can()
