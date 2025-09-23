@@ -3,7 +3,7 @@
 ## User flow
 
 When running `python -m scripts.run_flow`, multiple user bots start operating in parallel.
-Each repeatedly selects a random action from the following:
+Each bot repeatedly selects a random action from the following:
   - mint: Mint a random amount of lots against an agent with lowest fee.
   - mint_random: Mint a random amount of lots against a random agent.
   - redeem: Redeem a random amount of lots.
@@ -11,7 +11,15 @@ Each repeatedly selects a random action from the following:
   - redeem_default: Redeem a default redemption.
   - enter_pool: Enter a random pool with a random amount.
   - exit_pool: Exit a random (valid) pool with a random amount.
-  - withdraw_pool_fees: Withdraws the fees from a random (valid) pool.
+  - withdraw_pool_fees: Withdraws fees from a random (valid) pool.
+  - specific scenarios described below
+
+### Scenarios
+
+| Scenario number | Procedure       |
+|-----------------|-----------------|
+| 1               | - Enter a random pool with a random amount. <br>- Mint a random amount of lots against the agent that owns the entered collateral pool. <br>- Redeem the amount minted. <br>- Wait for the collateral pool token timelock period to expire. <br>- If possible, exit pool with all tokens. <br>- If possible, withdraw pool fees. |
+| 2               | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Pay as much FAsset fee debt as possible. <br>- Transfer as much collateral pool tokens as possible to the partner user bot. <br>- Exit pool from the partner user bot. |
 
 ## Code structure
 
