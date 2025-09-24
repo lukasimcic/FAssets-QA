@@ -19,7 +19,7 @@ Each bot repeatedly selects a random action from the following:
 | Scenario number | Procedure       |
 |-----------------|-----------------|
 | 1               | - Enter a random pool with a random amount. <br>- Mint a random amount of lots against the agent that owns the entered collateral pool. <br>- Redeem the amount minted. <br>- Wait for the collateral pool token timelock period to expire. <br>- If possible, exit pool with all tokens. <br>- If possible, withdraw pool fees. |
-| 2               | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Pay as much FAsset fee debt as possible. <br>- Transfer as much collateral pool tokens as possible to the partner user bot. <br>- Exit pool from the partner user bot. |
+| 2               | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Transfer debt-free pool tokens (up to the amount originally entered) to the partner user bot. <br>- Exit pool from the partner user bot. |
 
 ## Code structure
 

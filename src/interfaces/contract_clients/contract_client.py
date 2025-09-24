@@ -18,3 +18,26 @@ class ContractClient:
         contract_abi = get_contract_abi(contract_path)
         self.contract = self.web3.eth.contract(contract_address, abi=contract_abi)
 
+    def build_transaction(self, from_address: str, method: str, args: list = [], value: int = 0):
+        nonce = self.web3.eth.get_transaction_count(from_address)
+        gas = self.contract.functions[method](*args).estimate_gas({
+            'from': from_address,
+            'value': value
+        })
+        gas_price = self.web3.eth.gas_price
+        tx = self.contract.functions[method](*args).build_transaction({
+            'from': from_address,
+            'nonce': nonce,
+            'gas': gas,
+            'gasPrice': gas_price,
+            'value': value
+        })
+        return tx
+
+    def sign_and_send_transaction(self, tx, private_key):
+        signed_tx = self.web3.eth.account.sign_transaction(tx, private_key)
+        tx_hash = self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        self.web3.eth.wait_for_transaction_receipt(tx_hash)
+        return tx_hash
+    
+    

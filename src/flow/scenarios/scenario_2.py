@@ -23,9 +23,7 @@ class Scenario2:
         time.sleep(collateral_pool_token_timelock + 1)
 
         # get the amount of debt-free pool tokens 
-        print(pool_address)
         cp = CollateralPool(pool_address)
-        print(self.flow.executor.native_address)
         debt_free_tokens = cp.debtFreeTokensOf(self.flow.executor.native_address)
         if debt_free_tokens == 0:
             self.flow.executor.logger.info("No debt-free pool tokens available")
@@ -36,8 +34,6 @@ class Scenario2:
             # transfer pool tokens to partner bot
             pool_token_address = cp.poolToken()
             pt = CollateralPoolToken(pool_token_address)
-            print(amount, type(amount))
-            print(self.flow.partner_executor.native_address)
             pt.transfer(
                 self.flow.executor.native_address,
                 self.flow.executor.native_private_key,
