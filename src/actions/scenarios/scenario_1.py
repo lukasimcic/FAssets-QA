@@ -43,4 +43,4 @@ class Scenario1(ActionBundle):
         return can_enter_pool(self.balances, self.token_underlying) and can_mint(self.balances, self.token_underlying, self.lot_size)
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")

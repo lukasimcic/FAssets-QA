@@ -15,7 +15,7 @@ class RedeemRandomAmount(ActionBundle):
         return False
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")
 
 
 class RedeemDefaultRandomRedemption(ActionBundle):
@@ -30,4 +30,4 @@ class RedeemDefaultRandomRedemption(ActionBundle):
         return self.redemption_status["DEFAULT"]
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")
