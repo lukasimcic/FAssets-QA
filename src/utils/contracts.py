@@ -13,7 +13,6 @@ def get_contract_abi(contract_path: str) -> list:
     with open(contract_path, "r") as f:
         return json.load(f)["abi"]
 
-# TODO check if this is specific to AssetManager - getSettings or generic
 def get_output_index(contract_path: str, function_name: str, output_name: str) -> int:
     abi = get_contract_abi(contract_path)
     try:

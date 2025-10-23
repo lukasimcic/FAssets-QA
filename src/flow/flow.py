@@ -1,62 +1,93 @@
-from src.interfaces.user_bot import UserBot
-from src.flow.flow_conditions import FlowConditions
-from src.flow.flow_actions import FlowActions
+from src.interfaces.user.user import User
+from src.actions import ACTION_BUNDLE_CLASSES
+from abc import ABC, abstractmethod
 import random
 import time
 
-class Flow:
+class Flow(ABC):
     """
-    This class demonstrates a flow of a user bot.
-    When calling flow.run(), it will repeatedly choose at random one of the following actions, if possible:
-        - mint: Mint a random amount of lots against an agent with lowest fee.
-        - mint_random: Mint a random amount of lots against a random agent.
-        - redeem: Redeem a random amount of lots.
-        - mint_execute: Execute a pending mint.
-        - redeem_default: Redeem a default redemption.
-        - enter_pool: Enter a random pool with a random amount.
-        - exit_pool: Exit a random (valid) pool with a random amount.
-        - withdraw_pool_fees: Withdraws the fees from a random (valid) pool.
-        - scenario_1: TODO
+    This is the base class for flow implementations.
+    In a flow, user actions are repeatedly chosen at random among a set of possible actions, if their conditions are met.
     """
     def __init__(
         self,
-        token_fasset,
-        num=0, 
-        actions=[],
-        log_steps=True, config=None, total_time=None, time_wait=60, timeout=None
+        actions,
+        total_time=None, 
+        time_wait=60
     ):
-        self.executor = UserBot(token_fasset, num, config=config)
-        self.partner_executor = UserBot(token_fasset, num, partner=True, config=config)
+        self.actions = actions
         self.total_time = total_time
         self.time_wait = time_wait
-        self.timeout = timeout
-        self.log_steps = log_steps
 
+        # flow state
         self.balances = None
         self.mint_status = None
         self.redemption_status = None
         self.pools = None
         self.pool_holdings = None
 
-        self.fc = FlowConditions(self)
-        self.fa = FlowActions(self)
-        self.actions = [(getattr(self.fc, f"can_{name}"), getattr(self.fa, f"{name}")) for name in actions] 
+        # to be defined in subclasses
+        self.ca = None
+        self.ca_partner = None
+        self.user = None
+        self.partner = None
+        self.lot_size = None
+
+    def log(self, message, both=True):
+        self.user.logger.info(message)
+        if both:
+            self.partner.logger.info(message)
+
+    @abstractmethod
+    def get_balances(self, log_steps=False):
+        pass
+
+    @abstractmethod
+    def get_mint_status(self, log_steps=False):
+        pass
+
+    @abstractmethod
+    def get_redemption_status(self, log_steps=False):
+        pass
+
+    @abstractmethod
+    def get_pools(self, log_steps=False):
+        pass
+
+    @abstractmethod
+    def get_pool_holdings(self, log_steps=False):
+        pass
 
     def _step(self):
-        self.balances = self.executor.get_balances()
-        self.mint_status = self.executor.get_mint_status()
-        self.redemption_status = self.executor.get_redemption_status()
-        self.pools = self.executor.get_pools()
-        self.pool_holdings = self.executor.get_pool_holdings()
+        state = {
+            "balances": self.get_balances(),
+            "mint_status": self.get_mint_status(),
+            "redemption_status": self.get_redemption_status(),
+            "pools": self.get_pools(),
+            "pool_holdings": self.get_pool_holdings()
+        }
 
-        actions = [logic for condition, logic in self.actions if condition()]
-        action = random.choice(actions) if actions else None
-        if action:
-            self.executor.logger.info(f"-- Executing action {action.__name__} --")
-            action()
+        action_bundles = []
+        for cls in ACTION_BUNDLE_CLASSES:
+            if cls.__name__ in self.actions:
+                bundle = cls(
+                        self.ca, 
+                        self.ca_partner,
+                        self.user,
+                        self.partner,
+                        self.lot_size,
+                        state
+                    )
+                if bundle.condition():
+                    action_bundles.append(bundle)
         
+        bundle = random.choice(action_bundles) if action_bundles else None
+        if bundle:
+            self.log(f"-- Executing action {bundle.__class__.__name__} --", both=False)
+            bundle.action()
+
     def run(self):
-        self.executor.logger.info(f"----- Starting flow. -----")
+        self.log(f"----- Starting flow. -----")
         t = time.time()
         while True:
             self._step()
@@ -64,7 +95,7 @@ class Flow:
             if self.total_time:
                 self.total_time -= time.time() - t
                 if self.total_time <= 0:
-                    self.executor.logger.info("--- Total time reached, stopping flow. ---")
+                    self.log("--- Total time reached, stopping flow. ---")
                     break
                 else:
-                    self.executor.logger.info(f"--- Step finished, time left: {self.total_time:.2f} seconds. ---")
+                    self.log(f"--- Step finished, time left: {self.total_time:.2f} seconds. ---")

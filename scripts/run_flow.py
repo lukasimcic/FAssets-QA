@@ -1,26 +1,38 @@
-from src.flow.flow import Flow
-from src.utils.config import num_user_bots, token_fasset
-from src.flow.flow_actions import FlowActions
-import inspect
+from src.flow.flow_cli import FlowCli
+from src.flow.flow_manual import FlowManual
+from src.utils.config import NUM_USER_BOTS
+from src.actions import ACTION_BUNDLE_CLASSES
 import threading
 
-all_actions = [
-    name for name, _ in inspect.getmembers(FlowActions, predicate=inspect.isfunction)
-    if not name.startswith("_")
-]
-bot_actions = [["scenario_2"] for _ in range(num_user_bots)] # can customize actions for each bot here
+token_underlying = "testXRP"
 
-def make_threads(bot_actions):
+# names of classes of action bundles to include in the flow
+# can customize actions for each thread here
+all_actions = [
+    [cls.__name__ for cls in ACTION_BUNDLE_CLASSES] 
+    for _ in range(NUM_USER_BOTS)
+    ]
+actions = [
+    ["MintRandomAgentRandomAmount", "MintLowestFeeAgentRandomAmount"] 
+    for _ in range(NUM_USER_BOTS)
+    ]
+
+def make_threads(actions):
     threads = []
-    for i in range(num_user_bots):
-        actions = bot_actions[i]
-        flow = Flow(token_fasset, num=i, actions=actions, total_time=300)
+    for i in range(NUM_USER_BOTS):
+        flow = FlowManual(
+            token_underlying=token_underlying,
+            actions=actions[i],
+            num=i,
+            total_time=30,
+            time_wait=10
+            )
         t = threading.Thread(target=flow.run)
         threads.append(t)
     return threads
 
 if __name__ == "__main__":
-    threads = make_threads(bot_actions)
+    threads = make_threads(actions)
     for t in threads:
         t.start()
     for t in threads:
