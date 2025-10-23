@@ -19,7 +19,7 @@ class EnterRandomPoolRandomAmount(ActionBundle):
         return can_enter_pool(self.balances, self.token_underlying)
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")
 
 
 class ExitRandomPoolRandomAmount(ActionBundle):
@@ -35,7 +35,7 @@ class ExitRandomPoolRandomAmount(ActionBundle):
         return self.pool_holdings
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")
 
 
 class WithdrawPoolFeesRandomPool(ActionBundle):
@@ -50,4 +50,4 @@ class WithdrawPoolFeesRandomPool(ActionBundle):
         return self.pool_holdings
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")

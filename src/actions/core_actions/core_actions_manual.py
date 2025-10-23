@@ -9,7 +9,6 @@ class CoreActionsManual(CoreActions):
         self.logger = minter.logger
 
     def mint(self, lot_amount, agent=None, log_steps=False):
-        # TODO if agent is none, choose the best agent with lowesrt fees
         self.logger.info(f"Minting {lot_amount} lots against agent {agent}.")
         self.minter.mint(lot_amount, agent, log_steps=log_steps)
 

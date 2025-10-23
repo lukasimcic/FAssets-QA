@@ -35,7 +35,7 @@ class Scenario2(ActionBundle):
 
             # transfer pool tokens to partner bot
             pool_token_address = cp.pool_token()
-            pt = CollateralPoolToken(self.native_address, self.native_private_key, pool_token_address) # TODO
+            pt = CollateralPoolToken(self.native_address, self.native_private_key, pool_token_address)
             pt.transfer(self.partner_native_address, amount)
             self.logger.info(f"Transferred {amount} of pool tokens to partner bot.")
             self.partner_logger.info(f"Got {amount} of pool tokens from user bot.")
@@ -50,4 +50,4 @@ class Scenario2(ActionBundle):
 
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")

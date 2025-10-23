@@ -52,13 +52,13 @@ class CoreActions(ABC):
     @abstractmethod
     def mint_execute(self, mint_id, log_steps=False):
         """
-        Execute the mint with the given mint id. TODO is this really mint id?
+        Execute the mint with the given mint id.
         """
         pass
 
     @abstractmethod
     def redeem_default(self, redemption_id, log_steps=False):
         """
-        Redeem the defaulted redemption with the given redemption id. TODO is this really redemption id?
+        Redeem the defaulted redemption with the given redemption id.
         """
         pass

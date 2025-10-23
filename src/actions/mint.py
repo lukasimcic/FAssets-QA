@@ -11,8 +11,7 @@ class MintLowestFeeAgentRandomAmount(ActionBundle):
         super().__init__(ca, ca_partner, user, partner, lot_size, state)
     
     def action(self):
-        lot_amount = 1 # TODO zbrisi
-        # lot_amount = random.randint(1, self.balances[self.token_underlying] // self.lot_size + 1)
+        lot_amount = random.randint(1, self.balances[self.token_underlying] // self.lot_size + 1)
         agents = []
         current_lowest_fee = None
         for agent in self.ca.get_agents():
@@ -29,7 +28,7 @@ class MintLowestFeeAgentRandomAmount(ActionBundle):
         return can_mint(self.balances, self.token_underlying, self.lot_size)
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")
 
 
 class MintRandomAgentRandomAmount(ActionBundle):
@@ -37,8 +36,7 @@ class MintRandomAgentRandomAmount(ActionBundle):
         super().__init__(ca, ca_partner, user, partner, lot_size, state)
     
     def action(self):
-        lot_amount = 1 # TODO zbrisi
-        # lot_amount = random.randint(1, self.balances[self.token_underlying] // self.lot_size + 1)
+        lot_amount = random.randint(1, self.balances[self.token_underlying] // self.lot_size + 1)
         agents = []
         for agent in self.ca.get_agents():
             if agent["max_lots"] * self.lot_size >= lot_amount:
@@ -50,7 +48,7 @@ class MintRandomAgentRandomAmount(ActionBundle):
         return can_mint(self.balances, self.token_underlying, self.lot_size)
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")
 
 
 class MintExecuteRandomMinting(ActionBundle):
@@ -65,4 +63,4 @@ class MintExecuteRandomMinting(ActionBundle):
         return self.mint_status["PENDING"]
 
     def state_after(self):
-        pass # TODO
+        raise NotImplementedError("State update is not implemented yet.")
