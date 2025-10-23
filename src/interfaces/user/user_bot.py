@@ -1,42 +1,23 @@
-import subprocess
-from src.utils.config import user_secrets_files, user_partner_secrets_files, log_path, project_path
+from src.utils.config import user_secrets_files, user_partner_secrets_files, project_path
+from src.interfaces.user.user import User
 import re
 from contextlib import suppress
-import logging
-import json
+import subprocess
 
-class UserBot:
+class UserBot(User):
     """
     A class to interact with the user bot command line interface.
     It provides methods to execute commands and parse their output.
     """
-    def __init__(self, token, num=0, partner=False, config=None, timeout=None):
-        self.token = token
+    def __init__(self, token_underlying, num=0, partner=False, config=None, timeout=None):
+        super().__init__(token_underlying, num, partner)
         self.timeout = timeout
-
         if not partner:
             secrets_file = user_secrets_files[num]
         else:
             secrets_file = user_partner_secrets_files[num]
         config_snippet = f"-c {config}" if config else ""
-        self.command_prefix = f"yarn user-bot -s {secrets_file} {config_snippet} -f {token} "
-        
-        if not partner:
-            log_file = log_path / "user-bots" / f"user-bot-{num}.log"
-            self.logger = logging.getLogger(f"user-bot-{num}")
-        else:
-            log_file = log_path / "user-partner-bots" / f"user-partner-bot-{num}.log"
-            self.logger = logging.getLogger(f"user-partner-bot-{num}")
-        self.logger.setLevel(logging.INFO)
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)
-        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-        self.logger.addHandler(file_handler)
-
-        with open(secrets_file) as f:
-            secrets = json.load(f)
-            self.native_address = secrets["user"]["native"]["address"]
-            self.native_private_key = secrets["user"]["native"]["private_key"]
+        self.command_prefix = f"yarn user-bot -s {secrets_file} {config_snippet} -f {self.token_fasset} "
 
     def _execute(self, command, log_steps):
         self.logger.info(f"Executing command: {command}")

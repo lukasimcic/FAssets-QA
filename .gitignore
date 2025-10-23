@@ -4,6 +4,7 @@ send_testUSDT0.py
 .vscode/
 scripts/test.py
 scripts/test1.py
+secrets/
 
 # Other
 .DS_Store
