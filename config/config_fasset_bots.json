@@ -1,0 +1,14 @@
+{
+   "extends": "coston2-bot.json",
+   "ormOptions": {
+       "type": "sqlite",
+       "dbName": "fasset-bots-coston2.CONTROLLER.db",
+       "allowGlobalContext": true,
+       "pool": {
+           "min": 0,
+           "max": 2
+       }
+   },
+  "contractsJsonFile": "./contracts/conston2.json"
+
+}

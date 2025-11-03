@@ -1,17 +1,20 @@
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.interfaces.networks.network import Network
-from src.interfaces.networks.attestation import Attestation
+from src.interfaces.network.network import Network
+from src.interfaces.network.attestation import Attestation
+from src.utils.data_storage_client import DataStorageClient
 
 
 class Minter(User):
-    def __init__(self, token_underlying, num=0, partner=False, config=None):
+    def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
         super().__init__(token_underlying, num, partner)
         self.token_underlying = token_underlying
+        self.nn = Network(token_native, self.native_data["address"], self.native_data["private_key"])
         self.native_address = self.native_data["address"]
         self.native_private_key = self.native_data["private_key"]
         self.underlying_public_key = self.underlying_data["public_key"]
         self.underlying_private_key = self.underlying_data["private_key"]
+        self.dsc = DataStorageClient(num, partner, token_underlying, "mint")
         # TODO add support for custom config
         if config is not None:
             raise NotImplementedError("Custom config is not yet supported.")
@@ -42,9 +45,10 @@ class Minter(User):
         )
         return response.result["tx_json"]["hash"], amount
     
-    def _get_attestation_proof(self, underlying_hash):
+    def _get_payment_proof(self, underlying_hash):
         a = Attestation("testXRP", self.native_data, self.underlying_data, self.indexer_api_key)
-        response = a.prepare_attestation_request(underlying_hash, "Payment")
+        request_body = a.request_body_payment(underlying_hash)
+        response = a.prepare_attestation_request(request_body, "Payment")
         abi_encoded_request = response["abiEncodedRequest"]
         round_id = a.submit_attestation_request(abi_encoded_request)
         proof = a.get_proof(abi_encoded_request, round_id)
@@ -99,9 +103,25 @@ class Minter(User):
         tx = am.execute_minting(proof, collateral_reservation_id)
         return tx
     
+    def _save_mint_request(self, reserve_collateral_data, tx_hash):
+        """
+        Save mint request data to data storage.
+        """
+        current_timestamp = self.nn.get_current_timestamp()
+        request_data = {
+            "type" : "mint",
+            "requestId": str(reserve_collateral_data.collateralReservationId),
+            "paymentAddress": reserve_collateral_data.paymentAddress,
+            "transactionHash": tx_hash,
+            "executorAddress": reserve_collateral_data.executor,
+            "createdAt": self.dsc.timestamp_to_date(current_timestamp)
+        }
+        self.dsc.save_record(request_data)
+    
     def mint(self, lots, agent_vault, executor="0x0000000000000000000000000000000000000000", log_steps=False):
         """
-        Complete minting process: reserve collateral, pay underlying, get attestation proof, and execute minting.
+        Reserve collateral and pay underlying.
+        Returns collateral reservation id.
         """
         self.log_step(f"Reserving {lots} lots at agent vault {agent_vault}...", log_steps)
         reserve_collateral_data = self._reserve_collateral(agent_vault, lots, executor)
@@ -115,14 +135,47 @@ class Minter(User):
             reserve_collateral_data.paymentReference
         )
         self.log_step(f"Paid {amount} {self.token_underlying}.", log_steps)
-        self.log_step("Getting attestation proof...", log_steps)
-        proof = self._get_attestation_proof(tx_hash)
-        self.log_step("Got attestation proof.", log_steps)
+        self._save_mint_request(reserve_collateral_data, tx_hash)
+        return collateral_reservation_id
+
+    def prove_and_execute_minting(self, collateral_reservation_id, log_steps=False):
+        """
+        Get attestation proof for the underlying payment and execute minting on AssetManager contract.
+        """
+        self.log_step(f"Retrieving mint request data for collateral reservation id {collateral_reservation_id}...", log_steps)
+        mint_request = self.dsc.get_record(collateral_reservation_id)
+        self.log_step("Getting payment proof...", log_steps)
+        proof = self._get_payment_proof(mint_request["transactionHash"])
+        self.log_step("Got payment proof.", log_steps)
         proof = self._prepare_proof(proof)
         self.log_step("Executing minting on AssetManager contract...", log_steps)
         tx = self._execute_minting(
             proof, 
             collateral_reservation_id
         )
-        self.log_step("Minting executed.", log_steps)
+        self.log_step(f"Minting executed in transaction: {tx.blockHash.hex()}.", log_steps)
+        self.dsc.remove_record(collateral_reservation_id)
+
+    def mint_status(self):
+        """
+        Returns the status of all mint requests in storage.
+        """
+        a = Attestation("testXRP", self.native_data, self.underlying_data, self.indexer_api_key)
+        first_block, _ = a.get_block_range()
+        records = self.dsc.get_records()
+        statuses = {"PENDING": [], "EXPIRED": []}
+        for record in records:
+            tx_hash = record["transactionHash"]
+            request_id = int(record["requestId"])
+            un = Network(
+                token=self.token_underlying,
+                public_key=self.underlying_public_key, 
+                private_key=self.underlying_private_key
+                )
+            tx_block = un.get_block_of_tx(tx_hash)
+            if tx_block < first_block:
+                statuses["EXPIRED"].append(request_id)
+            else:
+                statuses["PENDING"].append(request_id)
+        return statuses
 

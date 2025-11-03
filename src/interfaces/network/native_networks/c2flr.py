@@ -1,0 +1,31 @@
+from src.interfaces.network.network import BaseNetwork
+from config.config_qa import rpc_url 
+from web3 import Web3
+from web3.middleware import geth_poa_middleware
+
+# TODO seperate underlying and network base class because of different methods needed
+
+class C2FLR(BaseNetwork):
+    def __init__(self, address, private_key):
+        super().__init__()
+        self.web3 = Web3(Web3.HTTPProvider(rpc_url["C2FLR"]))
+        self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        self.address = address
+        self.private_key = private_key
+
+    def get_balance(self):
+        balance_wei = self.web3.eth.get_balance(self.address)
+        balance = self.web3.from_wei(balance_wei, 'ether')
+        return balance
+    
+    def send_transaction(self, to_address, amount):
+        # implement as needed
+        raise NotImplementedError("C2FLR send_transaction not implemented yet.")
+
+    def get_current_block(self):
+        return self.web3.eth.block_number
+    
+    def get_current_timestamp(self):
+        current_block = self.get_current_block()
+        block = self.web3.eth.get_block(current_block)
+        return block.timestamp

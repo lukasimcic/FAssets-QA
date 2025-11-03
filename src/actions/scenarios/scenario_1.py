@@ -40,7 +40,9 @@ class Scenario1(ActionBundle):
 
 
     def condition(self):
-        return can_enter_pool(self.balances, self.token_underlying) and can_mint(self.balances, self.token_underlying, self.lot_size)
+        enter_pool_condition = can_enter_pool(self.balances, self.token_underlying)
+        mint_condition = can_mint(self.balances, self.token_underlying, self.lot_size, self.ca.get_agents())
+        return enter_pool_condition and mint_condition
 
     def state_after(self):
         raise NotImplementedError("State update is not implemented yet.")

@@ -1,6 +1,6 @@
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_address
-from src.utils.config import relay_path, relay_instance_name
+from config.config_qa import relay_path, relay_instance_name
 
 class Relay(ContractClient):
     def __init__(self, sender_address, sender_private_key):

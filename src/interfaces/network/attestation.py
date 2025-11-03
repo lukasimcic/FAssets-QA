@@ -1,6 +1,6 @@
 from src.interfaces.contracts import *
-from src.utils.config import fdc_url, da_url, x_csrftoken
-from src.utils.encoding import to_utf8_hex_string
+from config.config_qa import fdc_url, da_url, x_csrftoken, zero_address
+from src.utils.encoding import pad_to_64_hex, to_utf8_hex_string, keccak256_hexstr, keccak256_text
 
 from typing import Literal
 import requests
@@ -34,12 +34,9 @@ class Attestation():
         else:
             return f"{fdc_url}/verifier/{token_underlying}/{attestation_type}/{endpoint}"
         
-    def _generate_source_id(self, attestation_type : Literal["Payment"]):
-        if attestation_type == "Payment":
-            return to_utf8_hex_string(self.token_underlying)
-        else:
-            raise ValueError(f"Unsupported attestation type: {attestation_type}")
-
+    def _generate_source_id(self):
+        return to_utf8_hex_string(self.token_underlying)
+        
     def _generate_attestation_type(self, attestation_type):
         return to_utf8_hex_string(attestation_type)
         
@@ -58,21 +55,44 @@ class Attestation():
         response = requests.get(da_url + '/api/v0/fsp/status').json()
         return response["latest_fdc"]["voting_round_id"]
 
+    def request_body_payment(self, tx_hash):
+        return {
+            "transactionId": self._get_transaction_id(tx_hash),
+            "inUtxo": "0",
+            "utxo": "0"
+        }
+    
+    def request_body_referenced_payment_nonexistence(
+            self,
+            destination_address,
+            payment_reference,
+            amount,
+            first_block,
+            last_block,
+            last_timestamp
+            ):
+        return {
+            "minimalBlockNumber": str(first_block),
+            "deadlineBlockNumber": str(last_block),
+            "deadlineTimestamp": str(last_timestamp),
+            "destinationAddressHash": keccak256_text(destination_address),
+            "amount": str(amount),
+            "standardPaymentReference": pad_to_64_hex(payment_reference),
+            "checkSourceAddresses": False,
+            "sourceAddressesRoot": "0x" + "00" * 32
+        }
+
     # core functionality
 
-    def prepare_attestation_request(self, tx_hash, attestation_type : Literal["Payment"]):
+    def prepare_attestation_request(self, request_body, attestation_type : Literal["Payment", "ReferencedPaymentNonexistence"]):
         """
         Prepares an attestation request to the FDC.
         Returns response data.
         """
         data = {
             "attestationType": self._generate_attestation_type(attestation_type),
-            "sourceId": self._generate_source_id(attestation_type),
-            "requestBody": {
-                "transactionId": self._get_transaction_id(tx_hash),
-                "inUtxo": "0",
-                "utxo": "0"
-            }
+            "sourceId": self._generate_source_id(),
+            "requestBody": request_body
         }
         response = requests.post(
             url=self._generate_fdc_url("prepareRequest", attestation_type),
@@ -120,7 +140,14 @@ class Attestation():
                 return response
         raise ValueError("Proof not found after multiple attempts")
 
-        
+    def get_block_range(self):
+        """
+        Retrieves the range of available confirmed blocks in the indexer database.
+        Returns (first_block, last_block).
+        """
+        url_transaction = self._generate_fdc_url("block-range")
+        response = requests.get(url_transaction, headers=self.headers).json()
+        return response['data']['first'], response['data']['last']
 
 
 

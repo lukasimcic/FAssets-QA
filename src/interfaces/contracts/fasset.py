@@ -1,7 +1,7 @@
 from .contract_client import ContractClient
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.utils.contracts import get_contract_address
-from src.utils.config import fasset_path, fasset_testxrp_instance_name
+from config.config_qa import fasset_path, fasset_testxrp_instance_name
 
 
 class FAsset(ContractClient):

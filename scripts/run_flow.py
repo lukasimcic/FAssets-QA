@@ -1,30 +1,37 @@
 from src.flow.flow_cli import FlowCli
 from src.flow.flow_manual import FlowManual
-from src.utils.config import NUM_USER_BOTS
 from src.actions import ACTION_BUNDLE_CLASSES
 import threading
 
+num_user_bots = 2
 token_underlying = "testXRP"
+flow_class = FlowCli
 
 # names of classes of action bundles to include in the flow
 # can customize actions for each thread here
 all_actions = [
     [cls.__name__ for cls in ACTION_BUNDLE_CLASSES] 
-    for _ in range(NUM_USER_BOTS)
+    for _ in range(num_user_bots)
     ]
 actions = [
-    ["MintRandomAgentRandomAmount", "MintLowestFeeAgentRandomAmount"] 
-    for _ in range(NUM_USER_BOTS)
+    [
+        "MintRandomAgentRandomAmount", 
+        "MintLowestFeeAgentRandomAmount",
+        "MintExecuteRandomMinting",
+        "RedeemRandomAmount",
+        "RedeemDefaultRandomRedemption"
+    ] 
+    for _ in range(num_user_bots)
     ]
 
 def make_threads(actions):
     threads = []
-    for i in range(NUM_USER_BOTS):
-        flow = FlowManual(
+    for i in range(num_user_bots):
+        flow = flow_class(
             token_underlying=token_underlying,
             actions=actions[i],
             num=i,
-            total_time=30,
+            total_time=300,
             time_wait=10
             )
         t = threading.Thread(target=flow.run)
@@ -32,7 +39,7 @@ def make_threads(actions):
     return threads
 
 if __name__ == "__main__":
-    threads = make_threads(actions)
+    threads = make_threads(all_actions)
     for t in threads:
         t.start()
     for t in threads:

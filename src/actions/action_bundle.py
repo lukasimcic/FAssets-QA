@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Callable
-from src.interfaces.user.user import User
+from src.interfaces.user.informer import Informer
 from src.actions.core_actions.core_actions import CoreActions
 
 class ActionBundle(ABC):
@@ -8,8 +8,8 @@ class ActionBundle(ABC):
             self,
             ca : CoreActions,
             ca_partner : CoreActions,
-            user : User,
-            partner : User,
+            informer : Informer,
+            informer_partner : Informer,
             lot_size : int,
             state : dict
         ):
@@ -26,21 +26,21 @@ class ActionBundle(ABC):
         self.pools = state["pools"]
         self.pool_holdings = state["pool_holdings"]
         # tokens
-        self.token_native = user.token_native
-        self.token_underlying = user.token_underlying
-        self.token_fasset = user.token_fasset
+        self.token_native = informer.token_native
+        self.token_underlying = informer.token_underlying
+        self.token_fasset = informer.token_fasset
         # secrets
-        self.native_address = user.native_data["address"]
-        self.native_private_key = user.native_data["private_key"]
-        self.underlying_private_key = user.underlying_data["private_key"]
-        self.underlying_public_key = user.underlying_data["public_key"]
-        self.partner_native_address = partner.native_data["address"]
-        self.partner_native_private_key = partner.native_data["private_key"]
-        self.partner_underlying_private_key = partner.underlying_data["private_key"]
-        self.partner_underlying_public_key = partner.underlying_data["public_key"]
+        self.native_address = informer.native_data["address"]
+        self.native_private_key = informer.native_data["private_key"]
+        self.underlying_private_key = informer.underlying_data["private_key"]
+        self.underlying_public_key = informer.underlying_data["public_key"]
+        self.partner_native_address = informer_partner.native_data["address"]
+        self.partner_native_private_key = informer_partner.native_data["private_key"]
+        self.partner_underlying_private_key = informer_partner.underlying_data["private_key"]
+        self.partner_underlying_public_key = informer_partner.underlying_data["public_key"]
         # loggers
-        self.logger = user.logger
-        self.partner_logger = partner.logger
+        self.logger = informer.logger
+        self.partner_logger = informer_partner.logger
 
     @property
     @abstractmethod

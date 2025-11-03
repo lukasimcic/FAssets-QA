@@ -1,10 +1,12 @@
+from src.interfaces.user.redeemer import Redeemer
 from src.flow.flow import Flow
 from src.actions.core_actions.core_actions_manual import CoreActionsManual
 from src.interfaces.contracts.fasset import FAsset
-from src.interfaces.networks.network import Network
+from src.interfaces.network.network import Network
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.user import User
 from src.interfaces.user.minter import Minter
+from src.interfaces.user.informer import Informer
 
 class FlowManual(Flow):
     """
@@ -30,58 +32,47 @@ class FlowManual(Flow):
     ):
         super().__init__(actions, total_time, time_wait)
 
-        # user
-        self.user = User(token_underlying, num)
-        self.partner = User(token_underlying, num, partner=True)
-        self.minter = Minter(token_underlying, num, config=config)
-        self.minter_partner = Minter(token_underlying, num, partner=True, config=config)
-        self.logger = self.user.logger
+        # info
+        self.informer = Informer(token_underlying, num)
+        self.informer_partner = Informer(token_underlying, num, partner=True)
+        self.logger = self.informer.logger
+        self.partner_logger = self.informer_partner.logger
 
         # tokens
-        self.token_native = self.user.token_native
-        self.token_underlying = self.user.token_underlying
-        self.token_fasset = self.user.token_fasset
-
+        self.token_native = self.informer.token_native
+        self.token_underlying = self.informer.token_underlying
+        self.token_fasset = self.informer.token_fasset
+        
+        # users
+        self.minter = Minter(self.token_native, token_underlying, num, config=config)
+        self.minter_partner = Minter(self.token_native, token_underlying, num, partner=True, config=config)
+        self.redeemer = Redeemer(self.token_native, token_underlying, num, config=config)
+        self.redeemer_partner = Redeemer(self.token_native, token_underlying, num, partner=True, config=config)
+        
         # flow logic
         self.lot_size = AssetManager("", "", token_underlying).lot_size()
-        self.ca = CoreActionsManual(self.minter)
-        self.ca_partner = CoreActionsManual(self.minter_partner)
+        self.ca = CoreActionsManual(self.minter, self.redeemer)
+        self.ca_partner = CoreActionsManual(self.minter_partner, self.redeemer_partner)
 
     def get_balances(self, log_steps=False):
-        self.logger.info("Getting balances.")
-        nn = Network(
-            self.token_native,
-            self.user.native_data["address"], 
-            self.user.native_data["private_key"]
-        )
-        un = Network(
-            self.token_underlying,
-            self.user.underlying_data["public_key"], 
-            self.user.underlying_data["private_key"]
-        )
-        f = FAsset(
-            self.user.native_data["address"],
-            self.user.native_data["private_key"],
-            self.token_underlying)
-        balances = {
-            self.token_native: float(nn.get_balance()),
-            self.token_underlying: float(un.get_balance()),
-            self.token_fasset: float(f.get_balance())
-        }
+        balances = self.informer.get_balances(log_steps=log_steps)
+        self.logger.info(f"Balances: {balances}")
         return balances
 
     def get_pools(self, log_steps=False):
-        self.logger.info("Getting pools.")
+        self.logger.info("Pools:")
         pass
 
     def get_pool_holdings(self, log_steps=False):
-        self.logger.info("Getting pool holdings.")
+        self.logger.info("Pool holdings:")
         pass
 
     def get_mint_status(self, log_steps=False):
-        self.logger.info("Getting mint status.")
-        pass
+        mint_status = self.minter.mint_status()
+        self.logger.info(f"Mint status: {mint_status}")
+        return mint_status
 
     def get_redemption_status(self, log_steps=False):
-        self.logger.info("Getting redemption status.")
-        pass
+        redemption_status = self.redeemer.redemption_status()
+        self.logger.info(f"Redemption status: {redemption_status}")
+        return redemption_status

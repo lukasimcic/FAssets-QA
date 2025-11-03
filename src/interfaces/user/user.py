@@ -1,38 +1,35 @@
-from src.utils.config import user_secrets_files, user_partner_secrets_files, log_path
+from abc import ABC
+from config.config_qa import log_folder, fasset_name
+from src.utils.secrets import load_user_secrets
 import logging
 import json
 
-class User():
+class User(ABC):
     def __init__(self, token_underlying, num=0, partner=False):
-        if not partner:
-            self.secrets_file = user_secrets_files[num]
-            log_file = log_path / "user-bots" / f"user-bot-{num}.log"
-            self.logger = logging.getLogger(f"user-bot-{num}")
-        else:
-            self.secrets_file = user_partner_secrets_files[num]
-            log_file = log_path / "user-partner-bots" / f"user-partner-bot-{num}.log"
-            self.logger = logging.getLogger(f"user-partner-bot-{num}")
+
+        # tokens
+        self.token_native = "C2FLR"
+        self.token_underlying = token_underlying
+        self.token_fasset = fasset_name[token_underlying]
+        if token_underlying not in ["testXRP"]:
+            raise ValueError(f"Unsupported token_underlying: {token_underlying}")
         
+        # secrets
+        secrets = load_user_secrets(num, partner)
+        self.native_data = secrets["user"]["native"]
+        self.underlying_data = secrets["user"][token_underlying]
+        self.indexer_api_key = secrets["apiKey"]["indexer"][0]
+        
+        # logger
+        user_name = f"user{'_partner' if partner else ''}_{num}"
+        log_file = log_folder / user_name[:-2] / f"{user_name}.log"
+        self.logger = logging.getLogger(user_name)
         if not self.logger.hasHandlers():
             self.logger.setLevel(logging.INFO)
             file_handler = logging.FileHandler(log_file)
             file_handler.setLevel(logging.INFO)
             file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
             self.logger.addHandler(file_handler)
-
-        self.token_native = "C2FLR"
-        match token_underlying:
-            case "testXRP":
-                self.token_underlying = "testXRP"
-                self.token_fasset = "FTestXRP"
-            case _:
-                raise ValueError(f"Unsupported token_underlying: {token_underlying}")
-
-        with open(self.secrets_file) as f:
-            secrets = json.load(f)
-            self.native_data = secrets["user"]["native"]
-            self.underlying_data = secrets["user"][token_underlying]
-            self.indexer_api_key = secrets["apiKey"]["indexer"][0]
 
     def log_step(self, message, log_steps):
         if log_steps:
