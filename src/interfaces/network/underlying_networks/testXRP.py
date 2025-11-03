@@ -1,7 +1,6 @@
-from urllib import response
 from src.interfaces.contracts import *
 from config.config_qa import rpc_url
-from src.interfaces.network.network import BaseNetwork
+from src.interfaces.network.underlying_networks.underlying_network import UnderlyingBaseNetwork
 
 from xrpl.clients import JsonRpcClient
 from xrpl.wallet import Wallet
@@ -11,7 +10,7 @@ from xrpl.models.requests import AccountInfo, ServerInfo, Tx
 from xrpl.transaction import sign, autofill, submit
 
 
-class TestXRP(BaseNetwork):
+class TestXRP(UnderlyingBaseNetwork):
     def __init__(self, public_key, private_key):
         super().__init__()
         self.client = JsonRpcClient(rpc_url["testXRP"])

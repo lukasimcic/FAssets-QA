@@ -1,4 +1,3 @@
-from src.interfaces.user.user import User
 from src.actions import ACTION_BUNDLE_CLASSES
 from abc import ABC, abstractmethod
 import random
@@ -34,9 +33,9 @@ class Flow(ABC):
         self.lot_size = None
 
     def log(self, message, both=True):
-        self.informer.logger.info(message)
+        self.informer.log_step(message, True)
         if both:
-            self.informer_partner.logger.info(message)
+            self.informer_partner.log_step(message, True)
 
     @abstractmethod
     def get_balances(self, log_steps=False):

@@ -9,7 +9,7 @@ import time
 
 
 class Attestation():
-    def __init__(self, token_underlying : Literal["testXRP"], user_native_data, user_underlying_data, indexer_api_key):
+    def __init__(self, token_underlying : Literal["testXRP"], user_native_data, indexer_api_key):
         self.token_underlying = token_underlying
         self.contract_inputs = {
             "sender_address": user_native_data["address"],

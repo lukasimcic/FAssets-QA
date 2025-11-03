@@ -1,6 +1,7 @@
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.interfaces.network.network import Network
+from src.interfaces.network.native_networks.native_network import NativeNetwork
+from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.network.attestation import Attestation
 from src.utils.data_storage_client import DataStorageClient
 
@@ -9,7 +10,7 @@ class Minter(User):
     def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
         super().__init__(token_underlying, num, partner)
         self.token_underlying = token_underlying
-        self.nn = Network(token_native, self.native_data["address"], self.native_data["private_key"])
+        self.nn = NativeNetwork(token_native, self.native_data)
         self.native_address = self.native_data["address"]
         self.native_private_key = self.native_data["private_key"]
         self.underlying_public_key = self.underlying_data["public_key"]
@@ -32,11 +33,7 @@ class Minter(User):
         """
         Pay underlying asset after reserving collateral.
         """
-        un = Network(
-            token=self.token_underlying,
-            public_key=self.underlying_public_key, 
-            private_key=self.underlying_private_key
-            )
+        un = UnderlyingNetwork(self.token_underlying, self.underlying_data)
         amount = (value_UBA + fee_UBA) / un.asset_unit_uba
         response = un.send_transaction(
             to_address=payment_address,
@@ -46,7 +43,7 @@ class Minter(User):
         return response.result["tx_json"]["hash"], amount
     
     def _get_payment_proof(self, underlying_hash):
-        a = Attestation("testXRP", self.native_data, self.underlying_data, self.indexer_api_key)
+        a = Attestation("testXRP", self.native_data, self.indexer_api_key)
         request_body = a.request_body_payment(underlying_hash)
         response = a.prepare_attestation_request(request_body, "Payment")
         abi_encoded_request = response["abiEncodedRequest"]
@@ -160,18 +157,14 @@ class Minter(User):
         """
         Returns the status of all mint requests in storage.
         """
-        a = Attestation("testXRP", self.native_data, self.underlying_data, self.indexer_api_key)
+        a = Attestation("testXRP", self.native_data, self.indexer_api_key)
         first_block, _ = a.get_block_range()
         records = self.dsc.get_records()
         statuses = {"PENDING": [], "EXPIRED": []}
         for record in records:
             tx_hash = record["transactionHash"]
             request_id = int(record["requestId"])
-            un = Network(
-                token=self.token_underlying,
-                public_key=self.underlying_public_key, 
-                private_key=self.underlying_private_key
-                )
+            un = UnderlyingNetwork(self.token_underlying, self.underlying_data)
             tx_block = un.get_block_of_tx(tx_hash)
             if tx_block < first_block:
                 statuses["EXPIRED"].append(request_id)
