@@ -1,6 +1,7 @@
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.interfaces.network.network import Network
+from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
+from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.attestation import Attestation
 from config.config_qa import zero_address
 from src.utils.data_storage_client import DataStorageClient
@@ -10,7 +11,7 @@ class Redeemer(User):
     def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
         super().__init__(token_underlying, num, partner)
         self.token_underlying = token_underlying
-        self.nn = Network(token_native, self.native_data["address"], self.native_data["private_key"])
+        self.nn = NativeNetwork(token_native, self.native_data)
         self.num = num
         self.partner = partner
         self.native_address = self.native_data["address"]
@@ -87,7 +88,7 @@ class Redeemer(User):
         """
         Get attestation proof for referenced payment non-existence.
         """
-        a = Attestation("testXRP", self.native_data, self.underlying_data, self.indexer_api_key)
+        a = Attestation("testXRP", self.native_data, self.indexer_api_key)
         request_body = a.request_body_referenced_payment_nonexistence(
             self.underlying_data["address"],
             unpad_0x(redemption_data["paymentReference"]),
@@ -134,8 +135,8 @@ class Redeemer(User):
             status = statuses[request_info[1]]
             if status == "ACTIVE":
                 block = int(redemption["lastUnderlyingBlock"])
-                current_underlying_block = Network(self.token_underlying, "", "").get_current_block()
-                a = Attestation("testXRP", self.native_data, self.underlying_data, self.indexer_api_key)
+                current_underlying_block = UnderlyingNetwork(self.token_underlying, self.underlying_data).get_current_block()
+                a = Attestation("testXRP", self.native_data, self.indexer_api_key)
                 first_block, _ = a.get_block_range()
                 if current_underlying_block > block:
                     status = "DEFAULT"

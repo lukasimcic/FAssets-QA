@@ -5,7 +5,7 @@ import threading
 
 num_user_bots = 2
 token_underlying = "testXRP"
-flow_class = FlowCli
+flow_class = FlowManual
 
 # names of classes of action bundles to include in the flow
 # can customize actions for each thread here
@@ -39,7 +39,7 @@ def make_threads(actions):
     return threads
 
 if __name__ == "__main__":
-    threads = make_threads(all_actions)
+    threads = make_threads(actions)
     for t in threads:
         t.start()
     for t in threads:

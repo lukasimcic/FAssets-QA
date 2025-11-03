@@ -36,7 +36,6 @@ class CoreActionsManual(CoreActions):
         pass
 
     def get_agents(self, chunk_size=10, log_steps=False):
-        self.logger.info("Getting available agents.")
         agent_list = []
         start = 0
         am = AssetManager("", "", self.minter.token_underlying)
@@ -61,7 +60,6 @@ class CoreActionsManual(CoreActions):
                     d[fields_mapping[k]] = v
             result.append(d)
         return result
-
 
     def withdraw_pool_fees(self, pool_address, log_steps=False):
         self.logger.info(f"Withdrawing pool fees from pool {pool_address}.")

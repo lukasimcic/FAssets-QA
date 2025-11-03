@@ -2,7 +2,6 @@ from abc import ABC
 from config.config_qa import log_folder, fasset_name
 from src.utils.secrets import load_user_secrets
 import logging
-import json
 
 class User(ABC):
     def __init__(self, token_underlying, num=0, partner=False):
