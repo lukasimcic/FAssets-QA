@@ -1,6 +1,6 @@
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_address, get_output_index
-from src.utils.config import asset_manager_path, asset_manager_testxrp_instance_name, zero_address
+from config.config_qa import asset_manager_path, asset_manager_testxrp_instance_name, zero_address
 
 class AssetManager(ContractClient):
     def __init__(self, sender_address, sender_private_key, token_underlying):
@@ -11,6 +11,8 @@ class AssetManager(ContractClient):
                 raise ValueError(f"Unsupported underlying token: {token_underlying}")
         asset_manager_address =  get_contract_address(asset_manager_instance_name)
         super().__init__(sender_address, sender_private_key, asset_manager_path, asset_manager_address)
+
+    # info
 
     def _agent_info(self, agent_vault):
         agent_info = self.read("getAgentInfo", inputs=[agent_vault])
@@ -52,7 +54,7 @@ class AssetManager(ContractClient):
         idx = get_output_index(self.path, "getSettings", "assetUnitUBA")
         return settings[idx]
 
-    # reserve collateral
+    # mint
     
     def _agent_fee_BIPS(self, agent_vault):
         agent_info = self._agent_info(agent_vault)
@@ -69,12 +71,10 @@ class AssetManager(ContractClient):
         collateralReserved = self.write(
             "reserveCollateral",
             inputs=[agentVault, lots, agent_fee_BIPS, executor],
-            outputs=["CollateralReserved"],
+            events=["CollateralReserved"],
             value=collateral_reservation_fee
         )
         return collateralReserved["CollateralReserved"][0]
-    
-    # execute minting
 
     def execute_minting(self, proof, collateral_reservation_id):
         """
@@ -83,6 +83,51 @@ class AssetManager(ContractClient):
         _, receipt = self.write(
             "executeMinting",
             inputs=[proof, collateral_reservation_id],
+            return_receipt=True
+        )
+        return receipt
+    
+    # redeem
+
+    def redeem(self, lots, underlying_address, executor, executor_fee):
+        """
+        Redeem given lots. Returns requested redemption data.
+        """
+        events = self.write(
+            "redeem",
+            inputs=[lots, underlying_address, executor],
+            events=["RedemptionRequested", "RedemptionRequestIncomplete"],
+            value=executor_fee,
+        )
+        return events["RedemptionRequested"], events["RedemptionRequestIncomplete"]
+
+    def redemption_request_info(self, redemption_request_id):
+        """
+        Get redemption request info by id.
+        """
+        redemption_info = self.read(
+            "redemptionRequestInfo",
+            inputs=[redemption_request_id]
+        )
+        return redemption_info
+
+    def redemption_queue(self, first_redemption_ticket_id=0, page_size=10):
+        """
+        Get redemption queue starting from given ticket id.
+        """
+        queue = self.read(
+            "redemptionQueue",
+            inputs=[first_redemption_ticket_id, page_size]
+        )
+        return queue
+    
+    def redemption_payment_default(self, proof, redemption_request_id):
+        """
+        Execute redemption payment default after receiving attestation proof.
+        """
+        _, receipt = self.write(
+            "redemptionPaymentDefault",
+            inputs=[proof, redemption_request_id],
             return_receipt=True
         )
         return receipt

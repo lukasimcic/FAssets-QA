@@ -1,10 +1,12 @@
 # My files
-my_notes.md
-send_testUSDT0.py
+my_files/
 .vscode/
-scripts/test.py
-scripts/test1.py
-secrets/
+scripts/test*.py
+data/
+config/secrets/user/*
+config/secrets/user_partner/*
+config/secrets/agent/*
+!config/secrets/**/*.template.json
 
 # Other
 .DS_Store

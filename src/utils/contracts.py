@@ -1,8 +1,12 @@
-from src.utils.config import coston2_qa_path, contracts_path
+from config.config_qa import coston2_contracts_file
 import json
 
-def get_contract_address(contract_instance_name: str) -> str:
-    with open(coston2_qa_path, "r") as f:
+def get_contract_address(contract_instance_name: str, native_network: str = "C2FLR") -> str:
+    if native_network == "C2FLR":
+        contracts = coston2_contracts_file
+    else:
+        raise ValueError(f"Unsupported native network: {native_network}.")
+    with open(coston2_contracts_file, "r") as f:
         coston2_contracts = json.load(f)
     for contract in coston2_contracts:
         if contract.get("name") == contract_instance_name:

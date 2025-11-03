@@ -29,14 +29,14 @@ class Flow(ABC):
         # to be defined in subclasses
         self.ca = None
         self.ca_partner = None
-        self.user = None
-        self.partner = None
+        self.informer = None
+        self.informer_partner = None
         self.lot_size = None
 
     def log(self, message, both=True):
-        self.user.logger.info(message)
+        self.informer.logger.info(message)
         if both:
-            self.partner.logger.info(message)
+            self.informer_partner.logger.info(message)
 
     @abstractmethod
     def get_balances(self, log_steps=False):
@@ -73,8 +73,8 @@ class Flow(ABC):
                 bundle = cls(
                         self.ca, 
                         self.ca_partner,
-                        self.user,
-                        self.partner,
+                        self.informer,
+                        self.informer_partner,
                         self.lot_size,
                         state
                     )

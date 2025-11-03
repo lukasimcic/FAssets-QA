@@ -1,5 +1,5 @@
 from .contract_client import ContractClient
-from src.utils.config import collateral_pool_path
+from config.config_qa import collateral_pool_path
 
 class CollateralPool(ContractClient):
     def __init__(self, sender_address: str, sender_private_key: str, pool_address: str):

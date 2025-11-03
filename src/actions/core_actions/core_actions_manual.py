@@ -1,21 +1,32 @@
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.minter import Minter
+from src.interfaces.user.redeemer import Redeemer
 from src.actions.core_actions.core_actions import CoreActions
+from config.config_qa import zero_address
 
 class CoreActionsManual(CoreActions):
-    def __init__(self, minter : Minter):
+    def __init__(self, minter : Minter, redeemer : Redeemer):
         super().__init__()
         self.minter = minter
+        self.redeemer = redeemer
         self.logger = minter.logger
 
     def mint(self, lot_amount, agent=None, log_steps=False):
         self.logger.info(f"Minting {lot_amount} lots against agent {agent}.")
-        self.minter.mint(lot_amount, agent, log_steps=log_steps)
+        mint_id = self.minter.mint(lot_amount, agent, log_steps=log_steps)
+        self.logger.info(f"Proving underlying payment and executing minting.")
+        self.minter.prove_and_execute_minting(mint_id, log_steps=log_steps)
 
-    def redeem(self, lot_amount, log_steps=False):
+    def redeem(self, lot_amount, executor=zero_address, executor_fee=0, log_steps=False):
         self.logger.info(f"Redeeming {lot_amount} lots.")
-        pass
-
+        remaining_lots = self.redeemer.redeem(
+            lots=lot_amount, 
+            executor=executor, 
+            executor_fee=executor_fee,
+            log_steps=log_steps
+        )
+        self.logger.info(f"Redeemed {lot_amount - remaining_lots} lots.")
+        
     def enter_pool(self, pool_address, amount, log_steps=False):
         self.logger.info(f"Entering pool {pool_address} with amount {amount}.")
         pass
@@ -58,8 +69,8 @@ class CoreActionsManual(CoreActions):
 
     def mint_execute(self, mint_id, log_steps=False):
         self.logger.info(f"Executing minting for mint ID {mint_id}.")
-        pass
+        self.minter.prove_and_execute_minting(mint_id, log_steps=log_steps)
 
     def redeem_default(self, redemption_id, log_steps=False):
         self.logger.info(f"Executing redemption for redemption ID {redemption_id}.")
-        pass
+        self.redeemer.redeem_default(redemption_id, log_steps=log_steps)

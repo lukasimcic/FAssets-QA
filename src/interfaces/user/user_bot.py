@@ -1,4 +1,5 @@
-from src.utils.config import user_secrets_files, user_partner_secrets_files, project_path
+from config.config_qa import fasset_bots_folder
+from src.utils.secrets import secrets_file
 from src.interfaces.user.user import User
 import re
 from contextlib import suppress
@@ -12,12 +13,9 @@ class UserBot(User):
     def __init__(self, token_underlying, num=0, partner=False, config=None, timeout=None):
         super().__init__(token_underlying, num, partner)
         self.timeout = timeout
-        if not partner:
-            secrets_file = user_secrets_files[num]
-        else:
-            secrets_file = user_partner_secrets_files[num]
+        secrets = secrets_file(num, partner)
         config_snippet = f"-c {config}" if config else ""
-        self.command_prefix = f"yarn user-bot -s {secrets_file} {config_snippet} -f {self.token_fasset} "
+        self.command_prefix = f"yarn user-bot -s {secrets} {config_snippet} -f {self.token_fasset} "
 
     def _execute(self, command, log_steps):
         self.logger.info(f"Executing command: {command}")
@@ -27,7 +25,7 @@ class UserBot(User):
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=project_path,
+            cwd=fasset_bots_folder,
             restore_signals=False,
             start_new_session=True,
             text=True,

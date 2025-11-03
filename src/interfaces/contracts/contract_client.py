@@ -1,18 +1,9 @@
-from src.utils.config import rpc_url_c2flr
+from config.config_qa import rpc_url
 from src.utils.contracts import get_contract_abi
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 import warnings
 
-# Suppress specific warning from web3 about log processing. If an event will not be decoded,
-# it is not relevant to the code, otherwise an error would be raised later.
-#warnings.filterwarnings(
-#    "ignore",
-#    message=r"The log with transaction hash: HexBytes\('0x[a-fA-F0-9]+'\) and logIndex: \d+ encountered the following error during processing: .*\. It has been discarded\.",
-#    category=UserWarning,
-#    module="web3.contract.base_contract",
-#    append=True
-#)
 
 class ContractClient:
     def __init__(
@@ -26,12 +17,12 @@ class ContractClient:
         self.sender_address = sender_address
         self.sender_private_key = sender_private_key
         self.path = contract_path
-        self.name = contract_address
+        self.address = contract_address
         
         kwargs = {}
         if timeout is not None:
             kwargs['timeout'] = timeout
-        self.web3 = Web3(Web3.HTTPProvider(rpc_url_c2flr, request_kwargs=kwargs))
+        self.web3 = Web3(Web3.HTTPProvider(rpc_url["C2FLR"], request_kwargs=kwargs))
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
         assert self.web3.is_connected()
         contract_abi = get_contract_abi(contract_path)
@@ -63,12 +54,12 @@ class ContractClient:
         receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
         return receipt
     
-    def _get_outputs_from_receipt(self, receipt, outputs: list):
+    def _get_events_from_receipt(self, receipt, events: list):
         """
-        Extracts event outputs from a transaction receipt.
+        Extracts events from a transaction receipt.
         """
         result = {}
-        for event_name in outputs:
+        for event_name in events:
             event_obj = getattr(self.contract.events, event_name, None)
             if event_obj is None:
                 raise ValueError(f"Event {event_name} not found in contract.")
@@ -86,13 +77,13 @@ class ContractClient:
                 result[event_name] = []
         return result
     
-    def write(self, method: str, inputs: list = [], outputs: list = [], value: int = 0, return_receipt = False):
+    def write(self, method: str, inputs: list = [], events: list = [], value: int = 0, return_receipt = False):
         tx = self._build_transaction(method, inputs, value)
         receipt = self._sign_and_send_transaction(tx)
-        outputs = self._get_outputs_from_receipt(receipt, outputs)
+        events = self._get_events_from_receipt(receipt, events)
         if return_receipt:
-            return outputs, receipt
-        return outputs
+            return events, receipt
+        return events
     
     def read(self, method: str, inputs: list = []):
         return self.contract.functions[method](*inputs).call()

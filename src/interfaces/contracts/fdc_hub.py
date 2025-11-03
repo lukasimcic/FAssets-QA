@@ -1,6 +1,6 @@
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_address
-from src.utils.config import fdc_hub_path, fdc_hub_instance_name
+from config.config_qa import fdc_hub_path, fdc_hub_instance_name
 
 class FdcHub(ContractClient):
     def __init__(self, sender_address, sender_private_key):

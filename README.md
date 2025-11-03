@@ -4,14 +4,14 @@
 
 When running `python -m scripts.run_flow`, multiple user bots start operating in parallel.
 Each bot repeatedly selects a random action from the following:
-  - mint: Mint a random amount of lots against an agent with lowest fee.
-  - mint_random: Mint a random amount of lots against a random agent.
-  - redeem: Redeem a random amount of lots.
-  - mint_execute: Execute a pending mint.
-  - redeem_default: Redeem a default redemption.
-  - enter_pool: Enter a random pool with a random amount.
-  - exit_pool: Exit a random (valid) pool with a random amount.
-  - withdraw_pool_fees: Withdraws fees from a random (valid) pool.
+  - Mint a random amount of lots against an agent with lowest fee.
+  - Mint a random amount of lots against a random agent.
+  - Redeem a random amount of lots.
+  - Execute a random pending mint.
+  - Redeem a random default redemption.
+  - Enter a random pool with a random amount.
+  - Exit a random (valid) pool with a random amount.
+  - Withdraws fees from a random (valid) pool.
   - specific scenarios described below
 
 ### Scenarios
@@ -22,6 +22,8 @@ Each bot repeatedly selects a random action from the following:
 | 2               | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Transfer debt-free pool tokens (up to the amount originally entered) to the partner user bot. <br>- Exit pool from the partner user bot. |
 
 ## Code structure
+
+# TODO: rewrite code structure
 
 - Scripts in the `scripts/` directory serve as entry points for running flows and scenarios.
 
