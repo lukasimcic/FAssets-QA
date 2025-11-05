@@ -2,10 +2,11 @@ from pathlib import Path
 
 # directory paths
 config_folder = Path(__file__).resolve().parent
-fasset_bots_folder = config_folder.parent / "fasset-bots"
+root_folder = config_folder.parent
+fasset_bots_folder = root_folder / "fasset-bots"
 contracts_folder = fasset_bots_folder / "packages" / "fasset-bots-core" / "artifacts" / "contracts"
 secrets_folder = config_folder / "secrets"
-data_folder = config_folder.parent / "data"
+data_folder = root_folder / "data"
 log_folder = data_folder / "logs"
 
 # contract names and addresses
@@ -21,7 +22,7 @@ relay_instance_name = "Relay"
 asset_manager_path = contracts_folder / "assetManager" / "interfaces" / "IIAssetManager.sol" / "IIAssetManager.json"
 fasset_path = contracts_folder / "fassetToken" / "interfaces" / "IIFAsset.sol" / "IIFAsset.json"
 collateral_pool_path = contracts_folder / "collateralPool" / "interfaces" / "IICollateralPool.sol" / "IICollateralPool.json"
-collateral_pool_token_path = contracts_folder / "collateralPool" / "interfaces" / "IICollateralPoolToken.sol" / "IICollateralPoolToken.json"
+collateral_pool_token_path = contracts_folder / "collateralPool" / "implementation" / "CollateralPoolToken.sol" / "CollateralPoolToken.json"
 fdc_hub_path = contracts_folder / "fdc" / "mock" / "FdcHubMock.sol" / "FdcHubMock.json"
 fdc_request_fee_configurations_path = contracts_folder / "fdc" / "mock" / "FdcRequestFeeConfigurationsMock.sol" / "FdcRequestFeeConfigurationsMock.json"
 relay_path = contracts_folder / "fdc" / "mock" / "RelayMock.sol" / "RelayMock.json"

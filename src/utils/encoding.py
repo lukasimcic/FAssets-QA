@@ -1,4 +1,6 @@
 from web3 import Web3
+from pathlib import Path
+import json
 
 # padding
 
@@ -43,3 +45,26 @@ def get_error(error_names: list[str], encoded_error) -> str:
         if encoded_name == encoded_error:
             return name
     return "Error not in list."
+
+# for example folder = contracts_folder / "assetManager" / "facets"
+def save_errors(folder):
+    error_file = Path(__file__).parent / "errors.json"
+    if error_file.exists() and error_file.stat().st_size > 0:
+        with open(error_file, "r") as f:
+            errors = json.load(f)
+    else:
+        errors = {}
+    for subfolder in folder.iterdir():
+        if subfolder.is_dir():
+            subfolder_name = subfolder.name
+            if subfolder_name.endswith(".sol"):
+                contract_name = subfolder_name[:-4]
+                with open(subfolder / f"{contract_name}.json", "r") as f:
+                    contract_abi = json.load(f)["abi"]
+                    for item in contract_abi:
+                        if item["type"] == "error":
+                            error_name = item["name"]
+                            encoded_error = error_encode(error_name)
+                            errors[error_name] = encoded_error
+    with open(error_file, "w") as f:
+        json.dump(errors, f, indent=4)
