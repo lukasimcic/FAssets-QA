@@ -7,3 +7,9 @@ class CollateralPoolToken(ContractClient):
 
     def transfer(self, to_address, amount):
         self.write("transfer", inputs=[to_address, amount])
+
+    def decimals(self):
+        return self.read("decimals")
+
+    def name(self):
+        return self.read("name")

@@ -14,9 +14,10 @@ class AssetManager(ContractClient):
 
     # info
 
-    def _agent_info(self, agent_vault):
+    def agent_attribute(self, agent_vault, attribute):
         agent_info = self.read("getAgentInfo", inputs=[agent_vault])
-        return agent_info
+        idx = get_output_index(self.path, "getAgentInfo", attribute)
+        return agent_info[idx]
 
     def get_available_agents_detailed_list(asset_manager, start, end):
         agent_list = asset_manager.read(
@@ -24,7 +25,13 @@ class AssetManager(ContractClient):
             inputs=[start, end]
         )[0]
         idxs = {}
-        fields = ["agentVault", "freeCollateralLots", "feeBIPS"]
+        fields = [
+            "agentVault", 
+            "freeCollateralLots", 
+            "feeBIPS", 
+            "mintingPoolCollateralRatioBIPS",
+            "mintingVaultCollateralRatioBIPS"
+        ]
         for field in fields:
             idxs[field] = get_output_index(
                 asset_manager_path,
@@ -54,19 +61,27 @@ class AssetManager(ContractClient):
         idx = get_output_index(self.path, "getSettings", "assetUnitUBA")
         return settings[idx]
 
+    def asset_price_nat_wei(self):
+        asset_price_mul, asset_price_div = self.read("assetPriceNatWei")
+        return {
+            "mul": asset_price_mul,
+            "div": asset_price_div
+        }
+
+    def get_fAssets_backed_by_pool(self, vault_address):
+        return self.read(
+            "getFAssetsBackedByPool",
+            inputs=[vault_address]
+        )
+
     # mint
-    
-    def _agent_fee_BIPS(self, agent_vault):
-        agent_info = self._agent_info(agent_vault)
-        idx = get_output_index(self.path, "getAgentInfo", "feeBIPS")
-        return agent_info[idx]
     
     def _collateral_reservation_fee(self, lots):
         fee = self.read("collateralReservationFee", inputs=[lots])
         return fee
     
     def reserve_collateral(self, agentVault, lots, executor=zero_address):
-        agent_fee_BIPS = self._agent_fee_BIPS(agentVault)
+        agent_fee_BIPS = self.agent_attribute(agentVault, "feeBIPS")
         collateral_reservation_fee = self._collateral_reservation_fee(lots)
         collateralReserved = self.write(
             "reserveCollateral",
