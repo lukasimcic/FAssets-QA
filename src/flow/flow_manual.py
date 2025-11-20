@@ -1,6 +1,6 @@
 from src.interfaces.user.redeemer import Redeemer
 from src.flow.flow import Flow
-from src.actions.core_actions.core_actions_manual import CoreActionsManual
+from src.flow.flow_actions.core_actions.core_actions_manual import CoreActionsManual
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.minter import Minter
 from src.interfaces.user.informer import Informer

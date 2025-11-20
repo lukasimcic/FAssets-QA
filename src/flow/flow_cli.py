@@ -1,4 +1,4 @@
-from src.actions.core_actions.core_actions_cli import CoreActionsCli
+from src.flow.flow_actions.core_actions.core_actions_cli import CoreActionsCli
 from src.flow.flow import Flow
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.user_bot import UserBot

@@ -8,7 +8,7 @@ from src.utils.data_storage_client import DataStorageClient
 
 class PoolManager(User):
     def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
-        super().__init__(token_underlying, num, partner)
+        super().__init__(token_native, token_underlying, num, partner)
         self.native_address = self.native_data["address"]
         self.native_private_key = self.native_data["private_key"]
         self.underlying_public_key = self.underlying_data["public_key"]

@@ -1,4 +1,4 @@
-from src.actions.action_bundle import ActionBundle
+from src.flow.flow_actions.action_bundle import ActionBundle
 import random
 
 class RedeemRandomAmount(ActionBundle):

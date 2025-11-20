@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 from src.interfaces.user.informer import Informer
-from src.actions.core_actions.core_actions import CoreActions
+from src.flow.flow_actions.core_actions.core_actions import CoreActions
 
 class ActionBundle(ABC):
     def __init__(

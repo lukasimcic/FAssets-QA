@@ -1,4 +1,4 @@
-from src.actions import ACTION_BUNDLE_CLASSES
+from src.flow.flow_actions import ACTION_BUNDLE_CLASSES
 from abc import ABC, abstractmethod
 import random
 import time

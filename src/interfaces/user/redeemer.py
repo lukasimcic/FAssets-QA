@@ -9,7 +9,7 @@ from src.utils.encoding import pad_0x, unpad_0x
 
 class Redeemer(User):
     def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
-        super().__init__(token_underlying, num, partner)
+        super().__init__(token_native, token_underlying, num, partner)
         self.token_underlying = token_underlying
         self.nn = NativeNetwork(token_native, self.native_data)
         self.num = num

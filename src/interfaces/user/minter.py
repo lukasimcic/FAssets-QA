@@ -8,7 +8,7 @@ from src.utils.data_storage_client import DataStorageClient
 
 class Minter(User):
     def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
-        super().__init__(token_underlying, num, partner)
+        super().__init__(token_native, token_underlying, num, partner)
         self.token_underlying = token_underlying
         self.nn = NativeNetwork(token_native, self.native_data)
         self.native_address = self.native_data["address"]
