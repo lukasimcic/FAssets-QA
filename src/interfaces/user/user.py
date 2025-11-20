@@ -4,10 +4,10 @@ from src.utils.secrets import load_user_secrets
 import logging
 
 class User(ABC):
-    def __init__(self, token_underlying, num=0, partner=False):
+    def __init__(self, token_native, token_underlying, num=0, partner=False):
 
         # tokens
-        self.token_native = "C2FLR"
+        self.token_native = token_native
         self.token_underlying = token_underlying
         self.token_fasset = fasset_name[token_underlying]
         if token_underlying not in ["testXRP"]:

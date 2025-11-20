@@ -1,22 +1,15 @@
-from src.actions.action_bundle import ActionBundle
+from tasks.helper_functions import Task
+from tasks.conditions import max_lots, can_mint
 import random
+from locust import task
 
 
-def max_lots(agents):
-    if not agents:
-        return 0
-    return max(agent["max_lots"] for agent in agents)
+class MintLowestFeeAgentRandomAmount(Task):
+    def __init__(self, token_native, token_underlying, user_num, partner):
+        super().__init__(token_native, token_underlying, user_num, partner)
 
-def can_mint(balances, token_underlying, lot_size, agents):
-    enough_collateral = token_underlying in balances and balances[token_underlying] >= lot_size
-    available_agents = max_lots(agents) >= 1
-    return enough_collateral and available_agents
-
-class MintLowestFeeAgentRandomAmount(ActionBundle):
-    def __init__(self, ca, ca_partner, user, partner, lot_size, state):
-        super().__init__(ca, ca_partner, user, partner, lot_size, state)
-    
-    def action(self):
+    @task
+    def task(self):
         max_possible_lots = min(
             max_lots(self.ca.get_agents()), 
             self.balances[self.token_underlying] // self.lot_size

@@ -5,8 +5,8 @@ from src.interfaces.contracts import *
 
 
 class Informer(User):
-    def __init__(self, token_underlying, num=0, partner=False, config=None):
-        super().__init__(token_underlying, num, partner)
+    def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
+        super().__init__(token_native, token_underlying, num, partner)
 
     def get_balances(self, log_steps=False):
         nn = NativeNetwork( 

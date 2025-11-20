@@ -1,17 +1,40 @@
-from src.actions.core_actions.core_actions import CoreActions
+from src.interfaces.user.informer import Informer
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.minter import Minter
 from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
 from config.config_qa import zero_address
 
-class CoreActionsManual(CoreActions):
-    def __init__(self, minter : Minter, redeemer : Redeemer, pool_manager : PoolManager):
-        super().__init__()
-        self.minter = minter
-        self.redeemer = redeemer
-        self.pool_manager = pool_manager
-        self.logger = minter.logger
+class CoreActions():
+    def __init__(self, user_data):
+        self.informer = Informer(**user_data)
+        self.minter = Minter(**user_data)
+        self.redeemer = Redeemer(**user_data)
+        self.pool_manager = PoolManager(**user_data)
+        self.logger = self.informer.logger
+
+    def get_balances(self):
+        balances = self.informer.get_balances()
+        self.logger.info(f"Balances: {balances}")
+        return balances
+
+    def get_pools(self):
+        self.logger.info("Pools:")
+        pass
+
+    def get_pool_holdings(self):
+        self.logger.info("Pool holdings:")
+        pass
+
+    def get_mint_status(self):
+        mint_status = self.minter.mint_status()
+        self.logger.info(f"Mint status: {mint_status}")
+        return mint_status
+
+    def get_redemption_status(self):
+        redemption_status = self.redeemer.redemption_status()
+        self.logger.info(f"Redemption status: {redemption_status}")
+        return redemption_status
 
     def mint(self, lot_amount, agent=None, log_steps=False):
         self.logger.info(f"Minting {lot_amount} lots against agent {agent}.")
@@ -36,32 +59,6 @@ class CoreActionsManual(CoreActions):
     def exit_pool(self, pool_address, amount, log_steps=False):
         self.logger.info(f"Exiting pool {pool_address} with amount {amount}.")
         self.pool_manager.exit_pool(pool_address, amount, log_steps=log_steps)
-
-    def get_agents(self, chunk_size=10, log_steps=False):
-        agent_list = []
-        start = 0
-        am = AssetManager("", "", self.minter.token_underlying)
-        while True:
-            new = am.get_available_agents_detailed_list(start, start + chunk_size)
-            agent_list.extend(new)
-            if len(new) < chunk_size:
-                break
-            start += len(new)
-        fields_mapping = {
-            "agentVault": "address",
-            "freeCollateralLots": "max_lots",
-            "feeBIPS": "fee"
-            }
-        result = []
-        for agent in agent_list:
-            d = {}
-            for k, v in agent.items():
-                if k == "feeBIPS":
-                    d[fields_mapping[k]] = v / 100  # convert to percentage
-                else:
-                    d[fields_mapping[k]] = v
-            result.append(d)
-        return result
 
     def withdraw_pool_fees(self, pool_address, fees, log_steps=False):
         self.logger.info(f"Withdrawing pool fees from pool {pool_address}.")

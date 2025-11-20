@@ -1,5 +1,5 @@
 from src.interfaces.user.user_bot import UserBot
-from src.actions.core_actions.core_actions import CoreActions
+from src.flow.flow_actions.core_actions.core_actions import CoreActions
 
 class CoreActionsCli(CoreActions):
     def __init__(self, executor : UserBot):

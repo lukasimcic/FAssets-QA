@@ -1,6 +1,6 @@
 from src.flow.flow_cli import FlowCli
 from src.flow.flow_manual import FlowManual
-from src.actions import ACTION_BUNDLE_CLASSES
+from src.flow.flow_actions import ACTION_BUNDLE_CLASSES
 import threading
 
 num_user_bots = 2
