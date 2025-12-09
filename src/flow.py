@@ -58,8 +58,8 @@ class Flow():
             self.ca.get_balances(log_steps=log_steps),
             self.ca.get_mint_status(log_steps=log_steps),
             self.ca.get_redemption_status(log_steps=log_steps),
-            [], # self.ca.get_pools(log_steps=log_steps),
-            [], # self.ca.get_pool_holdings(log_steps=log_steps)
+            self.ca.get_pools(log_steps=log_steps),
+            self.ca.get_pool_holdings(log_steps=log_steps)
         )
     
     def _step(self):
@@ -88,11 +88,12 @@ class Flow():
                 successful = False
             
             if successful:
+                expected_state = bundle.expected_state
                 self.update_flow_state(log_steps=False)
                 state_mismatches = {}
                 for field in self.flow_state.fields():
                     actual_value = self.flow_state[field]
-                    expected_value = bundle.expected_state[field]
+                    expected_value = expected_state[field]
                     if actual_value != expected_value:
                         state_mismatches[field] = (expected_value, actual_value)
                 if not state_mismatches:

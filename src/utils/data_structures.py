@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Literal, Optional, Union
 import math
 
+# TODO maybe class TokenNative(Enum): C2FLR = "C2FLR" ...
 # Allowed tokens are also defined in config: tokens_native, tokens_underlying, fasset_name
 TokenNative = Literal["C2FLR"]
 TokenUnderlying = Literal["testXRP"]
@@ -84,6 +85,15 @@ class MintStatus:
         )
     def get_all_ids(self):
         return self.pending + self.expired
+    def __eq__(self, other):
+        if not isinstance(other, MintStatus):
+            return False
+        for field in self.__dataclass_fields__:
+            l1 = getattr(self, field)
+            l2 = getattr(other, field)
+            if sorted(l1) != sorted(l2):
+                return False
+        return True
 
 @dataclass
 class RedemptionStatus:
@@ -126,8 +136,22 @@ class PoolHolding:
     pool_address: str
     pool_tokens: float
     token_symbol: Optional[str] = None
+    compare_tolerance = 1e-12
     def __repr__(self):
         return repr_none_filtered(self)
+    def __eq__(self, other):
+        if not isinstance(other, PoolHolding):
+            return False
+        for field in self.__dataclass_fields__:
+            v1 = getattr(self, field)
+            v2 = getattr(other, field)
+            if type(v1) is float:
+                if not math.isclose(v1, v2, rel_tol=0, abs_tol=self.compare_tolerance):
+                    return False
+            else:
+                if v1 != v2:
+                    return False
+        return True
 
 @dataclass
 class FlowState:
@@ -136,6 +160,9 @@ class FlowState:
     redemption_status: RedemptionStatus
     pools: list[Pool]
     pool_holdings: list[PoolHolding]
+    def __post_init__(self):
+        self.pools = sorted(self.pools, key=lambda p: p.address)
+        self.pool_holdings = sorted(self.pool_holdings, key=lambda ph: ph.pool_address)
     def replace(self, changes : list):
         for change in changes:
             if type(change) is Balances:
