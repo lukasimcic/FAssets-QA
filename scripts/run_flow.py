@@ -27,7 +27,7 @@ actions = [
     ]
 actions = [
     [
-        "RedeemDefaultRandomRedemption"
+        "EnterRandomPoolRandomAmount"
     ] 
     for _ in range(num_user_bots)
     ]
@@ -43,7 +43,7 @@ def make_threads(actions):
             ),
             actions=actions[i],
             cli=cli,
-            total_time=40,
+            total_time=80,
             time_wait=30
             )
         t = threading.Thread(target=flow.run)

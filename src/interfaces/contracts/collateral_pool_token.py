@@ -20,3 +20,6 @@ class CollateralPoolToken(ContractClient):
 
     def name(self):
         return self.read("name")
+    
+    def total_supply(self):
+        return self.read("totalSupply")
