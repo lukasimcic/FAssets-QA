@@ -11,11 +11,12 @@ from xrpl.transaction import sign, autofill, submit
 
 
 class TestXRP(UnderlyingBaseNetwork):
-    def __init__(self, public_key, private_key):
-        super().__init__()
+    def __init__(self, public_key, private_key, fee_tracker):
+        super().__init__(fee_tracker=fee_tracker)
         self.client = JsonRpcClient(rpc_url["testXRP"])
-        self.wallet = Wallet(public_key, private_key)
-        self.asset_unit_uba = AssetManager("", "", "testXRP").asset_unit_uba()
+        if public_key and private_key: # otherwise this class is used for address non specific operations
+            self.wallet = Wallet(public_key, private_key)
+        self.asset_unit_uba = AssetManager("testXRP").asset_unit_uba()
 
     @staticmethod
     def generate_address():
@@ -58,7 +59,11 @@ class TestXRP(UnderlyingBaseNetwork):
         autofilled_tx = autofill(payment, self.client)
         signed_tx = sign(autofilled_tx, self.wallet)
         response = submit(signed_tx, self.client)
-        return response
+        self.fee_tracker.underlying_gas_fees += float(drops_to_xrp(response.result["tx_json"]["Fee"]))
+        return {
+            "tx_hash": response.result["tx_json"]["hash"],
+            "amount": amount
+        }
     
     def get_current_block(self):
         response = self.client.request(ServerInfo())

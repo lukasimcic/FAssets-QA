@@ -1,11 +1,13 @@
-from src.flow.flow_cli import FlowCli
-from src.flow.flow_manual import FlowManual
+from src.flow import Flow
 from src.actions import ACTION_BUNDLE_CLASSES
+from src.utils.data_structures import UserData
 import threading
 
-num_user_bots = 2
+
+num_user_bots = 1
+token_native = "C2FLR"
 token_underlying = "testXRP"
-flow_class = FlowManual
+cli = False
 
 # names of classes of action bundles to include in the flow
 # can customize actions for each thread here
@@ -23,16 +25,26 @@ actions = [
     ] 
     for _ in range(num_user_bots)
     ]
+actions = [
+    [
+        "RedeemDefaultRandomRedemption"
+    ] 
+    for _ in range(num_user_bots)
+    ]
 
 def make_threads(actions):
     threads = []
     for i in range(num_user_bots):
-        flow = flow_class(
-            token_underlying=token_underlying,
+        flow = Flow(
+            UserData(
+                token_native=token_native,
+                token_underlying=token_underlying,
+                num=i
+            ),
             actions=actions[i],
-            num=i,
-            total_time=300,
-            time_wait=10
+            cli=cli,
+            total_time=40,
+            time_wait=30
             )
         t = threading.Thread(target=flow.run)
         threads.append(t)

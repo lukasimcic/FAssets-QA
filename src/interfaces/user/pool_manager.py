@@ -1,29 +1,21 @@
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.interfaces.network.native_networks.native_network import NativeNetwork
-from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
-from src.interfaces.network.attestation import Attestation
-from src.utils.data_storage_client import DataStorageClient
+from src.utils.data_structures import Pool, PoolHolding, UserData
+from src.utils.fee_tracker import FeeTracker
 
 
 class PoolManager(User):
-    def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
-        super().__init__(token_underlying, num, partner)
-        self.native_address = self.native_data["address"]
-        self.native_private_key = self.native_data["private_key"]
-        self.underlying_public_key = self.underlying_data["public_key"]
-        self.underlying_private_key = self.underlying_data["private_key"]
-        # TODO add support for custom config
-        if config is not None:
-            raise NotImplementedError("Custom config is not yet supported.")
+    def __init__(self, user_data : UserData, fee_tracker : FeeTracker | None = None):
+        super().__init__(user_data, fee_tracker)
+        self.native_address = self.native_data.address
         
     def enter_pool(self, pool, amount, log_steps=False):
         """
         Enter the collateral pool by calling the CollateralPool contract.
         Amount is in pool tokens, not in UBA.
         """
-        cp = CollateralPool(self.native_address, self.native_private_key, pool)
-        cpt = CollateralPoolToken("", "", cp.pool_token())
+        cp = CollateralPool(pool, self.native_data, self.fee_tracker)
+        cpt = CollateralPoolToken(cp.pool_token())
         amount_UBA = int(amount * 10 ** cpt.decimals())
         cp.enter(amount_UBA)
 
@@ -32,8 +24,8 @@ class PoolManager(User):
         Exit the collateral pool by calling the CollateralPool contract.
         Amount is in pool tokens, not in UBA.
         """
-        cp = CollateralPool(self.native_address, self.native_private_key, pool)
-        cpt = CollateralPoolToken("", "", cp.pool_token())
+        cp = CollateralPool(pool, self.native_data, self.fee_tracker)
+        cpt = CollateralPoolToken(cp.pool_token())
         amount_UBA = int(amount * 10 ** cpt.decimals())
         cp.exit(amount_UBA)
 
@@ -41,7 +33,7 @@ class PoolManager(User):
         """
         Withdraw fees from the collateral pool by calling the CollateralPool contract.
         """
-        cp = CollateralPool(self.native_address, self.native_private_key, pool)
+        cp = CollateralPool(pool, self.native_data, self.fee_tracker)
         cp.withdraw_fees(fees)
 
     def pools(self, chunk_size=10, log_steps=False):
@@ -50,7 +42,7 @@ class PoolManager(User):
         """
         agent_list = []
         start = 0
-        am = AssetManager("", "", self.token_underlying)
+        am = AssetManager(self.token_underlying)
         while True:
             new = am.get_available_agents_detailed_list(start, start + chunk_size)
             agent_list.extend(new)
@@ -59,28 +51,28 @@ class PoolManager(User):
             start += len(new)
         result = []
         for agent in agent_list:
-            agent_dict = {"Pool address": am.agent_attribute(agent["agentVault"], "collateralPool")}
+            pool_dict = {"address": am.agent_attribute(agent["agentVault"], "collateralPool")}
             # add more details as needed
-            result.append(agent_dict)
+            result.append(Pool(**pool_dict))
         return result
     
     def pool_holdings(self, log_steps=False):
         """
-        Get the holdings of the specified collateral pool.
+        Get the user's holdings of all pools.
         """
         result = []
         all_pools = self.pools(log_steps=log_steps)
         for pool in all_pools:
-            pool_address = pool["Pool address"]
-            cp = CollateralPool("", "", pool_address)
+            pool_address = pool.address
+            cp = CollateralPool(pool_address)
             debt_free_tokens = cp.debt_free_tokens_of(self.native_address)
             debt_locked_tokens = cp.debt_locked_tokens_of(self.native_address)
             tokens = debt_free_tokens + debt_locked_tokens
             if tokens > 0:
-                cpt = CollateralPoolToken("", "", cp.pool_token())
+                cpt = CollateralPoolToken(cp.pool_token())
                 tokens = tokens / 10 ** cpt.decimals()
-                pool_dict = {"Pool address": pool_address, "Pool tokens": tokens}
-                result.append(pool_dict)
+                pool_dict = {"pool_address": pool_address, "pool_tokens": tokens}
+                result.append(PoolHolding(**pool_dict))
         return result
     
     def pool_fees(self, log_steps=False):
@@ -90,11 +82,11 @@ class PoolManager(User):
         result = []
         all_pools = self.pools(log_steps=log_steps)
         for pool in all_pools:
-            pool_address = pool["Pool address"]
-            cp = CollateralPool("", "", pool_address)
+            pool_address = pool.address
+            cp = CollateralPool(pool_address)
             fees = cp.fAsset_fees_of(self.native_address)
             if fees > 0:
-                cpt = CollateralPoolToken("", "", cp.pool_token())
+                cpt = CollateralPoolToken(cp.pool_token())
                 fees = fees / 10 ** cpt.decimals()
                 pool_dict = {"Pool address": pool_address, "Pool fees": fees}
                 result.append(pool_dict)
@@ -105,9 +97,9 @@ class PoolManager(User):
         """
         Check if the pool stays above the exit CR after exiting with amount.
         """
-        am = AssetManager("", "", self.token_underlying)
-        cp = CollateralPool("", "", pool)
-        cpt = CollateralPoolToken("", "", cp.pool_token())
+        am = AssetManager(self.token_underlying)
+        cp = CollateralPool(pool)
+        cpt = CollateralPoolToken(cp.pool_token())
         asset_price = am.asset_price_nat_wei()
         backed_fAssets = am.get_fAssets_backed_by_pool(cp.agent_vault())
         exit_cr = cp.exit_collateral_ratio_bips() / 1e4

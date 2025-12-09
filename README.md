@@ -1,5 +1,8 @@
 # FAssets-QA
 
+# TODO:
+- expected vs actual state match after action is only implemented for manual core actions. for cli core actions ...
+
 ## User flow
 
 When running `python -m scripts.run_flow`, multiple user bots start operating in parallel.

@@ -1,19 +1,23 @@
 from config.config_qa import fasset_bots_folder
+from src.utils.data_storage_client import DataStorageClient
 from src.utils.secrets import secrets_file
+from src.utils.data_structures import AgentInfo, Balances, MintStatus, PoolHolding, Pool, RedemptionStatus, UserData
 from src.interfaces.user.user import User
 import re
 from contextlib import suppress
 import subprocess
+
 
 class UserBot(User):
     """
     A class to interact with the user bot command line interface.
     It provides methods to execute commands and parse their output.
     """
-    def __init__(self, token_underlying, num=0, partner=False, config=None, timeout=None):
-        super().__init__(token_underlying, num, partner)
+    def __init__(self, user_data: UserData, config=None, timeout=None):
+        super().__init__(user_data)
+        self.user_data = user_data
         self.timeout = timeout
-        secrets = secrets_file(num, partner)
+        secrets = secrets_file(user_data.num, user_data.partner)
         config_snippet = f"-c {config}" if config else ""
         self.command_prefix = f"yarn user-bot -s {secrets} {config_snippet} -f {self.token_fasset} "
 
@@ -61,9 +65,9 @@ class UserBot(User):
         for line in output:
             amount, token = line.split(":")[1].strip().split(" ")
             balances[token] = float(amount)
-        return balances
+        return Balances(data=balances)
 
-    def get_agents(self, log_steps=False):
+    def get_agents(self, log_steps=False) -> list[AgentInfo]:
         """
         Returns a list of parsed agent dicts.
         Each dict contains the agent's address, max_lots and fee.
@@ -73,12 +77,12 @@ class UserBot(User):
         for line in output[1:]:  # Skip the header line
             try:
                 address, max_lots, fee = line.split()
-                agents.append(
+                agents.append(AgentInfo(
                     {
                         "address": address,
                         "max_lots": int(max_lots),
                         "fee": float(fee.strip("%")),
-                    }
+                    })
                 )
             except Exception as e:
                 self.logger.error(f"Error parsing agent line '{line}': {e}")
@@ -86,8 +90,7 @@ class UserBot(User):
 
     def get_agent_info(self, agent, log_steps=False):
         """
-        Returns a list of parsed agent info dicts.
-        Each dict contains the agent's address, total_lots, total_minted, total_redeemed, total_fees and status.
+        Returns a dictionary with detailed info about the specified agent.
         """
         output = self._execute(f"agentInfo {agent}", log_steps)
         data = {}
@@ -108,6 +111,14 @@ class UserBot(User):
         """
         output = self._execute("pools", log_steps)
         pools = []
+        key_mapping = {
+            "Pool address": "address",
+            "Token symbol": "token_symbol",
+            "Token price (CFLR)": "token_price_native",
+            "Collateral (CFLR)": "collateral_native",
+            "Fees (FTestXRP)": "fees_underlying",
+            "CR": "cr"
+        }
         header = re.split(r"\s{2,}", output[0].strip())
         for line in output[1:]:
             data = line.split()
@@ -115,8 +126,8 @@ class UserBot(User):
             for i, value in enumerate(data):
                 with suppress(ValueError):
                     value = float(value)
-                pool[header[i]] = value
-            pools.append(pool)
+                pool[key_mapping.get(header[i])] = value
+            pools.append(Pool(**pool))
         return pools
 
     def get_pool_holdings(self, log_steps=False):
@@ -133,11 +144,28 @@ class UserBot(User):
             for i, value in enumerate(data):
                 with suppress(ValueError):
                     value = float(value)
-                holding[header[i]] = value
-            holdings.append(holding)
+                key = header[i].replace(" ", "_").lower()
+                holding[key] = value
+            holdings.append(PoolHolding(**holding))
         return holdings
 
     # Mint and redeem actions
+
+    def _get_record_id_from_output(self, output):
+        """
+        Extracts and returns the record ID from the output of a mint or redeem command.
+        """
+        record_id = None
+        for line in output:
+            match = re.search(r"Paying on the underlying chain for reservation (\d+)", line)
+            if match:
+                record_id = match.group(1)
+                break
+            match = re.search(r"    id=(\d+)", line)
+            if match:
+                record_id = match.group(1)
+                break
+        return record_id
 
     def mint(self, amount, agent=None, log_steps=False):
         """
@@ -146,14 +174,22 @@ class UserBot(User):
         The minting will not be automatically split between agents.
         """
         command = f"mint {f'-a {agent}' if agent else ''} {amount}"
-        return self._execute(command, log_steps)
+        lines = self._execute(command, log_steps)
+        record_id = self._get_record_id_from_output(lines)
+        dsc = DataStorageClient(self.user_data, "mint")
+        dsc.add_data(record_id, {"lots": amount})
+        return lines
 
     def redeem(self, amount, log_steps=False):
         """
         Redeems the specified amount.
         """
         command = f"redeem {amount}"
-        return self._execute(command, log_steps)
+        lines = self._execute(command, log_steps)
+        record_id = self._get_record_id_from_output(lines)
+        dsc = DataStorageClient(self.user_data, "redeem")
+        dsc.add_data(record_id, {"lots": amount})
+        return lines
 
     def execute_mint(self, mint_id, log_steps=False):
         """
@@ -174,28 +210,30 @@ class UserBot(User):
         Returns a dictionary describing mint status of the user bot.
         """
         output = self._execute("mintStatus", log_steps)
-        mint_status = {"EXPIRED": [], "PENDING": []}
+        mint_status = {"expired": [], "pending": []}
         for line in output:
             if "  " in line:
                 mint_id, status = line.split("  ", 1)
+                status = status.lower()
                 if status in mint_status.keys():
                     mint_status[status] = mint_status[status] + [mint_id]
-        return mint_status
+        return MintStatus(**mint_status)
 
     def get_redemption_status(self, log_steps=False):
         """
         Returns a dictionary describing remeption status of the user bot.
         """
         output = self._execute("redemptionStatus", log_steps)
-        redemption_status = {"PENDING": [], "SUCCESS": [], "DEFAULT": [], "EXPIRED": []}
+        redemption_status = {"pending": [], "success": [], "default": [], "expired": []}
         for line in output:
             if "  " in line:
                 redemption_id, status = line.split("  ", 1)
+                status = status.lower()
                 if status in redemption_status.keys():
                     redemption_status[status] = redemption_status[status] + [
                         int(redemption_id.strip())
                     ]
-        return redemption_status
+        return RedemptionStatus(**redemption_status)
 
     # Pool actions
 

@@ -9,11 +9,11 @@ import time
 
 
 class Attestation():
-    def __init__(self, token_underlying : Literal["testXRP"], user_native_data, indexer_api_key):
+    def __init__(self, token_underlying : Literal["testXRP"], user_native_data, indexer_api_key, fee_tracker=None):
         self.token_underlying = token_underlying
         self.contract_inputs = {
-            "sender_address": user_native_data["address"],
-            "sender_private_key": user_native_data["private_key"]
+            "sender_data": user_native_data,
+            "fee_tracker": fee_tracker
         }
         self.headers = {
             "accept": "application/json",

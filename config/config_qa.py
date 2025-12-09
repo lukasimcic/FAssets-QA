@@ -28,6 +28,8 @@ fdc_request_fee_configurations_path = contracts_folder / "fdc" / "mock" / "FdcRe
 relay_path = contracts_folder / "fdc" / "mock" / "RelayMock.sol" / "RelayMock.json"
 
 # networks
+tokens_native = ["C2FLR"]
+tokens_underlying = ["testXRP"]
 fasset_name = {
     "testXRP": "FTestXRP"
 }

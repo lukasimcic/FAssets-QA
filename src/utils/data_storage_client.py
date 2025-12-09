@@ -1,18 +1,19 @@
 from config.config_qa import data_folder, asset_manager_controller_instance_name, fasset_name
 from src.utils.contracts import get_contract_address
+from src.utils.data_structures import UserData
 from datetime import datetime, timezone
 import json
 import os
 
 
 class DataStorageClient():
-    def __init__(self, user_num, partner, token_underlying, action_type):
+    def __init__(self, user_data : UserData, action_type):
         if action_type not in ["redeem", "mint"]:
             raise ValueError("action_type must be either 'redeem' or 'mint'")
         # set file name to match fasset-bots project format
         asset_manager_controller_snippet = get_contract_address(asset_manager_controller_instance_name)[2:10]
-        user_name = f"user{'_partner' if partner else ''}_{user_num}"
-        folder_name = f"{asset_manager_controller_snippet}-{fasset_name[token_underlying]}-{action_type}"
+        user_name = f"user{'_partner' if user_data.partner else ''}_{user_data.num}"
+        folder_name = f"{asset_manager_controller_snippet}-{fasset_name[user_data.token_underlying]}-{action_type}"
         self.folder = data_folder / "data_storage" / user_name[:-2] / user_name / folder_name
         if not self.folder.exists():
             os.makedirs(self.folder)
@@ -49,3 +50,20 @@ class DataStorageClient():
         record_file = self.folder / f"{record_id}.json"
         if record_file.exists():
             os.remove(record_file)
+
+    def add_data(self, record_id, data_dict):
+        record = self.get_record(record_id)
+        record.update(data_dict)
+        self.save_record(record)
+
+    def exists(self, record_id):
+        record_file = self.folder / f"{record_id}.json"
+        return record_file.exists()
+    
+    def get_existing_record_ids(self):
+        existing_ids = [int(file_name.removesuffix(".json")) for file_name in os.listdir(self.folder) if file_name.endswith(".json")]
+        return existing_ids
+    
+    def get_new_record_ids(self, previous_ids):
+        existing_ids = [int(file_name.removesuffix(".json")) for file_name in os.listdir(self.folder) if file_name.endswith(".json")]
+        return list(set(existing_ids).difference(set(previous_ids)))

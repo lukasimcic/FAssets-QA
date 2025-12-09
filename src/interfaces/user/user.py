@@ -1,22 +1,31 @@
-from abc import ABC
 from config.config_qa import log_folder, fasset_name
 from src.utils.secrets import load_user_secrets
+from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData, UserUnderlyingData
+from src.utils.fee_tracker import FeeTracker
+from abc import ABC
 import logging
 
+
+
 class User(ABC):
-    def __init__(self, token_underlying, num=0, partner=False):
+    def __init__(self, user_data: UserData, fee_tracker : FeeTracker = None):
+        token_native, token_underlying, num, partner = (
+            user_data.token_native,
+            user_data.token_underlying,
+            user_data.num,
+            user_data.partner
+        )
+        self.fee_tracker = fee_tracker
 
         # tokens
-        self.token_native = "C2FLR"
-        self.token_underlying = token_underlying
-        self.token_fasset = fasset_name[token_underlying]
-        if token_underlying not in ["testXRP"]:
-            raise ValueError(f"Unsupported token_underlying: {token_underlying}")
+        self.token_native : TokenNative = token_native
+        self.token_underlying : TokenUnderlying = token_underlying
+        self.token_fasset : TokenFasset = fasset_name[token_underlying]
         
         # secrets
         secrets = load_user_secrets(num, partner)
-        self.native_data = secrets["user"]["native"]
-        self.underlying_data = secrets["user"][token_underlying]
+        self.native_data = UserNativeData(**secrets["user"]["native"])
+        self.underlying_data = UserUnderlyingData(**secrets["user"][token_underlying])
         self.indexer_api_key = secrets["apiKey"]["indexer"][0]
         
         # logger
@@ -33,4 +42,3 @@ class User(ABC):
     def log_step(self, message, log_steps):
         if log_steps:
             self.logger.info(message)
-        

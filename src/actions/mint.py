@@ -1,80 +1,99 @@
+from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.action_bundle import ActionBundle
+from src.actions.helper_functions import can_mint, max_lots_available
+from src.utils.data_storage_client import DataStorageClient
 import random
 
 
-def max_lots(agents):
-    if not agents:
-        return 0
-    return max(agent["max_lots"] for agent in agents)
-
-def can_mint(balances, token_underlying, lot_size, agents):
-    enough_collateral = token_underlying in balances and balances[token_underlying] >= lot_size
-    available_agents = max_lots(agents) >= 1
-    return enough_collateral and available_agents
-
 class MintLowestFeeAgentRandomAmount(ActionBundle):
-    def __init__(self, ca, ca_partner, user, partner, lot_size, state):
-        super().__init__(ca, ca_partner, user, partner, lot_size, state)
-    
-    def action(self):
-        max_possible_lots = min(
-            max_lots(self.ca.get_agents()), 
-            self.balances[self.token_underlying] // self.lot_size
-        )
-        lot_amount = random.randint(1, max_possible_lots)
-        agents = []
-        current_lowest_fee = None
-        for agent in self.ca.get_agents():
-            if agent["max_lots"] * self.lot_size >= lot_amount:
-                if current_lowest_fee is None or agent["fee"] < current_lowest_fee:
-                    agents = [agent["address"]]
-                    current_lowest_fee = agent["fee"]
-                elif agent["fee"] == current_lowest_fee:
-                    agents.append(agent["address"])
-        agent = random.choice(agents)
-        self.ca.mint(lot_amount, agent=agent, log_steps=True)
+    def __init__(self, user_data, flow_state, cli):
+        super().__init__(user_data, flow_state, cli)
+        self.agents_dict = self.ca.get_agents()
 
     def condition(self):
-        return can_mint(self.balances, self.token_underlying, self.lot_size, self.ca.get_agents())
+        return can_mint(self.balances, self.token_underlying, self.lot_size, self.agents_dict)
+    
+    def action(self):
+        # action logic
+        agent_fees_dict = {
+            agent_fee: [
+                agent for agent in self.agents_dict if agent.fee == agent_fee and agent.max_lots >= 1
+                ] 
+                for agent_fee in set(agent.fee for agent in self.agents_dict)
+            }
+        lowest_fee = min(fee for fee, agents in agent_fees_dict.items() if agents)
+        agents = agent_fees_dict[lowest_fee]
+        agent = random.choice(agents)
+        max_lots = min(agent.max_lots, self.balances[self.token_underlying] // self.lot_size)
+        lot_amount = random.randint(1, max_lots)
+        self.ca.mint(lot_amount, agent=agent.address, log_steps=True)
+        # data for expected_state
+        self.lot_amount = lot_amount
+        self.agent = agent
 
-    def state_after(self):
-        raise NotImplementedError("State update is not implemented yet.")
+    @property
+    def expected_state(self):
+        new_balances = self.balances.copy()
+        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 100)
+        new_balances[self.token_fasset] += self.lot_size * self.lot_amount
+        new_balances.subtract_fees(self.ca.fee_tracker)
+        return self.flow_state.replace([new_balances])
 
 
 class MintRandomAgentRandomAmount(ActionBundle):
-    def __init__(self, ca, ca_partner, user, partner, lot_size, state):
-        super().__init__(ca, ca_partner, user, partner, lot_size, state)
+    def __init__(self, user_data, flow_state, cli):
+        super().__init__(user_data, flow_state, cli)
+    
+    def condition(self):
+        self.agents_dict = self.ca.get_agents()
+        return can_mint(self.balances, self.token_underlying, self.lot_size, self.agents_dict)
     
     def action(self):
-        max_possible_lots = min(
-            max_lots(self.ca.get_agents()), 
-            self.balances[self.token_underlying] // self.lot_size
-        )
-        lot_amount = random.randint(1, max_possible_lots)
-        agents = []
-        for agent in self.ca.get_agents():
-            if agent["max_lots"] * self.lot_size >= lot_amount:
-                agents.append(agent["address"])
+        # action logic
+        agents = [agent for agent in self.agents_dict if agent.max_lots >= 1]
         agent = random.choice(agents)
-        self.ca.mint(lot_amount, agent=agent, log_steps=True)
+        max_lots = min(agent.max_lots, self.balances[self.token_underlying] // self.lot_size)
+        lot_amount = random.randint(1, max_lots)
+        self.ca.mint(lot_amount, agent=agent.address, log_steps=True)
+        # data for expected_state
+        self.lot_amount = lot_amount
+        self.agent = agent
 
-    def condition(self):
-        return can_mint(self.balances, self.token_underlying, self.lot_size, self.ca.get_agents())
-
-    def state_after(self):
-        raise NotImplementedError("State update is not implemented yet.")
+    @property
+    def expected_state(self):
+        new_balances = self.balances.copy()
+        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 100)
+        new_balances[self.token_fasset] += self.lot_size * self.lot_amount
+        new_balances.subtract_fees(self.ca.fee_tracker)
+        return self.flow_state.replace([new_balances])
 
 
 class MintExecuteRandomMinting(ActionBundle):
-    def __init__(self, ca, ca_partner, user, partner, lot_size, state):
-        super().__init__(ca, ca_partner, user, partner, lot_size, state)
-
-    def action(self):
-        mint_id = random.choice(self.mint_status["PENDING"])
-        self.ca.mint_execute(mint_id, log_steps=True)
+    def __init__(self, user_data, flow_state, cli):
+        super().__init__(user_data, flow_state, cli)
 
     def condition(self):
-        return self.mint_status["PENDING"]
+        return self.mint_status.pending
 
-    def state_after(self):
-        raise NotImplementedError("State update is not implemented yet.")
+    def action(self):
+        # action logic
+        mint_id = random.choice(self.mint_status.pending)
+        # data for expected_state
+        dsc = DataStorageClient(self.user_data, action_type="mint")
+        self.mint_id = mint_id
+        self.record = dsc.get_record(mint_id)
+        self.fee_tracker = self.ca.fee_tracker
+        # action logic continued
+        self.ca.mint_execute(mint_id, log_steps=True)
+
+    @property
+    def expected_state(self):
+        # balances
+        new_balances = self.balances.copy()
+        new_balances[self.token_fasset] += self.lot_size * self.record["lots"]
+        new_balances.subtract_fees(self.ca.fee_tracker)
+        # mint status
+        new_mint_status = self.mint_status.copy()
+        new_mint_status.pending.remove(self.mint_id)
+        return self.flow_state.replace([new_balances, new_mint_status])
+

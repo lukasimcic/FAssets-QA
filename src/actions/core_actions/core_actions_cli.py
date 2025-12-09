@@ -1,33 +1,56 @@
 from src.interfaces.user.user_bot import UserBot
 from src.actions.core_actions.core_actions import CoreActions
+from src.utils.data_structures import UserData
 
-class CoreActionsCli(CoreActions):
-    def __init__(self, executor : UserBot):
+class CoreActionsCLI(CoreActions):
+    def __init__(self, user_data : UserData):
         super().__init__()
-        self.executor = executor
+        self.user_bot = UserBot(user_data)
 
-    # core actions
+    # state retrieval
+
+    def get_balances(self, log_steps=False):
+        return self.user_bot.get_balances(log_steps=log_steps)
+
+    def get_pools(self, log_steps=False):
+        return self.user_bot.get_pools(log_steps=log_steps)
+
+    def get_pool_holdings(self, log_steps=False):
+        return self.user_bot.get_pool_holdings(log_steps=log_steps)
+
+    def get_mint_status(self, log_steps=False):
+        return self.user_bot.get_mint_status(log_steps=log_steps)
+
+    def get_redemption_status(self, log_steps=False):
+        return self.user_bot.get_redemption_status(log_steps=log_steps)
+    
+    # logging
+    
+    def log(self, message):
+        self.user_bot.log_step(message, True)
+
+    # actions implementation
 
     def mint(self, lot_amount, agent=None, log_steps=False):
-        self.executor.mint(lot_amount, agent=agent, log_steps=log_steps)
+        self.user_bot.mint(lot_amount, agent=agent, log_steps=log_steps)
 
     def redeem(self, lot_amount, log_steps=False):
-        self.executor.redeem(lot_amount, log_steps=log_steps)
+        self.user_bot.redeem(lot_amount, log_steps=log_steps)
 
     def enter_pool(self, pool_address, amount, log_steps=False):
-        self.executor.enter_pool(pool_address, amount, log_steps=log_steps)
+        self.user_bot.enter_pool(pool_address, amount, log_steps=log_steps)
 
     def exit_pool(self, pool_address, amount, log_steps=False):
-        self.executor.exit_pool(pool_address, amount, log_steps=log_steps)
+        self.user_bot.exit_pool(pool_address, amount, log_steps=log_steps)
 
     def get_agents(self, log_steps=False):
-        return self.executor.get_agents(log_steps=log_steps)
+        return self.user_bot.get_agents(log_steps=log_steps)
 
     def withdraw_pool_fees(self, pool_address, log_steps=False):
-        self.executor.withdraw_pool_fees(pool_address, log_steps=log_steps)
+        self.user_bot.withdraw_pool_fees(pool_address, log_steps=log_steps)
 
     def mint_execute(self, mint_id, log_steps=False):
-        self.executor.execute_mint(mint_id, log_steps=log_steps)
+        self.user_bot.execute_mint(mint_id, log_steps=log_steps)
 
     def redeem_default(self, redemption_id, log_steps=False):
-        self.executor.redeem_default(redemption_id, log_steps=log_steps)
+        self.user_bot.redeem_default(redemption_id, log_steps=log_steps)
