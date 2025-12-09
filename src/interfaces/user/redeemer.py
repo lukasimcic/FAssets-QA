@@ -6,23 +6,13 @@ from src.interfaces.network.attestation import Attestation
 from config.config_qa import zero_address
 from src.utils.data_storage_client import DataStorageClient
 from src.utils.encoding import pad_0x, unpad_0x
+from src.utils.data_structures import RedemptionStatus, UserData
+from src.utils.fee_tracker import FeeTracker
 
 class Redeemer(User):
-    def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
-        super().__init__(token_underlying, num, partner)
-        self.token_underlying = token_underlying
-        self.nn = NativeNetwork(token_native, self.native_data)
-        self.num = num
-        self.partner = partner
-        self.native_address = self.native_data["address"]
-        self.native_private_key = self.native_data["private_key"]
-        self.underlying_public_key = self.underlying_data["public_key"]
-        self.underlying_private_key = self.underlying_data["private_key"]
-        self.underlying_address = self.underlying_data["address"]
-        self.dsc = DataStorageClient(num, partner, token_underlying, "redeem")
-        # TODO add support for custom config
-        if config is not None:
-            raise NotImplementedError("Custom config is not yet supported.")
+    def __init__(self, user_data : UserData, fee_tracker : FeeTracker | None = None):
+        super().__init__(user_data, fee_tracker)
+        self.dsc = DataStorageClient(user_data, "redeem")
 
     def redeem(self, lots, executor=zero_address, executor_fee=0, log_steps=False):
         """
@@ -31,11 +21,12 @@ class Redeemer(User):
         Returns lots remaining to be redeemed if redemption request is incomplete.
         """
         self.log_step(f"Starting redemption of {lots} lots.", log_steps)
-        am = AssetManager(self.native_address, self.native_private_key, self.token_underlying)
-        requested_redemptions, redemption_request_incomplete = am.redeem(lots, self.underlying_address, executor, executor_fee)
+        am = AssetManager(self.token_underlying, self.native_data, self.fee_tracker)
+        events = am.redeem(lots, self.underlying_data.address, executor, executor_fee)
+        requested_redemptions, redemption_request_incomplete = events["RedemptionRequested"], events["RedemptionRequestIncomplete"]
         self.log_step(f"Redemption request submitted. Got {len(requested_redemptions)} requested redemptions.", log_steps)
         for requested_redemption in requested_redemptions:
-            current_timestamp = self.nn.get_current_timestamp()
+            current_timestamp = NativeNetwork(self.token_native).get_current_timestamp()
             request_data = {
                 "type" : "redeem",
                 "requestId": str(requested_redemption.requestId),
@@ -45,10 +36,12 @@ class Redeemer(User):
                 "lastUnderlyingBlock": str(requested_redemption.lastUnderlyingBlock),
                 "lastUnderlyingTimestamp": str(requested_redemption.lastUnderlyingTimestamp),
                 "executorAddress": executor,
-                "createdAt": self.dsc.timestamp_to_date(current_timestamp)
-            }
+                "createdAt": self.dsc.timestamp_to_date(current_timestamp),
+                "lots": lots
+            } 
             self.dsc.save_record(request_data)
-        return redemption_request_incomplete[0]["remaining_lots"] if redemption_request_incomplete else 0
+        print("redemption_request_incomplete", redemption_request_incomplete)
+        return 0 if not redemption_request_incomplete else redemption_request_incomplete[0]["remainingLots"]
     
     def _prepare_proof(self, proof):
         """
@@ -88,9 +81,9 @@ class Redeemer(User):
         """
         Get attestation proof for referenced payment non-existence.
         """
-        a = Attestation("testXRP", self.native_data, self.indexer_api_key)
+        a = Attestation("testXRP", self.native_data, self.indexer_api_key, self.fee_tracker)
         request_body = a.request_body_referenced_payment_nonexistence(
-            self.underlying_data["address"],
+            self.underlying_data.address,
             unpad_0x(redemption_data["paymentReference"]),
             redemption_data["amountUBA"],
             redemption_data["firstUnderlyingBlock"],
@@ -115,7 +108,7 @@ class Redeemer(User):
         self.log_step("Got proof.", log_steps)
         redemption_id = int(redemption_data["requestId"])
         self.log_step(f"Submitting redemption default payment.", log_steps)
-        am = AssetManager(self.native_data["address"], self.native_data["private_key"], self.token_underlying)
+        am = AssetManager(self.token_underlying, self.native_data, self.fee_tracker)
         am.redemption_payment_default(proof, redemption_id)
         self.log_step(f"Redemption default executed.", log_steps)
         self.dsc.remove_record(redemption_id)
@@ -126,28 +119,28 @@ class Redeemer(User):
         Get statuses of all saved redemptions.
         """
         statuses = ["ACTIVE", "DEFAULTED_UNCONFIRMED", "SUCCESSFUL", "DEFAULTED_FAILED", "BLOCKED", "REJECTED"] # from RedemptionRequestInfo.sol
-        result = {"PENDING": [], "DEFAULT": [], "EXPIRED": [], "SUCCESS": []}
+        result = {"pending": [], "default": [], "expired": [], "success": []}
         redemptions = self.dsc.get_records()
-        am = AssetManager("","", self.token_underlying)
+        am = AssetManager(self.token_underlying)
         for redemption in redemptions:
             redemption_id = int(redemption["requestId"])
             request_info = am.redemption_request_info(redemption_id)
             status = statuses[request_info[1]]
             if status == "ACTIVE":
                 block = int(redemption["lastUnderlyingBlock"])
-                current_underlying_block = UnderlyingNetwork(self.token_underlying, self.underlying_data).get_current_block()
+                current_underlying_block = UnderlyingNetwork(self.token_underlying).get_current_block()
                 a = Attestation("testXRP", self.native_data, self.indexer_api_key)
                 first_block, _ = a.get_block_range()
                 if current_underlying_block > block:
-                    status = "DEFAULT"
+                    status = "default"
                 elif block < first_block:
-                    status = "EXPIRED"
+                    status = "expired"
                 else:
-                    status = "PENDING"
+                    status = "pending"
             elif status == "SUCCESSFUL":
-                status = "SUCCESS"
+                status = "success"
             else:
-                status = "EXPIRED"
+                status = "expired"
             result[status].append(redemption_id)
-        return result
+        return RedemptionStatus(**result)   
 

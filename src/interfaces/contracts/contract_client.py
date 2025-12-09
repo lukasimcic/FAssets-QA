@@ -1,23 +1,28 @@
 from config.config_qa import rpc_url
 from src.utils.contracts import get_contract_abi
+from src.utils.fee_tracker import FeeTracker
+from src.utils.data_structures import UserNativeData
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 import warnings
+import time
 
 
 class ContractClient:
     def __init__(
             self, 
-            sender_address: str,
-            sender_private_key: str,
             contract_path: str, 
             contract_address: str, 
+            sender_data: UserNativeData | None = None,
+            fee_tracker: FeeTracker | None = None,
             timeout: int | None = None
         ):
-        self.sender_address = sender_address
-        self.sender_private_key = sender_private_key
+        self.sender_data = sender_data
+        self.sender_address = sender_data.address if sender_data else None
+        self.sender_private_key = sender_data.private_key if sender_data else None
         self.path = contract_path
         self.address = contract_address
+        self.fee_tracker = fee_tracker
         
         kwargs = {}
         if timeout is not None:
@@ -77,15 +82,18 @@ class ContractClient:
                 result[event_name] = []
         return result
     
-    def write(self, method: str, inputs: list = [], events: list = [], value: int = 0, return_receipt = False):
+    def write(self, method: str, inputs: list = [], events: list = [], value: int = 0):
+        time.sleep(1)
         tx = self._build_transaction(method, inputs, value)
         receipt = self._sign_and_send_transaction(tx)
         events = self._get_events_from_receipt(receipt, events)
-        if return_receipt:
-            return events, receipt
-        return events
+        fees = receipt.gasUsed * getattr(receipt, 'effectiveGasPrice', tx['gasPrice'])
+        self.fee_tracker.native_gas_fees += float(self.web3.from_wei(fees, 'ether'))
+        return {"receipt": receipt, "events": events}
     
     def read(self, method: str, inputs: list = []):
+        time.sleep(1)
         return self.contract.functions[method](*inputs).call()
+
     
     

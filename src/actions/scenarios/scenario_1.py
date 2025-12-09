@@ -1,23 +1,22 @@
 from src.actions.action_bundle import ActionBundle
-from src.actions.mint import can_mint
-from src.actions.pool import can_enter_pool
+from src.actions.helper_functions import can_mint, can_enter_pool
 from src.interfaces.contracts import *
 import random
 import time
     
     
 class Scenario1(ActionBundle):
-    def __init__(self, ca, ca_partner, user, partner, lot_size, state):
-        super().__init__(ca, ca_partner, user, partner, lot_size, state)
+    def __init__(self, user_data, flow_state, cli):
+        super().__init__(user_data, flow_state, cli)
 
 
     def action(self):
         # choose pool
         pool = random.choice(self.pools)
-        pool_address = pool["Pool address"]
+        pool_address = pool.address
 
         # get agent vault address
-        cp = CollateralPool("", "", pool_address)
+        cp = CollateralPool(pool_address)
         agent_address = cp.agent_vault()
 
         # enter pool
@@ -30,7 +29,7 @@ class Scenario1(ActionBundle):
         self.ca.redeem(lot_amount, log_steps=True)
 
         # wait timelock
-        am = AssetManager("", "", self.token_underlying)
+        am = AssetManager(self.token_underlying)
         collateral_pool_token_timelock = am.collateral_pool_token_timelock_seconds()
         time.sleep(collateral_pool_token_timelock + 1)
 

@@ -1,62 +1,71 @@
 from abc import ABC, abstractmethod
-from typing import Callable
+from src.interfaces.contracts.asset_manager import AssetManager
+from src.actions.core_actions.core_actions_cli import CoreActionsCLI
+from src.actions.core_actions.core_actions_manual import CoreActionsManual
+from src.interfaces.user.user_bot import UserBot
 from src.interfaces.user.informer import Informer
-from src.actions.core_actions.core_actions import CoreActions
+from src.utils.data_structures import FlowState, UserData
 
 class ActionBundle(ABC):
     def __init__(
             self,
-            ca : CoreActions,
-            ca_partner : CoreActions,
-            informer : Informer,
-            informer_partner : Informer,
-            lot_size : int,
-            state : dict
+            user_data: UserData,
+            flow_state : FlowState,
+            cli: bool
         ):
-        # core actions
-        self.ca = ca
-        self.ca_partner = ca_partner
-        # lot size
-        self.lot_size = lot_size
-        # state
-        self.state = state
-        self.balances = state["balances"]
-        self.mint_status = state["mint_status"]
-        self.redemption_status = state["redemption_status"]
-        self.pools = state["pools"]
-        self.pool_holdings = state["pool_holdings"]
+
+        # informer for data extraction and logging
+        self.user_data = user_data
+        if cli:
+            informer = UserBot(user_data)
+            informer_partner = UserBot(user_data.partner_data())
+        else:
+            informer = Informer(user_data)
+            informer_partner = Informer(user_data.partner_data())
+        
         # tokens
         self.token_native = informer.token_native
         self.token_underlying = informer.token_underlying
         self.token_fasset = informer.token_fasset
+        
         # secrets
-        self.native_address = informer.native_data["address"]
-        self.native_private_key = informer.native_data["private_key"]
-        self.underlying_private_key = informer.underlying_data["private_key"]
-        self.underlying_public_key = informer.underlying_data["public_key"]
-        self.partner_native_address = informer_partner.native_data["address"]
-        self.partner_native_private_key = informer_partner.native_data["private_key"]
-        self.partner_underlying_private_key = informer_partner.underlying_data["private_key"]
-        self.partner_underlying_public_key = informer_partner.underlying_data["public_key"]
+        self.native_data = informer.native_data
+        self.underlying_data = informer.underlying_data
+        self.partner_native_data = informer_partner.native_data
+        self.partner_underlying_data = informer_partner.underlying_data
+        
         # loggers
         self.logger = informer.logger
         self.partner_logger = informer_partner.logger
 
-    @property
+        # state
+        self.flow_state = flow_state
+        self.balances = flow_state.balances
+        self.mint_status = flow_state.mint_status
+        self.redemption_status = flow_state.redemption_status
+        self.pools = flow_state.pools
+        self.pool_holdings = flow_state.pool_holdings
+        
+        # flow logic
+        self.lot_size = AssetManager(user_data.token_underlying).lot_size()
+        partner_data = user_data.partner_data()
+        if not cli:
+            self.ca = CoreActionsManual(user_data)
+            self.ca_partner = CoreActionsManual(partner_data)
+        else:
+            self.ca = CoreActionsCLI(user_data)
+            self.ca_partner = CoreActionsCLI(partner_data)
+
+
     @abstractmethod
     def action(self):
         pass
 
-    @property
     @abstractmethod
     def condition(self):
         pass
 
     @property
-    def state_before(self):
-        return self.state
-
-    @property
     @abstractmethod
-    def state_after(self):
+    def expected_state(self):
         pass

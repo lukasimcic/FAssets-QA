@@ -4,46 +4,40 @@ from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.network.attestation import Attestation
 from src.utils.data_storage_client import DataStorageClient
+from src.utils.data_structures import MintStatus, UserData
+from src.utils.fee_tracker import FeeTracker
 
 
 class Minter(User):
-    def __init__(self, token_native, token_underlying, num=0, partner=False, config=None):
-        super().__init__(token_underlying, num, partner)
-        self.token_underlying = token_underlying
-        self.nn = NativeNetwork(token_native, self.native_data)
-        self.native_address = self.native_data["address"]
-        self.native_private_key = self.native_data["private_key"]
-        self.underlying_public_key = self.underlying_data["public_key"]
-        self.underlying_private_key = self.underlying_data["private_key"]
-        self.dsc = DataStorageClient(num, partner, token_underlying, "mint")
-        # TODO add support for custom config
-        if config is not None:
-            raise NotImplementedError("Custom config is not yet supported.")
+    def __init__(self, user_data : UserData, fee_tracker : FeeTracker | None = None):
+        super().__init__(user_data, fee_tracker)
+        self.dsc = DataStorageClient(user_data, "mint")
 
     def _reserve_collateral(self, agent_vault, lots, executor):
         """
         Reserve collateral with the AssetManager contract.
         Returns paymentAddress, valueUBA, feeUBA, paymentReference.
         """
-        am = AssetManager(self.native_address, self.native_private_key, self.token_underlying)
+        am = AssetManager(self.token_underlying, self.native_data, self.fee_tracker)
         outputs = am.reserve_collateral(agent_vault, lots, executor)
         return outputs
-    
+
     def _pay_underlying(self, payment_address, value_UBA, fee_UBA, payment_reference):
         """
         Pay underlying asset after reserving collateral.
+        Returns dictionary including transaction hash, amount and fees paid.
         """
-        un = UnderlyingNetwork(self.token_underlying, self.underlying_data)
+        un = UnderlyingNetwork(self.token_underlying, self.underlying_data, self.fee_tracker)
         amount = (value_UBA + fee_UBA) / un.asset_unit_uba
         response = un.send_transaction(
             to_address=payment_address,
             amount=amount,
             memo_data=payment_reference.hex()
         )
-        return response.result["tx_json"]["hash"], amount
+        return response
     
     def _get_payment_proof(self, underlying_hash):
-        a = Attestation("testXRP", self.native_data, self.indexer_api_key)
+        a = Attestation("testXRP", self.native_data, self.indexer_api_key, self.fee_tracker)
         request_body = a.request_body_payment(underlying_hash)
         response = a.prepare_attestation_request(request_body, "Payment")
         abi_encoded_request = response["abiEncodedRequest"]
@@ -96,22 +90,23 @@ class Minter(User):
         """
         Execute minting after receiving attestation proof.
         """
-        am = AssetManager(self.native_address, self.native_private_key, self.token_underlying)
+        am = AssetManager(self.token_underlying, self.native_data, self.fee_tracker)
         tx = am.execute_minting(proof, collateral_reservation_id)
         return tx
     
-    def _save_mint_request(self, reserve_collateral_data, tx_hash):
+    def _save_mint_request(self, reserve_collateral_data, tx_hash, lots):
         """
         Save mint request data to data storage.
         """
-        current_timestamp = self.nn.get_current_timestamp()
+        current_timestamp = NativeNetwork(self.token_native).get_current_timestamp()
         request_data = {
             "type" : "mint",
             "requestId": str(reserve_collateral_data.collateralReservationId),
             "paymentAddress": reserve_collateral_data.paymentAddress,
             "transactionHash": tx_hash,
             "executorAddress": reserve_collateral_data.executor,
-            "createdAt": self.dsc.timestamp_to_date(current_timestamp)
+            "createdAt": self.dsc.timestamp_to_date(current_timestamp),
+            "lots": lots
         }
         self.dsc.save_record(request_data)
     
@@ -125,14 +120,14 @@ class Minter(User):
         collateral_reservation_id = reserve_collateral_data.collateralReservationId
         self.log_step(f"Collateral reserved with id {collateral_reservation_id}.", log_steps)
         self.log_step(f"Paying underlying assets to {reserve_collateral_data.paymentAddress}...", log_steps)
-        tx_hash, amount = self._pay_underlying(
+        pay_underlying_outputs = self._pay_underlying(
             reserve_collateral_data.paymentAddress, 
             reserve_collateral_data.valueUBA, 
             reserve_collateral_data.feeUBA, 
             reserve_collateral_data.paymentReference
         )
-        self.log_step(f"Paid {amount} {self.token_underlying}.", log_steps)
-        self._save_mint_request(reserve_collateral_data, tx_hash)
+        self.log_step(f"Paid {pay_underlying_outputs['amount']} {self.token_underlying}.", log_steps)
+        self._save_mint_request(reserve_collateral_data, pay_underlying_outputs["tx_hash"], lots)
         return collateral_reservation_id
 
     def prove_and_execute_minting(self, collateral_reservation_id, log_steps=False):
@@ -160,15 +155,15 @@ class Minter(User):
         a = Attestation("testXRP", self.native_data, self.indexer_api_key)
         first_block, _ = a.get_block_range()
         records = self.dsc.get_records()
-        statuses = {"PENDING": [], "EXPIRED": []}
+        statuses = {"pending": [], "expired": []}
         for record in records:
             tx_hash = record["transactionHash"]
             request_id = int(record["requestId"])
-            un = UnderlyingNetwork(self.token_underlying, self.underlying_data)
+            un = UnderlyingNetwork(self.token_underlying)
             tx_block = un.get_block_of_tx(tx_hash)
             if tx_block < first_block:
-                statuses["EXPIRED"].append(request_id)
+                statuses["expired"].append(request_id)
             else:
-                statuses["PENDING"].append(request_id)
-        return statuses
+                statuses["pending"].append(request_id)
+        return MintStatus(**statuses)
 
