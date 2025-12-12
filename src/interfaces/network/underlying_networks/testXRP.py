@@ -1,7 +1,6 @@
 from src.interfaces.contracts import *
-from config.config_qa import rpc_url
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingBaseNetwork
-
+from src.utils.data_structures import TokenUnderlying
 from xrpl.clients import JsonRpcClient
 from xrpl.wallet import Wallet
 from xrpl.models.transactions import Payment, Memo
@@ -10,13 +9,14 @@ from xrpl.models.requests import AccountInfo, ServerInfo, Tx
 from xrpl.transaction import sign, autofill, submit
 
 
+
 class TestXRP(UnderlyingBaseNetwork):
     def __init__(self, public_key, private_key, fee_tracker):
         super().__init__(fee_tracker=fee_tracker)
-        self.client = JsonRpcClient(rpc_url["testXRP"])
+        token_underlying = TokenUnderlying.testXRP
+        self.client = JsonRpcClient(token_underlying.rpc_url)
         if public_key and private_key: # otherwise this class is used for address non specific operations
             self.wallet = Wallet(public_key, private_key)
-        self.asset_unit_uba = AssetManager("testXRP").asset_unit_uba()
 
     @staticmethod
     def generate_address():

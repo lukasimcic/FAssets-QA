@@ -1,14 +1,56 @@
+from enum import Enum
 from src.utils.fee_tracker import FeeTracker
-from config.config_qa import tokens_native, tokens_underlying, fasset_name
+from config.config_qa import contracts_file_coston2, asset_manager_instance_name_testxrp, fasset_instance_name_testxrp, fdc_url, da_url, rpc_url
 from dataclasses import dataclass, field
-from typing import Dict, Literal, Optional, Union
+from typing import Dict, Optional, Union
 import math
 
-# TODO maybe class TokenNative(Enum): C2FLR = "C2FLR" ...
-# Allowed tokens are also defined in config: tokens_native, tokens_underlying, fasset_name
-TokenNative = Literal["C2FLR"]
-TokenUnderlying = Literal["testXRP"]
-TokenFasset = Literal["FTestXRP"]
+# TODO C2FLR -> coston2
+class TokenNative(Enum):
+    C2FLR = ("C2FLR", contracts_file_coston2, 18)
+    def __init__(self, name, contracts_file, decimals):
+        self._name_ = name
+        self.contracts_file = contracts_file
+        self.decimals = decimals
+        self.compare_tolerance = 10 ** (-decimals + 3)
+        self.rpc_url = rpc_url[name]
+        self.fdc_url = fdc_url[name]
+        self.da_url = da_url[name]
+    def to_uba(self, amount: float) -> int:
+        return int(amount * 10 ** self.decimals)
+    def from_uba(self, amount_uba: int) -> float:
+        return amount_uba / 10 ** self.decimals
+
+class TokenUnderlying(Enum):
+    testXRP = ("testXRP", asset_manager_instance_name_testxrp, fasset_instance_name_testxrp, 6)
+    def __init__(self, name, asset_manager_instance_name, fasset_instance_name, decimals):
+        self._name_ = name
+        self.asset_manager_instance_name = asset_manager_instance_name
+        self.fasset_instance_name = fasset_instance_name
+        self.decimals = decimals
+        self.compare_tolerance = 10 ** (-decimals + 1)
+        self.rpc_url = rpc_url[name]
+    def to_uba(self, amount: float) -> int:
+        return int(amount * 10 ** self.decimals)
+    def from_uba(self, amount_uba: int) -> float:
+        return amount_uba / 10 ** self.decimals
+
+class TokenFasset(Enum):
+    testXRP_fasset = ("FTestXRP", TokenUnderlying.testXRP)
+    def __init__(self, name, token_underlying : TokenUnderlying):
+        self._name_ = name
+        self.token_underlying = token_underlying
+        self.decimals = token_underlying.decimals
+        self.compare_tolerance = 10 ** -self.decimals
+    @classmethod
+    def from_underlying(cls, underlying: TokenUnderlying):
+        name = f"{underlying.name}_fasset"
+        return cls[name]
+    def to_uba(self, amount: float) -> int:
+        return int(amount * 10 ** self.decimals)
+    def from_uba(self, amount_uba: int) -> float:
+        return amount_uba / 10 ** self.decimals
+    
 Token = Union[TokenNative, TokenUnderlying, TokenFasset]
 
 @dataclass
@@ -17,6 +59,11 @@ class UserData:
     token_underlying: TokenUnderlying
     num: int
     partner: bool = False
+    def __post_init__(self):
+        if not isinstance(self.token_native, TokenNative):
+            self.token_native = TokenNative(self.token_native)
+        if not isinstance(self.token_underlying, TokenUnderlying):
+            self.token_underlying = TokenUnderlying(self.token_underlying)
     def partner_data(self):
         return UserData(
             token_native=self.token_native,
@@ -39,7 +86,6 @@ class UserNativeData:
 @dataclass
 class Balances:
     data: Dict[Token, float] = field(default_factory=dict)
-    compare_tolerance = 1e-12
     def __getitem__(self, key):
         return self.data[key]
     def __setitem__(self, key, value):
@@ -56,22 +102,22 @@ class Balances:
         for k in self.data:
             v1 = self.data[k]
             v2 = other.data[k]
-            if not math.isclose(v1, v2, rel_tol=0, abs_tol=self.compare_tolerance):
+            if not math.isclose(v1, v2, rel_tol=0, abs_tol=k.compare_tolerance):
                 return False
         return True
     def __repr__(self):
         items = []
         for k, v in self.data.items():
             if isinstance(v, float):
-                items.append(f"{k}: {v:.12f}")
+                items.append(f"{k.name}: {v:.12f}")
             else:
-                items.append(f"{k}: {v}")
+                items.append(f"{k.name}: {v}")
         return f"Balances({{{', '.join(items)}}})"
     def subtract_fees(self, fee_tracker : FeeTracker):
         for token in self.data:
-            if token in tokens_native:
+            if isinstance(token, TokenNative):
                 self.data[token] -= fee_tracker.native_fees()
-            elif token in tokens_underlying:
+            elif isinstance(token, TokenUnderlying):
                 self.data[token] -= fee_tracker.underlying_fees()
 
 @dataclass
@@ -129,16 +175,17 @@ class Pool:
     fees_underlying: Optional[float] = None
     cr: Optional[float] = None
     def __repr__(self):
-        return repr_none_filtered(self)
+        return _repr_none_filtered(self)
 
 @dataclass
 class PoolHolding:
     pool_address: str
-    pool_tokens: float
+    pool_tokens: float = 0
+    fasset_fees: float = 0
     token_symbol: Optional[str] = None
-    compare_tolerance = 1e-12
+    max_amount_to_exit: Optional[float] = None
     def __repr__(self):
-        return repr_none_filtered(self)
+        return _repr_none_filtered(self)
     def __eq__(self, other):
         if not isinstance(other, PoolHolding):
             return False
@@ -146,7 +193,11 @@ class PoolHolding:
             v1 = getattr(self, field)
             v2 = getattr(other, field)
             if type(v1) is float:
-                if not math.isclose(v1, v2, rel_tol=0, abs_tol=self.compare_tolerance):
+                if field == "pool_tokens":
+                    compare_tolerance = 1e-15 # TODO de-hardcode
+                elif field == "fasset_fees":
+                    compare_tolerance = 1e-8 # TODO de-hardcode
+                if not math.isclose(v1, v2, rel_tol=0, abs_tol=compare_tolerance):
                     return False
             else:
                 if v1 != v2:
@@ -158,10 +209,8 @@ class FlowState:
     balances: Balances
     mint_status: MintStatus
     redemption_status: RedemptionStatus
-    pools: list[Pool]
     pool_holdings: list[PoolHolding]
     def __post_init__(self):
-        self.pools = sorted(self.pools, key=lambda p: p.address)
         self.pool_holdings = sorted(self.pool_holdings, key=lambda ph: ph.pool_address)
     def replace(self, changes : list):
         for change in changes:
@@ -172,10 +221,7 @@ class FlowState:
             elif type(change) is RedemptionStatus:
                 self.redemption_status = change
             elif type(change) is list and len(change) > 0:
-                if type(change[0]) is Pool:
-                    self.pools = change
-                elif type(change[0]) is PoolHolding:
-                    self.pool_holdings = change
+                self.pool_holdings = change
         return self
     def fields(self):
         return self.__dataclass_fields__.keys()
@@ -186,7 +232,6 @@ class FlowState:
             balances=self.balances.copy(),
             mint_status=self.mint_status.copy(),
             redemption_status=self.redemption_status.copy(),
-            pools=self.pools.copy(),
             pool_holdings=self.pool_holdings.copy()
         )
     
@@ -199,7 +244,7 @@ class AgentInfo:
 
 # helper functions
 
-def repr_none_filtered(obj):
+def _repr_none_filtered(obj):
     field_strs = [
         f"{k}={repr(v)}"
         for k, v in obj.__dict__.items()

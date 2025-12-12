@@ -6,7 +6,7 @@ class CoreActions(ABC):
     def __init__(self):
         self.fee_tracker = FeeTracker()
 
-    # state retrieval
+    # state (user-specific) retrieval
 
     @abstractmethod
     def get_balances(self, log_steps=False):
@@ -30,16 +30,25 @@ class CoreActions(ABC):
         pass
 
     @abstractmethod
-    def get_pools(self, log_steps=False):
+    def get_pool_holdings(self, log_steps=False):
         """
-        Returns a list of Pool objects.
+        Returns a list of PoolHoldings objects.
+        """
+        pass
+
+    # info (system-specific) retrieval
+
+    @abstractmethod
+    def get_agents(self, log_steps=False):
+        """
+        Returns a list of AgentInfo objects
         """
         pass
 
     @abstractmethod
-    def get_pool_holdings(self, log_steps=False):
+    def get_pools(self, log_steps=False):
         """
-        Returns a list of PoolHoldings objects.
+        Returns a list of Pool objects.
         """
         pass
 
@@ -57,13 +66,6 @@ class CoreActions(ABC):
 
     @abstractmethod
     def redeem(self, lot_amount, log_steps=False):
-        pass
-
-    @abstractmethod
-    def get_agents(self, log_steps=False):
-        """
-        Returns a list of AgentInfo objects
-        """
         pass
 
     @abstractmethod

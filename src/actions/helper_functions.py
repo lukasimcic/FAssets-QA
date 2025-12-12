@@ -13,15 +13,40 @@ def can_mint(balances, token_underlying, lot_size, agents):
     return enough_collateral and available_agents
 
 def can_enter_pool(balances, token_native):
-    return token_native in balances and balances[token_native] >= 1
+    min_amount = CollateralPool.min_nat_to_enter
+    return token_native in balances and balances[token_native] >= min_amount
 
-def collateral_to_token_share(pool, amount_native):
-    cp = CollateralPool(pool)   
-    cpt = CollateralPoolToken(cp.pool_token())
-    factor = 10 ** cpt.decimals()
-    collateral = int(amount_native * factor)
+def add_max_amount_to_stay_above_exit_CR(pool_holdings, token_native, token_underlying):
+    for pool_holding in pool_holdings:
+        cp = CollateralPool(token_native, pool_holding.pool_address)
+        pool_holding.max_amount_to_exit = cp.max_amount_to_stay_above_exit_CR(token_underlying)
+    return pool_holdings
+
+def collateral_to_tokens(token_native, pool, amount_native):
+    cp = CollateralPool(token_native, pool)   
+    cpt = CollateralPoolToken(token_native, cp.pool_token())
+    collateral = cpt.to_uba(amount_native)
     total_collateral = cp.total_collateral()
     total_pool_tokens = cpt.total_supply()
     if total_collateral == 0 or total_pool_tokens == 0:
-        return collateral / factor
-    return (total_pool_tokens * collateral / total_collateral) / factor
+        return cpt.from_uba(collateral)
+    tokens = (total_pool_tokens * collateral) / total_collateral
+    return cpt.from_uba(tokens)
+
+def tokens_to_collateral(token_native, pool, amount_pool_tokens):
+    cp = CollateralPool(token_native, pool)   
+    cpt = CollateralPoolToken(token_native, cp.pool_token())
+    pool_tokens = cpt.to_uba(amount_pool_tokens)
+    total_collateral = cp.total_collateral()
+    total_pool_tokens = cpt.total_supply()
+    collateral = (total_collateral * pool_tokens) / total_pool_tokens
+    return cpt.from_uba(collateral)
+    
+def tokens_to_fees(token_native, pool, amount_pool_tokens):
+    cp = CollateralPool(token_native, pool)   
+    cpt = CollateralPoolToken(token_native, cp.pool_token())
+    pool_tokens = cpt.to_uba(amount_pool_tokens)
+    total_fees = cp.total_fAsset_fees()
+    total_pool_tokens = cpt.total_supply()
+    fees = (total_fees * pool_tokens) / total_pool_tokens
+    return cpt.from_uba(fees)

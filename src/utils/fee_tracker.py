@@ -1,5 +1,6 @@
 class FeeTracker:
     def __init__(self):
+        # all fees in native/underlying currency units
         self.native_gas_fees = 0
         self.native_other_fees = 0
         self.underlying_gas_fees = 0

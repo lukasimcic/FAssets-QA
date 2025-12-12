@@ -58,7 +58,6 @@ class Flow():
             self.ca.get_balances(log_steps=log_steps),
             self.ca.get_mint_status(log_steps=log_steps),
             self.ca.get_redemption_status(log_steps=log_steps),
-            self.ca.get_pools(log_steps=log_steps),
             self.ca.get_pool_holdings(log_steps=log_steps)
         )
     
@@ -73,7 +72,7 @@ class Flow():
                         self.flow_state,
                         self.cli
                     )
-                if bundle.condition():
+                if bundle.general_conditions() and bundle.condition():
                     action_bundles.append(bundle)
         
         if action_bundles:

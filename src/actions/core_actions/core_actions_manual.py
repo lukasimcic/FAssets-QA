@@ -51,7 +51,7 @@ class CoreActionsManual(CoreActions):
     def get_agents(self, chunk_size=10, log_steps=False) -> list[AgentInfo]:
         agent_list = []
         start = 0
-        am = AssetManager(self.minter.token_underlying)
+        am = AssetManager(self.informer.token_native, self.informer.token_underlying)
         while True:
             new = am.get_available_agents_detailed_list(start, start + chunk_size)
             agent_list.extend(new)
@@ -69,7 +69,7 @@ class CoreActionsManual(CoreActions):
             for k, v in agent.items():
                 if k in fields_mapping:
                     if k.endswith("BIPS"):
-                        d[fields_mapping[k]] = v / 100
+                        d[fields_mapping[k]] = v / 1e2
                     else:
                         d[fields_mapping[k]] = v
             result.append(AgentInfo(**d))
@@ -108,7 +108,7 @@ class CoreActionsManual(CoreActions):
         self.pool_manager.exit_pool(pool_address, amount, log_steps=log_steps)
 
     def withdraw_pool_fees(self, pool_address, fees, log_steps=False):
-        self.logger.info(f"Withdrawing pool fees from pool {pool_address}.")
+        self.logger.info(f"Withdrawing pool {fees} fees from pool {pool_address}.")
         self.pool_manager.withdraw_pool_fees(pool_address, fees, log_steps=log_steps)
 
     def mint_execute(self, mint_id, log_steps=False):

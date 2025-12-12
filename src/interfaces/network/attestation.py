@@ -1,6 +1,7 @@
 from src.interfaces.contracts import *
-from config.config_qa import fdc_url, da_url, x_csrftoken, zero_address
-from src.utils.encoding import pad_to_64_hex, to_utf8_hex_string, keccak256_hexstr, keccak256_text
+from config.config_qa import x_csrftoken
+from src.utils.encoding import pad_to_64_hex, to_utf8_hex_string, keccak256_text
+from src.utils.data_structures import TokenNative, TokenUnderlying
 
 from typing import Literal
 import requests
@@ -9,9 +10,11 @@ import time
 
 
 class Attestation():
-    def __init__(self, token_underlying : Literal["testXRP"], user_native_data, indexer_api_key, fee_tracker=None):
+    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_native_data, indexer_api_key, fee_tracker=None):
+        self.token_native = token_native
         self.token_underlying = token_underlying
         self.contract_inputs = {
+            "token_native": token_native,
             "sender_data": user_native_data,
             "fee_tracker": fee_tracker
         }
@@ -25,17 +28,15 @@ class Attestation():
     # utility functions
 
     def _generate_fdc_url(self, endpoint, attestation_type=None):
-        if self.token_underlying == "testXRP":
+        if self.token_underlying == TokenUnderlying.testXRP:
             token_underlying = "xrp"
-        else:
-            raise ValueError(f"Unsupported token_underlying: {self.token_underlying}")
         if attestation_type is None:
-            return f"{fdc_url}/verifier/{token_underlying}/api/indexer/{endpoint}"
+            return f"{self.token_native.fdc_url}/verifier/{token_underlying}/api/indexer/{endpoint}"
         else:
-            return f"{fdc_url}/verifier/{token_underlying}/{attestation_type}/{endpoint}"
+            return f"{self.token_native.fdc_url}/verifier/{token_underlying}/{attestation_type}/{endpoint}"
         
     def _generate_source_id(self):
-        return to_utf8_hex_string(self.token_underlying)
+        return to_utf8_hex_string(self.token_underlying.name)
         
     def _generate_attestation_type(self, attestation_type):
         return to_utf8_hex_string(attestation_type)
@@ -52,7 +53,7 @@ class Attestation():
         raise ValueError("Transaction not found or still pending after multiple attempts")
         
     def _current_round_id(self):
-        response = requests.get(da_url + '/api/v0/fsp/status').json()
+        response = requests.get(self.token_native.da_url + '/api/v0/fsp/status').json()
         return response["latest_fdc"]["voting_round_id"]
 
     def request_body_payment(self, tx_hash):
@@ -128,7 +129,7 @@ class Attestation():
             if len(response.get("proof", [])) == 0:
                 time.sleep(15)
                 response = requests.post(
-                    url=da_url + "/api/v0/fdc/get-proof-round-id-bytes",
+                    url=self.token_native.da_url + "/api/v0/fdc/get-proof-round-id-bytes",
                     headers=self.headers,
                     data=json.dumps({
                         "votingRoundId": round_id,

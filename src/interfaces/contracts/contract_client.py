@@ -1,7 +1,6 @@
-from config.config_qa import rpc_url
 from src.utils.contracts import get_contract_abi
 from src.utils.fee_tracker import FeeTracker
-from src.utils.data_structures import UserNativeData
+from src.utils.data_structures import TokenNative, UserNativeData
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 import warnings
@@ -11,12 +10,14 @@ import time
 class ContractClient:
     def __init__(
             self, 
+            token_native: TokenNative,
             contract_path: str, 
             contract_address: str, 
             sender_data: UserNativeData | None = None,
             fee_tracker: FeeTracker | None = None,
             timeout: int | None = None
         ):
+        self.token_native = token_native
         self.sender_data = sender_data
         self.sender_address = sender_data.address if sender_data else None
         self.sender_private_key = sender_data.private_key if sender_data else None
@@ -27,7 +28,7 @@ class ContractClient:
         kwargs = {}
         if timeout is not None:
             kwargs['timeout'] = timeout
-        self.web3 = Web3(Web3.HTTPProvider(rpc_url["C2FLR"], request_kwargs=kwargs))
+        self.web3 = Web3(Web3.HTTPProvider(self.token_native.rpc_url, request_kwargs=kwargs))
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
         assert self.web3.is_connected()
         contract_abi = get_contract_abi(contract_path)
@@ -83,16 +84,16 @@ class ContractClient:
         return result
     
     def write(self, method: str, inputs: list = [], events: list = [], value: int = 0):
-        time.sleep(1)
+        time.sleep(0.5)
         tx = self._build_transaction(method, inputs, value)
         receipt = self._sign_and_send_transaction(tx)
         events = self._get_events_from_receipt(receipt, events)
         fees = receipt.gasUsed * getattr(receipt, 'effectiveGasPrice', tx['gasPrice'])
-        self.fee_tracker.native_gas_fees += float(self.web3.from_wei(fees, 'ether'))
+        self.fee_tracker.native_gas_fees += self.token_native.from_uba(fees)
         return {"receipt": receipt, "events": events}
     
     def read(self, method: str, inputs: list = []):
-        time.sleep(1)
+        time.sleep(0.5)
         return self.contract.functions[method](*inputs).call()
 
     

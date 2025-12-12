@@ -43,11 +43,10 @@ class ActionBundle(ABC):
         self.balances = flow_state.balances
         self.mint_status = flow_state.mint_status
         self.redemption_status = flow_state.redemption_status
-        self.pools = flow_state.pools
         self.pool_holdings = flow_state.pool_holdings
         
         # flow logic
-        self.lot_size = AssetManager(user_data.token_underlying).lot_size()
+        self.lot_size = AssetManager(user_data.token_native, user_data.token_underlying).lot_size()
         partner_data = user_data.partner_data()
         if not cli:
             self.ca = CoreActionsManual(user_data)
@@ -69,3 +68,7 @@ class ActionBundle(ABC):
     @abstractmethod
     def expected_state(self):
         pass
+
+    def general_conditions(self):
+        enough_native = self.balances[self.token_native] > 10  # to avoid gas issues
+        return enough_native

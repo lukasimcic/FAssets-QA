@@ -20,22 +20,22 @@ class Scenario2(ActionBundle):
         self.ca.enter_pool(pool_address, amount, log_steps=True)
 
         # wait timelock
-        am = AssetManager(self.token_underlying)
+        am = AssetManager(self.token_native, self.token_underlying)
         collateral_pool_token_timelock = am.collateral_pool_token_timelock_seconds()
         time.sleep(collateral_pool_token_timelock + 1)
 
         # get the amount of debt-free pool tokens
-        cp = CollateralPool(pool_address)
+        cp = CollateralPool(self.token_native, pool_address)
         debt_free_tokens = cp.debt_free_tokens_of(self.native_data.address)
         if debt_free_tokens == 0:
             self.logger.info("No debt-free pool tokens available")
         else:
             self.logger.info(f"Debt free pool tokens: {debt_free_tokens}")
-            amount = min(int(amount * am.asset_unit_uba()), debt_free_tokens)
+            amount = min(int(self.token_underlying.to_uba(amount)), debt_free_tokens)
 
             # transfer pool tokens to partner bot
             pool_token_address = cp.pool_token()
-            pt = CollateralPoolToken(pool_token_address, self.native_data)
+            pt = CollateralPoolToken(self.token_native, pool_token_address, self.native_data)
             pt.transfer(self.partner_native_data.address, amount)
             self.logger.info(f"Transferred {amount} of pool tokens to partner bot.")
             self.partner_logger.info(f"Got {amount} of pool tokens from user bot.")

@@ -1,4 +1,4 @@
-from src.utils.data_structures import UserNativeData
+from src.utils.data_structures import TokenNative, UserNativeData
 from abc import ABC, abstractmethod
 
 
@@ -16,18 +16,16 @@ class NativeBaseNetwork(ABC):
 
 
 class NativeNetwork:
-    def __new__(cls, token, native_data : UserNativeData | None = None):
+    def __new__(cls, token: TokenNative, native_data : UserNativeData | None = None):
         """
         Factory method to create an instance of the appropriate network class.
         Must be initialized with the  token type, but other parameters depend on the specific network.
         """
-        if token == "C2FLR":
+        if token == TokenNative.C2FLR:
             from src.interfaces.network.native_networks.c2flr import C2FLR
             return C2FLR(
                 native_data.address if native_data else None,
                 native_data.private_key if native_data else None
                 )
-        else:
-            raise ValueError(f"Unsupported  token: {token}")
 
 

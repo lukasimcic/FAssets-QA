@@ -1,4 +1,4 @@
-from src.utils.data_structures import UserUnderlyingData
+from src.utils.data_structures import TokenUnderlying, UserUnderlyingData
 from src.utils.fee_tracker import FeeTracker
 from abc import ABC, abstractmethod
 
@@ -35,14 +35,12 @@ class UnderlyingNetwork:
         Factory method to create an instance of the appropriate network class.
         Must be initialized with the  token type, but other parameters depend on the specific network.
         """
-        if token == "testXRP":
+        if token == TokenUnderlying.testXRP:
             from src.interfaces.network.underlying_networks.testXRP import TestXRP
             return TestXRP(
                 underlying_data.public_key if underlying_data else None, 
                 underlying_data.private_key if underlying_data else None,
                 fee_tracker=fee_tracker
             )
-        else:
-            raise ValueError(f"Unsupported  token: {token}")
 
 

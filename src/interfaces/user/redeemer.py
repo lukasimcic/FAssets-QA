@@ -21,7 +21,7 @@ class Redeemer(User):
         Returns lots remaining to be redeemed if redemption request is incomplete.
         """
         self.log_step(f"Starting redemption of {lots} lots.", log_steps)
-        am = AssetManager(self.token_underlying, self.native_data, self.fee_tracker)
+        am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
         events = am.redeem(lots, self.underlying_data.address, executor, executor_fee)
         requested_redemptions, redemption_request_incomplete = events["RedemptionRequested"], events["RedemptionRequestIncomplete"]
         self.log_step(f"Redemption request submitted. Got {len(requested_redemptions)} requested redemptions.", log_steps)
@@ -40,7 +40,6 @@ class Redeemer(User):
                 "lots": lots
             } 
             self.dsc.save_record(request_data)
-        print("redemption_request_incomplete", redemption_request_incomplete)
         return 0 if not redemption_request_incomplete else redemption_request_incomplete[0]["remainingLots"]
     
     def _prepare_proof(self, proof):
@@ -81,7 +80,7 @@ class Redeemer(User):
         """
         Get attestation proof for referenced payment non-existence.
         """
-        a = Attestation("testXRP", self.native_data, self.indexer_api_key, self.fee_tracker)
+        a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key, self.fee_tracker)
         request_body = a.request_body_referenced_payment_nonexistence(
             self.underlying_data.address,
             unpad_0x(redemption_data["paymentReference"]),
@@ -108,7 +107,7 @@ class Redeemer(User):
         self.log_step("Got proof.", log_steps)
         redemption_id = int(redemption_data["requestId"])
         self.log_step(f"Submitting redemption default payment.", log_steps)
-        am = AssetManager(self.token_underlying, self.native_data, self.fee_tracker)
+        am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
         am.redemption_payment_default(proof, redemption_id)
         self.log_step(f"Redemption default executed.", log_steps)
         self.dsc.remove_record(redemption_id)
@@ -121,7 +120,7 @@ class Redeemer(User):
         statuses = ["ACTIVE", "DEFAULTED_UNCONFIRMED", "SUCCESSFUL", "DEFAULTED_FAILED", "BLOCKED", "REJECTED"] # from RedemptionRequestInfo.sol
         result = {"pending": [], "default": [], "expired": [], "success": []}
         redemptions = self.dsc.get_records()
-        am = AssetManager(self.token_underlying)
+        am = AssetManager(self.token_native, self.token_underlying)
         for redemption in redemptions:
             redemption_id = int(redemption["requestId"])
             request_info = am.redemption_request_info(redemption_id)
@@ -129,7 +128,7 @@ class Redeemer(User):
             if status == "ACTIVE":
                 block = int(redemption["lastUnderlyingBlock"])
                 current_underlying_block = UnderlyingNetwork(self.token_underlying).get_current_block()
-                a = Attestation("testXRP", self.native_data, self.indexer_api_key)
+                a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key)
                 first_block, _ = a.get_block_range()
                 if current_underlying_block > block:
                     status = "default"
