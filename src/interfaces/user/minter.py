@@ -18,7 +18,7 @@ class Minter(User):
         Reserve collateral with the AssetManager contract.
         Returns paymentAddress, valueUBA, feeUBA, paymentReference.
         """
-        am = AssetManager(self.token_underlying, self.native_data, self.fee_tracker)
+        am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
         outputs = am.reserve_collateral(agent_vault, lots, executor)
         return outputs
 
@@ -28,7 +28,7 @@ class Minter(User):
         Returns dictionary including transaction hash, amount and fees paid.
         """
         un = UnderlyingNetwork(self.token_underlying, self.underlying_data, self.fee_tracker)
-        amount = (value_UBA + fee_UBA) / un.asset_unit_uba
+        amount = self.token_underlying.from_uba(value_UBA + fee_UBA)
         response = un.send_transaction(
             to_address=payment_address,
             amount=amount,
@@ -37,7 +37,7 @@ class Minter(User):
         return response
     
     def _get_payment_proof(self, underlying_hash):
-        a = Attestation("testXRP", self.native_data, self.indexer_api_key, self.fee_tracker)
+        a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key, self.fee_tracker)
         request_body = a.request_body_payment(underlying_hash)
         response = a.prepare_attestation_request(request_body, "Payment")
         abi_encoded_request = response["abiEncodedRequest"]
@@ -90,7 +90,7 @@ class Minter(User):
         """
         Execute minting after receiving attestation proof.
         """
-        am = AssetManager(self.token_underlying, self.native_data, self.fee_tracker)
+        am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
         tx = am.execute_minting(proof, collateral_reservation_id)
         return tx
     
@@ -152,7 +152,7 @@ class Minter(User):
         """
         Returns the status of all mint requests in storage.
         """
-        a = Attestation("testXRP", self.native_data, self.indexer_api_key)
+        a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key)
         first_block, _ = a.get_block_range()
         records = self.dsc.get_records()
         statuses = {"pending": [], "expired": []}

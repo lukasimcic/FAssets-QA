@@ -19,6 +19,7 @@ class Informer(User):
             self.underlying_data
         )
         f = FAsset(
+            self.token_native,
             self.token_underlying,
             self.native_data
         )

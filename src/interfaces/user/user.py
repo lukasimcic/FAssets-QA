@@ -1,4 +1,4 @@
-from config.config_qa import log_folder, fasset_name
+from config.config_qa import log_folder
 from src.utils.secrets import load_user_secrets
 from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData, UserUnderlyingData
 from src.utils.fee_tracker import FeeTracker
@@ -20,12 +20,12 @@ class User(ABC):
         # tokens
         self.token_native : TokenNative = token_native
         self.token_underlying : TokenUnderlying = token_underlying
-        self.token_fasset : TokenFasset = fasset_name[token_underlying]
+        self.token_fasset : TokenFasset = TokenFasset.from_underlying(token_underlying)
         
         # secrets
         secrets = load_user_secrets(num, partner)
         self.native_data = UserNativeData(**secrets["user"]["native"])
-        self.underlying_data = UserUnderlyingData(**secrets["user"][token_underlying])
+        self.underlying_data = UserUnderlyingData(**secrets["user"][token_underlying.name])
         self.indexer_api_key = secrets["apiKey"]["indexer"][0]
         
         # logger

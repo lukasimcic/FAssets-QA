@@ -1,6 +1,6 @@
-from config.config_qa import data_folder, asset_manager_controller_instance_name, fasset_name
+from config.config_qa import data_folder, asset_manager_controller_instance_name
 from src.utils.contracts import get_contract_address
-from src.utils.data_structures import UserData
+from src.utils.data_structures import TokenFasset, UserData
 from datetime import datetime, timezone
 import json
 import os
@@ -13,7 +13,8 @@ class DataStorageClient():
         # set file name to match fasset-bots project format
         asset_manager_controller_snippet = get_contract_address(asset_manager_controller_instance_name)[2:10]
         user_name = f"user{'_partner' if user_data.partner else ''}_{user_data.num}"
-        folder_name = f"{asset_manager_controller_snippet}-{fasset_name[user_data.token_underlying]}-{action_type}"
+        token_fasset = TokenFasset.from_underlying(user_data.token_underlying)
+        folder_name = f"{asset_manager_controller_snippet}-{token_fasset.name}-{action_type}"
         self.folder = data_folder / "data_storage" / user_name[:-2] / user_name / folder_name
         if not self.folder.exists():
             os.makedirs(self.folder)

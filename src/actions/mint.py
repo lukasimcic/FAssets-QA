@@ -1,4 +1,3 @@
-from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_mint, max_lots_available
 from src.utils.data_storage_client import DataStorageClient
@@ -34,7 +33,7 @@ class MintLowestFeeAgentRandomAmount(ActionBundle):
     @property
     def expected_state(self):
         new_balances = self.balances.copy()
-        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 100)
+        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 1e2)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount
         new_balances.subtract_fees(self.ca.fee_tracker)
         return self.flow_state.replace([new_balances])
@@ -62,7 +61,7 @@ class MintRandomAgentRandomAmount(ActionBundle):
     @property
     def expected_state(self):
         new_balances = self.balances.copy()
-        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 100)
+        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 1e2)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount
         new_balances.subtract_fees(self.ca.fee_tracker)
         return self.flow_state.replace([new_balances])
@@ -82,7 +81,6 @@ class MintExecuteRandomMinting(ActionBundle):
         dsc = DataStorageClient(self.user_data, action_type="mint")
         self.mint_id = mint_id
         self.record = dsc.get_record(mint_id)
-        self.fee_tracker = self.ca.fee_tracker
         # action logic continued
         self.ca.mint_execute(mint_id, log_steps=True)
 

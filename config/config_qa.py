@@ -10,13 +10,13 @@ data_folder = root_folder / "data"
 log_folder = data_folder / "logs"
 
 # contract names and addresses
-coston2_contracts_file = config_folder / "contracts" / "coston2.json"
-asset_manager_testxrp_instance_name = "AssetManager_FTestXRP"
+contracts_file_coston2 = config_folder / "contracts" / "coston2.json"
 asset_manager_controller_instance_name = "AssetManagerController"
-fasset_testxrp_instance_name = "FTestXRP"
 fdc_hub_instance_name = "FdcHub"
 fdc_request_fee_configurations_instance_name = "FdcRequestFeeConfigurations"
 relay_instance_name = "Relay"
+asset_manager_instance_name_testxrp = "AssetManager_FTestXRP"
+fasset_instance_name_testxrp = "FTestXRP"
 
 # contract abi paths
 asset_manager_path = contracts_folder / "assetManager" / "interfaces" / "IIAssetManager.sol" / "IIAssetManager.json"
@@ -28,17 +28,16 @@ fdc_request_fee_configurations_path = contracts_folder / "fdc" / "mock" / "FdcRe
 relay_path = contracts_folder / "fdc" / "mock" / "RelayMock.sol" / "RelayMock.json"
 
 # networks
-tokens_native = ["C2FLR"]
-tokens_underlying = ["testXRP"]
-fasset_name = {
-    "testXRP": "FTestXRP"
-}
 rpc_url = {
     "C2FLR": "https://coston2-api.flare.network/ext/C/rpc",
     "testXRP": "https://s.altnet.rippletest.net:51234/"
 }
-fdc_url = "https://testnet-verifier-fdc-test.aflabs.org"
-da_url = "https://ctn2-data-availability.flare.network"
+fdc_url = {
+    "C2FLR": "https://testnet-verifier-fdc-test.aflabs.org"
+}
+da_url = {
+    "C2FLR": "https://ctn2-data-availability.flare.network"
+}
 x_csrftoken = "dYBRCYd1bmuV5BfYrFctdMhh2obIameQ0zpWF7z8FE8ehAKVb9fjVckctfIqbZjp"
 
 # hardcoded addresses

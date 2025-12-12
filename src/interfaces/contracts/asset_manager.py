@@ -1,23 +1,21 @@
-from src.utils.data_structures import TokenUnderlying, UserNativeData
+from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
 from src.utils.fee_tracker import FeeTracker
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_address, get_output_index
-from config.config_qa import asset_manager_path, asset_manager_testxrp_instance_name, zero_address
+from config.config_qa import asset_manager_path, zero_address
 
 class AssetManager(ContractClient):
     def __init__(
             self, 
+            token_native: TokenNative,
             token_underlying: TokenUnderlying, 
             sender_data: UserNativeData | None = None, 
             fee_tracker: FeeTracker | None = None
         ):
-        match token_underlying:
-            case "testXRP": 
-                asset_manager_instance_name = asset_manager_testxrp_instance_name
-            case _:
-                raise ValueError(f"Unsupported underlying token: {token_underlying}")
-        asset_manager_address =  get_contract_address(asset_manager_instance_name)
-        super().__init__(asset_manager_path, asset_manager_address, sender_data, fee_tracker)
+        self.token_native = token_native
+        self.token_underlying = token_underlying
+        asset_manager_address =  get_contract_address(token_underlying.asset_manager_instance_name)
+        super().__init__(token_native, asset_manager_path, asset_manager_address, sender_data, fee_tracker)
 
     # info
 
@@ -59,14 +57,8 @@ class AssetManager(ContractClient):
     def lot_size(self):
         settings = self.read("getSettings")
         idx = get_output_index(self.path, "getSettings", "lotSizeAMG")
-        lot_size_anm = settings[idx]
-        lot_size = lot_size_anm // self.asset_unit_uba()
-        return lot_size
-
-    def asset_unit_uba(self):
-        settings = self.read("getSettings")
-        idx = get_output_index(self.path, "getSettings", "assetUnitUBA")
-        return settings[idx]
+        lot_size_uba = settings[idx]
+        return self.token_underlying.from_uba(lot_size_uba)
 
     def asset_price_nat_wei(self):
         asset_price_mul, asset_price_div = self.read("assetPriceNatWei")
@@ -108,7 +100,7 @@ class AssetManager(ContractClient):
             events=["CollateralReserved"],
             value=collateral_reservation_fee
         )["events"]
-        self.fee_tracker.native_other_fees += float(self.web3.from_wei(collateral_reservation_fee, 'ether'))
+        self.fee_tracker.native_other_fees += self.token_native.from_uba(collateral_reservation_fee)
         return collateralReserved["CollateralReserved"][0]
 
     def execute_minting(self, proof, collateral_reservation_id):
@@ -127,14 +119,12 @@ class AssetManager(ContractClient):
         """
         Redeem given lots. Returns RedemptionRequested and RedemptionRequestIncomplete events.
         """
-        print(f"--- Redeeming {lots} lots to {underlying_address} with executor {executor} and executor fee {executor_fee} ---")
         events = self.write(
             "redeem",
             inputs=[lots, underlying_address, executor],
             events=["RedemptionRequested", "RedemptionRequestIncomplete"],
             value=executor_fee
         )["events"]
-        print(events)
         return events
 
     def redemption_request_info(self, redemption_request_id):
