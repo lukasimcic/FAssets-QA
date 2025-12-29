@@ -1,6 +1,6 @@
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_mint, max_lots_available
-from src.utils.data_storage_client import DataStorageClient
+from src.utils.data_storage import DataStorageClient
 import random
 
 

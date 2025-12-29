@@ -1,5 +1,5 @@
 from config.config_qa import fasset_bots_folder
-from src.utils.data_storage_client import DataStorageClient
+from src.utils.data_storage import DataStorageClient
 from src.utils.secrets import secrets_file
 from src.utils.data_structures import AgentInfo, Balances, MintStatus, PoolHolding, Pool, RedemptionStatus, UserData
 from src.interfaces.user.user import User
@@ -252,9 +252,9 @@ class UserBot(User):
         command = f"exitPool {pool_id} {amount if amount else 'all'}"
         return self._execute(command, log_steps)
 
-    def withdraw_pool_fees(self, pool_id, log_steps=False):
+    def withdraw_pool_fees(self, pool_id, fees, log_steps=False):
         """
         Withdraws the fees from the specified pool.
         """
-        command = f"withdrawPoolFees {pool_id}"
+        command = f"withdrawPoolFees {pool_id} {fees}"
         return self._execute(command, log_steps)

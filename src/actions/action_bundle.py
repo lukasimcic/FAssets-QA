@@ -54,6 +54,7 @@ class ActionBundle(ABC):
         else:
             self.ca = CoreActionsCLI(user_data)
             self.ca_partner = CoreActionsCLI(partner_data)
+        self.partner_involved = False  # set to True in subclasses where partner is involved
 
 
     @abstractmethod
@@ -72,3 +73,10 @@ class ActionBundle(ABC):
     def general_conditions(self):
         enough_native = self.balances[self.token_native] > 10  # to avoid gas issues
         return enough_native
+    
+    def update_partner_flow_state(self, partner_flow_state : FlowState):
+        self.partner_flow_state = partner_flow_state
+        self.partner_balances = partner_flow_state.balances
+        self.partner_mint_status = partner_flow_state.mint_status
+        self.partner_redemption_status = partner_flow_state.redemption_status
+        self.partner_pool_holdings = partner_flow_state.pool_holdings

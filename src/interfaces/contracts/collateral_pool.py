@@ -59,4 +59,5 @@ class CollateralPool(ContractClient):
         exit_cr = self.exit_collateral_ratio_bips() / 1e4
         # from (N - n) q >= F p cr
         amount_UBA = self.total_collateral() - backed_fAssets * exit_cr * asset_price["mul"] / asset_price["div"]
-        return cpt.from_uba(amount_UBA)
+        amount = cpt.from_uba(amount_UBA)
+        return max(amount, 0) 

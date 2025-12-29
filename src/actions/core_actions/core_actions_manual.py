@@ -111,6 +111,10 @@ class CoreActionsManual(CoreActions):
         self.logger.info(f"Withdrawing pool {fees} fees from pool {pool_address}.")
         self.pool_manager.withdraw_pool_fees(pool_address, fees, log_steps=log_steps)
 
+    def transfer_pool_tokens(self, pool_address, to_address, amount, log_steps=False):
+        self.logger.info(f"Transferring {amount} pool tokens of pool {pool_address} to {to_address}.")
+        self.pool_manager.transfer_pool_tokens(pool_address, to_address, amount, log_steps=log_steps)
+
     def mint_execute(self, mint_id, log_steps=False):
         self.logger.info(f"Executing minting for mint ID {mint_id}.")
         self.minter.prove_and_execute_minting(mint_id, log_steps=log_steps)

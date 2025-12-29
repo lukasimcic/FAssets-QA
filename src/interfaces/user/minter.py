@@ -3,7 +3,7 @@ from src.interfaces.contracts import *
 from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.network.attestation import Attestation
-from src.utils.data_storage_client import DataStorageClient
+from src.utils.data_storage import DataStorageClient
 from src.utils.data_structures import MintStatus, UserData
 from src.utils.fee_tracker import FeeTracker
 

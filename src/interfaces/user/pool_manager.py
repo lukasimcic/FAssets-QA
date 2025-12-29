@@ -84,3 +84,14 @@ class PoolManager(User):
             if "pool_tokens" in pool_dict or "fasset_fees" in pool_dict:
                 result.append(PoolHolding(**pool_dict))
         return result
+    
+    def transfer_pool_tokens(self, pool_address, to_address, amount, log_steps=False):
+        """
+        Transfer pool tokens to another address.
+        Amount is in pool tokens, not in UBA.
+        """
+        cp = CollateralPool(self.token_native, pool_address, self.native_data, self.fee_tracker)
+        pool_token_address = cp.pool_token()
+        cpt = CollateralPoolToken(self.token_native, pool_token_address, self.native_data, self.fee_tracker)
+        amount_UBA = cpt.to_uba(amount)
+        cpt.transfer(to_address, amount_UBA)

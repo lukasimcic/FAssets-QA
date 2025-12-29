@@ -4,7 +4,7 @@ from src.interfaces.network.underlying_networks.underlying_network import Underl
 from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.attestation import Attestation
 from config.config_qa import zero_address
-from src.utils.data_storage_client import DataStorageClient
+from src.utils.data_storage import DataStorageClient
 from src.utils.encoding import pad_0x, unpad_0x
 from src.utils.data_structures import RedemptionStatus, UserData
 from src.utils.fee_tracker import FeeTracker
