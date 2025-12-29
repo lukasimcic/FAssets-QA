@@ -46,11 +46,16 @@ class CoreActionsCLI(CoreActions):
     def get_agents(self, log_steps=False):
         return self.user_bot.get_agents(log_steps=log_steps)
 
-    def withdraw_pool_fees(self, pool_address, log_steps=False):
-        self.user_bot.withdraw_pool_fees(pool_address, log_steps=log_steps)
+    def withdraw_pool_fees(self, pool_address, fees, log_steps=False):
+        self.user_bot.withdraw_pool_fees(pool_address, fees, log_steps=log_steps)
 
     def mint_execute(self, mint_id, log_steps=False):
         self.user_bot.execute_mint(mint_id, log_steps=log_steps)
 
     def redeem_default(self, redemption_id, log_steps=False):
         self.user_bot.redeem_default(redemption_id, log_steps=log_steps)
+
+    # not implemented
+
+    def transfer_pool_tokens(self, pool_address, to_address, amount, log_steps=False):
+        raise NotImplementedError("transfer_pool_tokens is not implemented in CLI mode.")

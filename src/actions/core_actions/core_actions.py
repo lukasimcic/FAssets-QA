@@ -1,5 +1,7 @@
 from src.utils.fee_tracker import FeeTracker
+from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus
 from abc import ABC, abstractmethod
+
 
 
 class CoreActions(ABC):
@@ -9,47 +11,29 @@ class CoreActions(ABC):
     # state (user-specific) retrieval
 
     @abstractmethod
-    def get_balances(self, log_steps=False):
-        """
-        Returns a Balance object.
-        """
+    def get_balances(self, log_steps=False) -> Balances:
         pass
 
     @abstractmethod
-    def get_mint_status(self, log_steps=False):
-        """
-        Returns a MintStatus object.
-        """
+    def get_mint_status(self, log_steps=False) -> MintStatus:
         pass
 
     @abstractmethod
-    def get_redemption_status(self, log_steps=False):
-        """
-        Returns a RedemptionStatus object.
-        """
+    def get_redemption_status(self, log_steps=False) -> RedemptionStatus:
         pass
 
     @abstractmethod
-    def get_pool_holdings(self, log_steps=False):
-        """
-        Returns a list of PoolHoldings objects.
-        """
+    def get_pool_holdings(self, log_steps=False) -> list[PoolHolding]:
         pass
 
     # info (system-specific) retrieval
 
     @abstractmethod
-    def get_agents(self, log_steps=False):
-        """
-        Returns a list of AgentInfo objects
-        """
+    def get_agents(self, log_steps=False) -> list[AgentInfo]:
         pass
 
     @abstractmethod
-    def get_pools(self, log_steps=False):
-        """
-        Returns a list of Pool objects.
-        """
+    def get_pools(self, log_steps=False) -> list[Pool]:
         pass
 
     # logging

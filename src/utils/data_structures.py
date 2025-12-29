@@ -12,7 +12,7 @@ class TokenNative(Enum):
         self._name_ = name
         self.contracts_file = contracts_file
         self.decimals = decimals
-        self.compare_tolerance = 10 ** (-decimals + 3)
+        self.compare_tolerance = 10 ** (-decimals + 6)
         self.rpc_url = rpc_url[name]
         self.fdc_url = fdc_url[name]
         self.da_url = da_url[name]
@@ -108,10 +108,7 @@ class Balances:
     def __repr__(self):
         items = []
         for k, v in self.data.items():
-            if isinstance(v, float):
-                items.append(f"{k.name}: {v:.12f}")
-            else:
-                items.append(f"{k.name}: {v}")
+            items.append(f"{k.name}: {v:.{int(-math.log10(k.compare_tolerance))}f}")
         return f"Balances({{{', '.join(items)}}})"
     def subtract_fees(self, fee_tracker : FeeTracker):
         for token in self.data:
@@ -213,16 +210,17 @@ class FlowState:
     def __post_init__(self):
         self.pool_holdings = sorted(self.pool_holdings, key=lambda ph: ph.pool_address)
     def replace(self, changes : list):
+        new_flow_state = self.copy()
         for change in changes:
             if type(change) is Balances:
-                self.balances = change
+                new_flow_state.balances = change
             elif type(change) is MintStatus:
-                self.mint_status = change
+                new_flow_state.mint_status = change
             elif type(change) is RedemptionStatus:
-                self.redemption_status = change
+                new_flow_state.redemption_status = change
             elif type(change) is list and len(change) > 0:
-                self.pool_holdings = change
-        return self
+                new_flow_state.pool_holdings = change
+        return new_flow_state
     def fields(self):
         return self.__dataclass_fields__.keys()
     def __getitem__(self, key):
@@ -234,6 +232,19 @@ class FlowState:
             redemption_status=self.redemption_status.copy(),
             pool_holdings=self.pool_holdings.copy()
         )
+    def compare(self, others):
+        if not isinstance(others, list):
+            others = [others]
+        all_mismatches = []
+        for other in others:
+            mismatches = {}
+            for field in self.fields():
+                v1 = self[field]
+                v2 = other[field]
+                if v1 != v2:
+                    mismatches[field] = (v1, v2)
+            all_mismatches.append(mismatches)
+        return all_mismatches
     
 @dataclass
 class AgentInfo:

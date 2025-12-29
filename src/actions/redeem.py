@@ -1,4 +1,4 @@
-from src.utils.data_storage_client import DataStorageClient
+from src.utils.data_storage import DataStorageClient
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.action_bundle import ActionBundle
 import random
@@ -20,7 +20,6 @@ class RedeemRandomAmount(ActionBundle):
         # data for expected_state
         self.lot_amount = lot_amount
         self.remaining_lots = remaining_lots
-        self.fee_tracker = self.ca.fee_tracker
 
     @property
     def expected_state(self):

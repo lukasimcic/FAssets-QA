@@ -60,6 +60,14 @@ class Flow():
             self.ca.get_redemption_status(log_steps=log_steps),
             self.ca.get_pool_holdings(log_steps=log_steps)
         )
+
+    def get_partner_flow_state(self, log_steps=True):
+        return FlowState(
+            self.ca_partner.get_balances(log_steps=log_steps),
+            self.ca_partner.get_mint_status(log_steps=log_steps),
+            self.ca_partner.get_redemption_status(log_steps=log_steps),
+            self.ca_partner.get_pool_holdings(log_steps=log_steps)
+        )
     
     def _step(self):
         self.update_flow_state()
@@ -80,6 +88,9 @@ class Flow():
             self.log(f"-- Executing action {bundle.__class__.__name__} --", both=False)
             
             successful = True
+            if bundle.partner_involved:
+                partner_flow_state = self.get_partner_flow_state()
+                bundle.update_partner_flow_state(partner_flow_state)
             try:
                 bundle.action()
             except Exception as e:
@@ -89,23 +100,26 @@ class Flow():
             if successful:
                 expected_state = bundle.expected_state
                 self.update_flow_state(log_steps=False)
-                state_mismatches = {}
-                for field in self.flow_state.fields():
-                    actual_value = self.flow_state[field]
-                    expected_value = expected_state[field]
-                    if actual_value != expected_value:
-                        state_mismatches[field] = (expected_value, actual_value)
-                if not state_mismatches:
+                state_mismatches = self.flow_state.compare(expected_state)
+                if bundle.partner_involved:
+                    partner_flow_state = self.get_partner_flow_state(log_steps=False)
+                    partner_expected_state = bundle.partner_expected_state
+                    partner_state_mismatches = partner_flow_state.compare(partner_expected_state)
+                else:
+                    partner_state_mismatches = [[]]
+                if min(len(m) for m in state_mismatches) == min(len(m) for m in partner_state_mismatches) == 0:
                     self.log("Action successfully executed.")
                 else:
                     successful = False
-                    mismatch_str = "\n".join(
-                        f"{field.capitalize()}:\n    expected: {expected}\n    actual:   {actual}"
-                        for field, (expected, actual) in state_mismatches.items()
-                    )
-                    self.log(
-                        f"State mismatch after action execution!\n{mismatch_str}"
-                    )
+                    for user, state_mismatches in zip(["", "partner "], [state_mismatches, partner_state_mismatches]):
+                        for state_mismatche in state_mismatches:
+                            mismatch_str = "\n".join(
+                                f"{user}{field.capitalize()}:\n    expected: {expected}\n    actual:   {actual}"
+                                for field, (actual, expected) in state_mismatche.items()
+                            )
+                            self.log(
+                                f"State mismatch after action execution!\n{mismatch_str}"
+                            )
             return successful
 
     def run(self):

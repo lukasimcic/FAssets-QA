@@ -1,3 +1,4 @@
+from src.actions.core_actions.core_actions import CoreActions
 from config.config_qa import data_folder, asset_manager_controller_instance_name
 from src.utils.contracts import get_contract_address
 from src.utils.data_structures import TokenFasset, UserData
@@ -68,3 +69,18 @@ class DataStorageClient():
     def get_new_record_ids(self, previous_ids):
         existing_ids = [int(file_name.removesuffix(".json")) for file_name in os.listdir(self.folder) if file_name.endswith(".json")]
         return list(set(existing_ids).difference(set(previous_ids)))
+    
+
+def remove_inactive_records(user_data: UserData, ca: CoreActions):
+    # redemptions
+    redemption_status = ca.get_redemption_status()
+    inactive_ids = redemption_status.success + redemption_status.expired
+    dsc = DataStorageClient(user_data, "redeem")
+    for record_id in inactive_ids:
+        dsc.remove_record(record_id)
+    # mintings
+    mint_status = ca.get_mint_status()
+    inactive_ids = mint_status.expired
+    dsc = DataStorageClient(user_data, "mint")
+    for record_id in inactive_ids:
+        dsc.remove_record(record_id)

@@ -26,6 +26,7 @@ collateral_pool_token_path = contracts_folder / "collateralPool" / "implementati
 fdc_hub_path = contracts_folder / "fdc" / "mock" / "FdcHubMock.sol" / "FdcHubMock.json"
 fdc_request_fee_configurations_path = contracts_folder / "fdc" / "mock" / "FdcRequestFeeConfigurationsMock.sol" / "FdcRequestFeeConfigurationsMock.json"
 relay_path = contracts_folder / "fdc" / "mock" / "RelayMock.sol" / "RelayMock.json"
+agent_vault_path = contracts_folder / "agentVault" / "interfaces" / "IIAgentVault.sol" / "IIAgentVault.json"
 
 # networks
 rpc_url = {

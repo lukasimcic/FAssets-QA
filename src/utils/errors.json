@@ -220,5 +220,7 @@
     "DestroyNotAllowedYet": "0x39d13f56",
     "DestroyNotAnnounced": "0x6accea8d",
     "SuffixInvalidFormat": "0x2609d98d",
-    "SuffixReserved": "0xa4709907"
+    "SuffixReserved": "0xa4709907",
+    "InsufficientNonTimelockedBalance": "0x68c89f0b",
+    "InsufficientTransferableBalance": "0x407c3f3d"
 }

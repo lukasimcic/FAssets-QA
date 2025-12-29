@@ -1,6 +1,6 @@
 from src.interfaces.contracts.collateral_pool import CollateralPool
 from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
-from src.utils.data_structures import AgentInfo
+from src.utils.data_structures import AgentInfo, PoolHolding, TokenUnderlying, TokenNative
 
 def max_lots_available(agents : list[AgentInfo]):
     if not agents:
@@ -16,7 +16,7 @@ def can_enter_pool(balances, token_native):
     min_amount = CollateralPool.min_nat_to_enter
     return token_native in balances and balances[token_native] >= min_amount
 
-def add_max_amount_to_stay_above_exit_CR(pool_holdings, token_native, token_underlying):
+def add_max_amount_to_stay_above_exit_CR(pool_holdings: list[PoolHolding], token_native: TokenNative, token_underlying: TokenUnderlying):
     for pool_holding in pool_holdings:
         cp = CollateralPool(token_native, pool_holding.pool_address)
         pool_holding.max_amount_to_exit = cp.max_amount_to_stay_above_exit_CR(token_underlying)

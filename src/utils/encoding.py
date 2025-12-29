@@ -46,7 +46,7 @@ def get_error(error_names: list[str], encoded_error) -> str:
             return name
     return "Error not in list."
 
-# for example folder = contracts_folder / "assetManager" / "facets"
+# example folder: contracts_folder / "assetManager" / "facets"
 def save_errors(folder):
     error_file = Path(__file__).parent / "errors.json"
     if error_file.exists() and error_file.stat().st_size > 0:

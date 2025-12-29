@@ -27,9 +27,7 @@ mint_redeem_actions = [
     ]
 actions = [
     [
-        "MintExecuteRandomMinting",
-        "RedeemDefaultRandomRedemption"
-
+        "Scenario2"
     ]
     for _ in range(num_user_bots)
     ]
@@ -45,7 +43,7 @@ def make_threads(actions):
             ),
             actions=actions[i],
             cli=cli,
-            total_time=100,
+            total_time=60,
             time_wait=5
             )
         t = threading.Thread(target=flow.run)

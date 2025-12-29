@@ -125,7 +125,7 @@ class Attestation():
             if self._current_round_id() >= round_id:
                 break
         response = {}
-        for _ in range(20):
+        for _ in range(40):
             if len(response.get("proof", [])) == 0:
                 time.sleep(15)
                 response = requests.post(
