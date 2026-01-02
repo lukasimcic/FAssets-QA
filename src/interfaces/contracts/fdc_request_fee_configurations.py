@@ -1,5 +1,5 @@
 from src.utils.data_structures import TokenNative, UserNativeData
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_address
 from config.config_qa import fdc_request_fee_configurations_path, fdc_request_fee_configurations_instance_name

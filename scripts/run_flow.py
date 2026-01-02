@@ -1,10 +1,11 @@
-from src.flow import Flow
+from src.flow.flow import Flow
 from src.actions import ACTION_BUNDLE_CLASSES
 from src.utils.data_structures import UserData, TokenNative, TokenUnderlying
+from src.flow.user_manager import UserManager
 import threading
 
-
-num_user_bots = 1
+request_funds = True
+user_nums = list(range(3))
 token_native = TokenNative.C2FLR
 token_underlying = TokenUnderlying.testXRP
 cli = False
@@ -13,7 +14,7 @@ cli = False
 # can customize actions for each thread here
 all_actions = [
     [cls.__name__ for cls in ACTION_BUNDLE_CLASSES] 
-    for _ in range(num_user_bots)
+    for _ in user_nums
     ]
 mint_redeem_actions = [
     [
@@ -23,18 +24,13 @@ mint_redeem_actions = [
         "RedeemRandomAmount",
         "RedeemDefaultRandomRedemption"
     ] 
-    for _ in range(num_user_bots)
+    for _ in user_nums
     ]
-actions = [
-    [
-        "Scenario2"
-    ]
-    for _ in range(num_user_bots)
-    ]
+actions = all_actions
 
 def make_threads(actions):
     threads = []
-    for i in range(num_user_bots):
+    for i in user_nums:
         flow = Flow(
             UserData(
                 token_native=token_native,
@@ -51,8 +47,13 @@ def make_threads(actions):
     return threads
 
 if __name__ == "__main__":
+    um = UserManager(token_native, token_underlying, user_nums=user_nums)
+    if request_funds:
+        um.request_funds()
+    um.distribute_funds()
     threads = make_threads(actions)
     for t in threads:
         t.start()
     for t in threads:
         t.join()
+    um.collect_funds()

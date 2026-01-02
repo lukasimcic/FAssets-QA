@@ -1,19 +1,19 @@
 from config.config_qa import log_folder
 from src.utils.secrets import load_user_secrets
 from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData, UserUnderlyingData
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 from abc import ABC
 import logging
 
 
-
 class User(ABC):
     def __init__(self, user_data: UserData, fee_tracker : FeeTracker = None):
-        token_native, token_underlying, num, partner = (
+        token_native, token_underlying, num, partner, funder = (
             user_data.token_native,
             user_data.token_underlying,
             user_data.num,
-            user_data.partner
+            user_data.partner,
+            user_data.funder
         )
         self.fee_tracker = fee_tracker
 
@@ -23,14 +23,18 @@ class User(ABC):
         self.token_fasset : TokenFasset = TokenFasset.from_underlying(token_underlying)
         
         # secrets
-        secrets = load_user_secrets(num, partner)
+        secrets = load_user_secrets(num, partner, funder)
         self.native_data = UserNativeData(**secrets["user"]["native"])
         self.underlying_data = UserUnderlyingData(**secrets["user"][token_underlying.name])
         self.indexer_api_key = secrets["apiKey"]["indexer"][0]
         
         # logger
-        user_name = f"user{'_partner' if partner else ''}_{num}"
-        log_file = log_folder / user_name[:-2] / f"{user_name}.log"
+        if not funder:
+            user_name = f"user{'_partner' if partner else ''}_{num}"
+            log_file = log_folder / user_name[:-2] / f"{user_name}.log"
+        else:
+            user_name = "funder"
+            log_file = log_folder / f"{user_name}.log"
         self.logger = logging.getLogger(user_name)
         if not self.logger.hasHandlers():
             self.logger.setLevel(logging.INFO)

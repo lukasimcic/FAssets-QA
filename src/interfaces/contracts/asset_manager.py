@@ -1,5 +1,5 @@
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_address, get_output_index
 from config.config_qa import asset_manager_path, zero_address

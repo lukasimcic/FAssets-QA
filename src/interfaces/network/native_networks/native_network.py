@@ -11,9 +11,20 @@ class NativeBaseNetwork(ABC):
         pass
 
     @abstractmethod
+    def send_transaction(self, to_address, amount):
+        pass
+
+    @abstractmethod
     def get_current_timestamp(self):
         pass
 
+    @abstractmethod
+    def generate_new_address(self):
+        pass
+
+    @abstractmethod
+    def request_funds(self):
+        pass
 
 class NativeNetwork:
     def __new__(cls, token: TokenNative, native_data : UserNativeData | None = None):

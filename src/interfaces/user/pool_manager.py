@@ -1,7 +1,7 @@
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.utils.data_structures import Pool, PoolHolding, UserData
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 
 
 class PoolManager(User):

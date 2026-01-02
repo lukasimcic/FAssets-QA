@@ -1,8 +1,8 @@
 from src.utils.contracts import get_contract_abi
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 from src.utils.data_structures import TokenNative, UserNativeData
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware
 import warnings
 import time
 
@@ -29,7 +29,7 @@ class ContractClient:
         if timeout is not None:
             kwargs['timeout'] = timeout
         self.web3 = Web3(Web3.HTTPProvider(self.token_native.rpc_url, request_kwargs=kwargs))
-        self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         assert self.web3.is_connected()
         contract_abi = get_contract_abi(contract_path)
         self.contract = self.web3.eth.contract(contract_address, abi=contract_abi)
@@ -56,7 +56,7 @@ class ContractClient:
         Returns any event outputs.
         """
         signed_tx = self.web3.eth.account.sign_transaction(tx, self.sender_private_key)
-        tx_hash = self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = self.web3.eth.send_raw_transaction(signed_tx.raw_transaction)
         receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
         return receipt
     
@@ -84,7 +84,7 @@ class ContractClient:
         return result
     
     def write(self, method: str, inputs: list = [], events: list = [], value: int = 0):
-        time.sleep(0.5)
+        time.sleep(2)
         tx = self._build_transaction(method, inputs, value)
         receipt = self._sign_and_send_transaction(tx)
         events = self._get_events_from_receipt(receipt, events)
@@ -93,7 +93,7 @@ class ContractClient:
         return {"receipt": receipt, "events": events}
     
     def read(self, method: str, inputs: list = []):
-        time.sleep(0.5)
+        time.sleep(2)
         return self.contract.functions[method](*inputs).call()
 
     

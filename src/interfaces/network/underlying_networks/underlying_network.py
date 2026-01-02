@@ -1,5 +1,5 @@
 from src.utils.data_structures import TokenUnderlying, UserUnderlyingData
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 from abc import ABC, abstractmethod
 
 
@@ -28,6 +28,13 @@ class UnderlyingBaseNetwork(ABC):
     def get_block_of_tx(self, tx_hash):
         pass
 
+    @abstractmethod
+    def generate_new_address(self):
+        pass
+
+    @abstractmethod
+    def request_funds(self):
+        pass
 
 class UnderlyingNetwork:
     def __new__(cls, token, underlying_data : UserUnderlyingData | None = None, fee_tracker=None):

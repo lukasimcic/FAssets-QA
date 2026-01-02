@@ -1,7 +1,7 @@
 from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.utils.data_structures import TokenNative, UserNativeData
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
 from config.config_qa import collateral_pool_path
 

@@ -33,6 +33,10 @@ rpc_url = {
     "C2FLR": "https://coston2-api.flare.network/ext/C/rpc",
     "testXRP": "https://s.altnet.rippletest.net:51234/"
 }
+faucet_url = {
+    "testXRP": "https://faucet.altnet.rippletest.net/accounts",
+    "C2FLR": "https://faucet.flare.network/coston2"
+}
 fdc_url = {
     "C2FLR": "https://testnet-verifier-fdc-test.aflabs.org"
 }
