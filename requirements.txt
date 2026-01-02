@@ -1,0 +1,5 @@
+web3==7.14.0
+requests==2.32.5
+eth_account==0.13.7
+selenium==4.39.0
+xrpl-py==4.4.0
