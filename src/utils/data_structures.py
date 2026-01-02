@@ -1,6 +1,6 @@
 from enum import Enum
-from src.utils.fee_tracker import FeeTracker
-from config.config_qa import contracts_file_coston2, asset_manager_instance_name_testxrp, fasset_instance_name_testxrp, fdc_url, da_url, rpc_url
+from src.flow.fee_tracker import FeeTracker
+from config.config_qa import contracts_file_coston2, asset_manager_instance_name_testxrp, fasset_instance_name_testxrp, fdc_url, da_url, rpc_url, faucet_url
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Union
 import math
@@ -14,6 +14,7 @@ class TokenNative(Enum):
         self.decimals = decimals
         self.compare_tolerance = 10 ** (-decimals + 6)
         self.rpc_url = rpc_url[name]
+        self.faucet_url = faucet_url[name]
         self.fdc_url = fdc_url[name]
         self.da_url = da_url[name]
     def to_uba(self, amount: float) -> int:
@@ -30,6 +31,7 @@ class TokenUnderlying(Enum):
         self.decimals = decimals
         self.compare_tolerance = 10 ** (-decimals + 1)
         self.rpc_url = rpc_url[name]
+        self.faucet_url = faucet_url[name]
     def to_uba(self, amount: float) -> int:
         return int(amount * 10 ** self.decimals)
     def from_uba(self, amount_uba: int) -> float:
@@ -57,8 +59,9 @@ Token = Union[TokenNative, TokenUnderlying, TokenFasset]
 class UserData:
     token_native: TokenNative
     token_underlying: TokenUnderlying
-    num: int
-    partner: bool = False
+    num: int | None = None
+    partner: bool | None = False
+    funder: bool | None = False
     def __post_init__(self):
         if not isinstance(self.token_native, TokenNative):
             self.token_native = TokenNative(self.token_native)
@@ -88,6 +91,8 @@ class Balances:
     data: Dict[Token, float] = field(default_factory=dict)
     def __getitem__(self, key):
         return self.data[key]
+    def get(self, key, default=None):
+        return self.data.get(key, default)
     def __setitem__(self, key, value):
         self.data[key] = value
     def __contains__(self, key):

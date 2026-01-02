@@ -5,7 +5,7 @@ from src.interfaces.network.underlying_networks.underlying_network import Underl
 from src.interfaces.network.attestation import Attestation
 from src.utils.data_storage import DataStorageClient
 from src.utils.data_structures import MintStatus, UserData
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 
 
 class Minter(User):

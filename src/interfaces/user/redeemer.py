@@ -7,7 +7,7 @@ from config.config_qa import zero_address
 from src.utils.data_storage import DataStorageClient
 from src.utils.encoding import pad_0x, unpad_0x
 from src.utils.data_structures import RedemptionStatus, UserData
-from src.utils.fee_tracker import FeeTracker
+from src.flow.fee_tracker import FeeTracker
 
 class Redeemer(User):
     def __init__(self, user_data : UserData, fee_tracker : FeeTracker | None = None):

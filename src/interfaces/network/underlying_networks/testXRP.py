@@ -7,14 +7,15 @@ from xrpl.models.transactions import Payment, Memo
 from xrpl.utils import xrp_to_drops, drops_to_xrp
 from xrpl.models.requests import AccountInfo, ServerInfo, Tx
 from xrpl.transaction import sign, autofill, submit
+import requests
 
 
 
 class TestXRP(UnderlyingBaseNetwork):
     def __init__(self, public_key, private_key, fee_tracker):
         super().__init__(fee_tracker=fee_tracker)
-        token_underlying = TokenUnderlying.testXRP
-        self.client = JsonRpcClient(token_underlying.rpc_url)
+        self.token_underlying = TokenUnderlying.testXRP
+        self.client = JsonRpcClient(self.token_underlying.rpc_url)
         if public_key and private_key: # otherwise this class is used for address non specific operations
             self.wallet = Wallet(public_key, private_key)
 
@@ -36,6 +37,8 @@ class TestXRP(UnderlyingBaseNetwork):
             strict=True
             )
         response = self.client.request(acct_info)
+        if "error" in response.result and response.result["error"] == "actNotFound":
+            return 0.0
         balance_drops = response.result["account_data"]["Balance"]
         balance = float(drops_to_xrp(balance_drops))
         # reserved balance
@@ -59,7 +62,8 @@ class TestXRP(UnderlyingBaseNetwork):
         autofilled_tx = autofill(payment, self.client)
         signed_tx = sign(autofilled_tx, self.wallet)
         response = submit(signed_tx, self.client)
-        self.fee_tracker.underlying_gas_fees += float(drops_to_xrp(response.result["tx_json"]["Fee"]))
+        if self.fee_tracker:
+            self.fee_tracker.underlying_gas_fees += float(drops_to_xrp(response.result["tx_json"]["Fee"]))
         return {
             "tx_hash": response.result["tx_json"]["hash"],
             "amount": amount
@@ -75,3 +79,21 @@ class TestXRP(UnderlyingBaseNetwork):
         """
         response = self.client.request(Tx(transaction=tx_hash))
         return int(response.result["ledger_index"])
+    
+    def generate_new_address(self):
+        wallet = Wallet.create()
+        secrets = {
+            "public_key": wallet.public_key,
+            "private_key": wallet.private_key,
+            "address": wallet.classic_address
+            }
+        return secrets
+    
+    def request_funds(self):
+        response = requests.post(
+            self.token_underlying.faucet_url, 
+            json={"destination": self.wallet.classic_address}
+            )
+        if response.status_code != 200:
+            raise Exception(f"Faucet request failed with status code {response.status_code}: {response.text}")
+        return 100
