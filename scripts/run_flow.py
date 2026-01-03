@@ -1,17 +1,20 @@
+import random
+import threading
+import time
+
 from src.flow.flow import Flow
 from src.actions import ACTION_BUNDLE_CLASSES
 from src.utils.data_structures import UserData, TokenNative, TokenUnderlying
 from src.flow.user_manager import UserManager
-import threading
 
+# configuration
 request_funds = True
 user_nums = list(range(3))
 token_native = TokenNative.C2FLR
 token_underlying = TokenUnderlying.testXRP
 cli = False
 
-# names of classes of action bundles to include in the flow
-# can customize actions for each thread here
+# names of action classes to include in the flow
 all_actions = [
     [cls.__name__ for cls in ACTION_BUNDLE_CLASSES] 
     for _ in user_nums
@@ -53,6 +56,7 @@ if __name__ == "__main__":
     um.distribute_funds()
     threads = make_threads(actions)
     for t in threads:
+        time.sleep(random.uniform(1, 1.5))
         t.start()
     for t in threads:
         t.join()

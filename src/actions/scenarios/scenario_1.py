@@ -1,9 +1,12 @@
-from src.actions.action_bundle import ActionBundle
-from src.actions.helper_functions import can_mint, can_enter_pool, collateral_to_tokens, tokens_to_collateral
-from src.interfaces.contracts import *
-from src.utils.data_storage import DataStorageClient
+from decimal import Decimal
 import random
 import time
+
+from src.actions.action_bundle import ActionBundle
+from src.actions.helper_functions import can_mint, can_enter_pool, collateral_to_tokens, random_decimal_between, tokens_to_collateral
+from src.interfaces.contracts import *
+from src.utils.data_storage import DataStorageClient
+from src.utils.data_structures import FlowState
 
 
 class Scenario1(ActionBundle):
@@ -12,13 +15,13 @@ class Scenario1(ActionBundle):
         self.agents = self.ca.get_agents()
 
 
-    def condition(self):
+    def condition(self) -> bool:
         enter_pool_condition = can_enter_pool(self.balances, self.token_native)
         mint_condition = can_mint(self.balances, self.token_underlying, self.lot_size, self.agents)
         return enter_pool_condition and mint_condition
 
 
-    def action(self):
+    def action(self) -> None:
         # choose agent and pool
         agents = [agent for agent in self.agents if agent.max_lots >= 1]
         agent = random.choice(agents)
@@ -26,9 +29,9 @@ class Scenario1(ActionBundle):
         pool_address = AgentVault(self.token_native, agent_address, self.native_data).collateral_pool()
 
         # enter pool
-        amount = random.uniform(1, self.balances[self.token_native])
-        self.ca.enter_pool(pool_address, amount, log_steps=True)
+        amount = random_decimal_between(Decimal(1), self.balances[self.token_native])
         token_amount = collateral_to_tokens(self.token_native, pool_address, amount)
+        self.ca.enter_pool(pool_address, token_amount, log_steps=True)
 
         # mint and redeem
         max_lots = [agent.max_lots for agent in self.agents if agent.address == agent_address][0]
@@ -62,7 +65,7 @@ class Scenario1(ActionBundle):
 
 
     @property
-    def expected_state(self):
+    def expected_state(self) -> list[FlowState]:
         new_balances = self.balances.copy()
         new_balances.subtract_fees(self.ca.fee_tracker)
 

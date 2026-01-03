@@ -1,7 +1,8 @@
-from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus
+from decimal import Decimal
 from abc import ABC, abstractmethod
 
+from src.flow.fee_tracker import FeeTracker
+from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus
 
 
 class CoreActions(ABC):
@@ -11,29 +12,29 @@ class CoreActions(ABC):
     # state (user-specific) retrieval
 
     @abstractmethod
-    def get_balances(self, log_steps=False) -> Balances:
+    def get_balances(self, log_steps: bool = False) -> Balances:
         pass
 
     @abstractmethod
-    def get_mint_status(self, log_steps=False) -> MintStatus:
+    def get_mint_status(self, log_steps: bool = False) -> MintStatus:
         pass
 
     @abstractmethod
-    def get_redemption_status(self, log_steps=False) -> RedemptionStatus:
+    def get_redemption_status(self, log_steps: bool = False) -> RedemptionStatus:
         pass
 
     @abstractmethod
-    def get_pool_holdings(self, log_steps=False) -> list[PoolHolding]:
+    def get_pool_holdings(self, log_steps: bool = False) -> list[PoolHolding]:
         pass
 
     # info (system-specific) retrieval
 
     @abstractmethod
-    def get_agents(self, log_steps=False) -> list[AgentInfo]:
+    def get_agents(self, log_steps: bool = False) -> list[AgentInfo]:
         pass
 
     @abstractmethod
-    def get_pools(self, log_steps=False) -> list[Pool]:
+    def get_pools(self, log_steps: bool = False) -> list[Pool]:
         pass
 
     # logging
@@ -45,29 +46,29 @@ class CoreActions(ABC):
     # actions implementation
 
     @abstractmethod
-    def mint(self, lot_amount, agent=None, log_steps=False):
+    def mint(self, lot_amount: int, agent: str = None, log_steps: bool = False) -> None:
         pass
 
     @abstractmethod
-    def redeem(self, lot_amount, log_steps=False):
+    def redeem(self, lot_amount: int, log_steps: bool = False) -> None:
         pass
 
     @abstractmethod
-    def enter_pool(self, pool_address, amount, log_steps=False):
+    def enter_pool(self, pool_address: str, amount: Decimal, log_steps: bool = False) -> None:
         pass
 
     @abstractmethod
-    def exit_pool(self, pool_address, amount, log_steps=False):
+    def exit_pool(self, pool_address: str, amount: Decimal, log_steps: bool = False) -> None:
         pass
 
     @abstractmethod
-    def withdraw_pool_fees(self, pool_address, log_steps=False):
+    def withdraw_pool_fees(self, pool_address: str, log_steps: bool = False) -> None:
         pass
 
     @abstractmethod
-    def mint_execute(self, mint_id, log_steps=False):
+    def mint_execute(self, mint_id: int, log_steps: bool = False) -> None:
         pass
 
     @abstractmethod
-    def redeem_default(self, redemption_id, log_steps=False):
+    def redeem_default(self, redemption_id: int, log_steps: bool = False) -> None:
         pass

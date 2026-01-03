@@ -1,3 +1,5 @@
+import os
+
 from src.interfaces.user.informer import Informer
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserData
 from src.utils.secrets import get_user_nums
@@ -5,7 +7,7 @@ from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.user.funder import Funder
 from config.config_qa import secrets_folder
-import os, re
+
 
 # TODO: unify naming in secrets, check usage in fasset-bots
 class UserManager():
@@ -26,7 +28,7 @@ class UserManager():
             self.user_nums = user_nums
         self.funder = Funder(self.token_native, self.token_underlying)
 
-    def _generate_credentials(self):
+    def _generate_credentials(self) -> dict[str, dict[str, str]]:
         un = UnderlyingNetwork(self.token_underlying)
         secrets_underlying = un.generate_new_address()
         nn = NativeNetwork(self.token_native)
@@ -36,10 +38,10 @@ class UserManager():
             self.token_underlying.name: secrets_underlying
         }
     
-    def _get_next_user_num(self):
+    def _get_next_user_num(self) -> int:
         return max(self.user_nums + [0]) + 1
     
-    def generate(self):
+    def generate(self) -> None:
         user_num = self._get_next_user_num()
         for user in ["user", "user_partner"]:
             folder = secrets_folder / user
@@ -55,13 +57,13 @@ class UserManager():
                 import json
                 json.dump(secrets, f, indent=4)
 
-    def request_funds(self):
+    def request_funds(self) -> None:
         self.funder.request_funds()
 
-    def distribute_funds(self):
+    def distribute_funds(self) -> None:
         self.funder.distribute_funds()
 
-    def collect_funds(self):
+    def collect_funds(self) -> None:
         self.funder.collect_funds()
     
 

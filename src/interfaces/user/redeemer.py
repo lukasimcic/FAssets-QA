@@ -14,7 +14,7 @@ class Redeemer(User):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "redeem")
 
-    def redeem(self, lots, executor=zero_address, executor_fee=0, log_steps=False):
+    def redeem(self, lots: int, executor: str = zero_address, executor_fee: int = 0, log_steps: bool = False) -> int:
         """
         Redeem underlying asset by calling the AssetManager contract.
         Saves redemption data for potential later default redemptions.
@@ -42,7 +42,7 @@ class Redeemer(User):
             self.dsc.save_record(request_data)
         return 0 if not redemption_request_incomplete else redemption_request_incomplete[0]["remainingLots"]
     
-    def _prepare_proof(self, proof):
+    def _prepare_proof(self, proof: dict) -> tuple:
         """
         Format the attestation proof response for redemptionPaymentDefault contract call.
         """
@@ -76,7 +76,7 @@ class Redeemer(User):
         )
         return contract_proof
 
-    def _get_referenced_payment_non_existence_proof(self, redemption_data):
+    def _get_referenced_payment_non_existence_proof(self, redemption_data: dict) -> dict:
         """
         Get attestation proof for referenced payment non-existence.
         """
@@ -95,7 +95,7 @@ class Redeemer(User):
         proof = a.get_proof(abi_encoded_request, round_id)
         return proof
 
-    def redeem_default(self, redemption_id, log_steps=False):
+    def redeem_default(self, redemption_id: int, log_steps: bool = False) -> None:
         """
         Redeem a default redemption by its ID.
         """
@@ -113,7 +113,7 @@ class Redeemer(User):
         self.dsc.remove_record(redemption_id)
         self.log_step(f"Redemption data removed from storage.", log_steps)
 
-    def redemption_status(self):
+    def redemption_status(self) -> RedemptionStatus:
         """
         Get statuses of all saved redemptions.
         """

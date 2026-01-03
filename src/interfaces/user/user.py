@@ -1,9 +1,10 @@
+from abc import ABC
+import logging
+
 from config.config_qa import log_folder
 from src.utils.secrets import load_user_secrets
 from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData, UserUnderlyingData
 from src.flow.fee_tracker import FeeTracker
-from abc import ABC
-import logging
 
 
 class User(ABC):
@@ -43,6 +44,6 @@ class User(ABC):
             file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
             self.logger.addHandler(file_handler)
 
-    def log_step(self, message, log_steps):
+    def log_step(self, message: str, log_steps: bool) -> None:
         if log_steps:
             self.logger.info(message)

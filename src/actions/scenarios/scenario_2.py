@@ -1,10 +1,11 @@
-from src.actions.action_bundle import ActionBundle
-from src.actions.helper_functions import can_enter_pool, collateral_to_tokens, tokens_to_collateral
-from src.interfaces.contracts import *
-from src.utils.data_structures import PoolHolding
+from decimal import Decimal
 import random
 import time
 
+from src.actions.action_bundle import ActionBundle
+from src.actions.helper_functions import can_enter_pool, collateral_to_tokens, random_decimal_between, tokens_to_collateral
+from src.interfaces.contracts import *
+from src.utils.data_structures import FlowState, PoolHolding
 
 
 class Scenario2(ActionBundle):
@@ -13,17 +14,18 @@ class Scenario2(ActionBundle):
         self.partner_involved = True
     
 
-    def condition(self):
+    def condition(self) -> bool:
         return can_enter_pool(self.balances, self.token_underlying)
 
 
-    def action(self):
+    def action(self) -> None:
         # choose pool
         pool = random.choice(self.ca.get_pools())
         pool_address = pool.address
 
         # enter pool
-        enter_amount_collateral = random.uniform(0, self.balances[self.token_native])
+        min_amount = CollateralPool.min_nat_to_enter
+        enter_amount_collateral = random_decimal_between(Decimal(min_amount), self.balances[self.token_native])
         enter_amount_tokens = collateral_to_tokens(self.token_native, pool_address, enter_amount_collateral)
         self.ca.enter_pool(pool_address, enter_amount_collateral, log_steps=True)
 
@@ -73,7 +75,7 @@ class Scenario2(ActionBundle):
 
 
     @property
-    def expected_state(self):
+    def expected_state(self) -> FlowState:
         # balances
         new_balances = self.balances.copy()
         new_balances[self.token_native] -= self.enter_amount_collateral
@@ -89,14 +91,14 @@ class Scenario2(ActionBundle):
                 break
         if not pool_already_in_holdings:
             new_pool_holdings.append(PoolHolding(
-                pool_address=self.pool_holding.pool_address,
+                pool_address=self.pool_address,
                 pool_tokens=token_amount
             ))
         return self.flow_state.replace([new_balances, new_pool_holdings])
     
 
     @property
-    def partner_expected_state(self):
+    def partner_expected_state(self) -> FlowState:
         # balances
         new_balances = self.partner_balances.copy()
         new_balances[self.token_native] += tokens_to_collateral(self.token_native, self.pool_address, self.exit_amount_tokens)

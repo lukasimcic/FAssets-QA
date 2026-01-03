@@ -1,7 +1,9 @@
+import random
+
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_mint, max_lots_available
 from src.utils.data_storage import DataStorageClient
-import random
+from src.utils.data_structures import FlowState
 
 
 class MintLowestFeeAgentRandomAmount(ActionBundle):
@@ -9,10 +11,10 @@ class MintLowestFeeAgentRandomAmount(ActionBundle):
         super().__init__(user_data, flow_state, cli)
         self.agents_dict = self.ca.get_agents()
 
-    def condition(self):
+    def condition(self) -> bool:
         return can_mint(self.balances, self.token_underlying, self.lot_size, self.agents_dict)
     
-    def action(self):
+    def action(self) -> None:
         # action logic
         agent_fees_dict = {
             agent_fee: [
@@ -31,7 +33,7 @@ class MintLowestFeeAgentRandomAmount(ActionBundle):
         self.agent = agent
 
     @property
-    def expected_state(self):
+    def expected_state(self) -> FlowState:
         new_balances = self.balances.copy()
         new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 1e2)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount
@@ -43,11 +45,11 @@ class MintRandomAgentRandomAmount(ActionBundle):
     def __init__(self, user_data, flow_state, cli):
         super().__init__(user_data, flow_state, cli)
     
-    def condition(self):
+    def condition(self) -> bool:
         self.agents_dict = self.ca.get_agents()
         return can_mint(self.balances, self.token_underlying, self.lot_size, self.agents_dict)
     
-    def action(self):
+    def action(self) -> None:
         # action logic
         agents = [agent for agent in self.agents_dict if agent.max_lots >= 1]
         agent = random.choice(agents)
@@ -59,7 +61,7 @@ class MintRandomAgentRandomAmount(ActionBundle):
         self.agent = agent
 
     @property
-    def expected_state(self):
+    def expected_state(self) -> FlowState:
         new_balances = self.balances.copy()
         new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 1e2)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount
@@ -71,10 +73,10 @@ class MintExecuteRandomMinting(ActionBundle):
     def __init__(self, user_data, flow_state, cli):
         super().__init__(user_data, flow_state, cli)
 
-    def condition(self):
+    def condition(self) -> bool:
         return self.mint_status.pending
 
-    def action(self):
+    def action(self) -> None:
         # action logic
         mint_id = random.choice(self.mint_status.pending)
         # data for expected_state
@@ -85,7 +87,7 @@ class MintExecuteRandomMinting(ActionBundle):
         self.ca.mint_execute(mint_id, log_steps=True)
 
     @property
-    def expected_state(self):
+    def expected_state(self) -> FlowState:
         # balances
         new_balances = self.balances.copy()
         new_balances[self.token_fasset] += self.lot_size * self.record["lots"]

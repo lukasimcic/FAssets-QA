@@ -9,7 +9,7 @@ class Informer(User):
     def __init__(self, user_data : UserData):
         super().__init__(user_data)
 
-    def get_balances(self, log_steps=False):
+    def get_balances(self, log_steps: bool = False) -> Balances:
         nn = NativeNetwork( 
             self.token_native,
             self.native_data
@@ -24,9 +24,9 @@ class Informer(User):
             self.native_data
         )
         balances = Balances(data={
-            self.token_native: float(nn.get_balance()),
-            self.token_underlying: float(un.get_balance()),
-            self.token_fasset: float(f.get_balance())
+            self.token_native: nn.get_balance(),
+            self.token_underlying: un.get_balance(),
+            self.token_fasset: f.get_balance()
         })
         return balances
     
