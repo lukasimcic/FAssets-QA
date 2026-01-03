@@ -13,7 +13,7 @@ class Minter(User):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "mint")
 
-    def _reserve_collateral(self, agent_vault, lots, executor):
+    def _reserve_collateral(self, agent_vault: str, lots: int, executor: str) -> dict:
         """
         Reserve collateral with the AssetManager contract.
         Returns paymentAddress, valueUBA, feeUBA, paymentReference.
@@ -22,7 +22,7 @@ class Minter(User):
         outputs = am.reserve_collateral(agent_vault, lots, executor)
         return outputs
 
-    def _pay_underlying(self, payment_address, value_UBA, fee_UBA, payment_reference):
+    def _pay_underlying(self, payment_address: str, value_UBA: int, fee_UBA: int, payment_reference: bytes) -> dict:
         """
         Pay underlying asset after reserving collateral.
         Returns dictionary including transaction hash, amount and fees paid.
@@ -36,7 +36,7 @@ class Minter(User):
         )
         return response
     
-    def _get_payment_proof(self, underlying_hash):
+    def _get_payment_proof(self, underlying_hash: str) -> dict:
         a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key, self.fee_tracker)
         request_body = a.request_body_payment(underlying_hash)
         response = a.prepare_attestation_request(request_body, "Payment")
@@ -46,7 +46,7 @@ class Minter(User):
         return proof
 
     @staticmethod
-    def _prepare_proof(proof):
+    def _prepare_proof(proof: dict) -> tuple:
         """
         Prepare the proof for contract submission.
         """
@@ -86,7 +86,7 @@ class Minter(User):
         )
         return proof_payment
 
-    def _execute_minting(self, proof, collateral_reservation_id):
+    def _execute_minting(self, proof: tuple, collateral_reservation_id: int) -> dict:
         """
         Execute minting after receiving attestation proof.
         """
@@ -94,7 +94,7 @@ class Minter(User):
         tx = am.execute_minting(proof, collateral_reservation_id)
         return tx
     
-    def _save_mint_request(self, reserve_collateral_data, tx_hash, lots):
+    def _save_mint_request(self, reserve_collateral_data: dict, tx_hash: str, lots: int) -> None:
         """
         Save mint request data to data storage.
         """
@@ -110,7 +110,7 @@ class Minter(User):
         }
         self.dsc.save_record(request_data)
     
-    def mint(self, lots, agent_vault, executor="0x0000000000000000000000000000000000000000", log_steps=False):
+    def mint(self, lots: int, agent_vault: str, executor: str = "0x0000000000000000000000000000000000000000", log_steps: bool = False) -> int:
         """
         Reserve collateral and pay underlying.
         Returns collateral reservation id.
@@ -130,7 +130,7 @@ class Minter(User):
         self._save_mint_request(reserve_collateral_data, pay_underlying_outputs["tx_hash"], lots)
         return collateral_reservation_id
 
-    def prove_and_execute_minting(self, collateral_reservation_id, log_steps=False):
+    def prove_and_execute_minting(self, collateral_reservation_id: int, log_steps: bool = False) -> None:
         """
         Get attestation proof for the underlying payment and execute minting on AssetManager contract.
         """
@@ -148,7 +148,7 @@ class Minter(User):
         self.log_step(f"Minting executed in transaction: {tx.blockHash.hex()}.", log_steps)
         self.dsc.remove_record(collateral_reservation_id)
 
-    def mint_status(self):
+    def mint_status(self) -> MintStatus:
         """
         Returns the status of all mint requests in storage.
         """

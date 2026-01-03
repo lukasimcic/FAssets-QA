@@ -1,10 +1,12 @@
-from src.utils.contracts import get_contract_abi
-from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import TokenNative, UserNativeData
+from typing import Any
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 import warnings
 import time
+
+from src.utils.contracts import get_contract_abi
+from src.flow.fee_tracker import FeeTracker
+from src.utils.data_structures import TokenNative, UserNativeData
 
 
 class ContractClient:
@@ -34,7 +36,7 @@ class ContractClient:
         contract_abi = get_contract_abi(contract_path)
         self.contract = self.web3.eth.contract(contract_address, abi=contract_abi)
 
-    def _build_transaction(self, method: str, args: list = [], value: int = 0):
+    def _build_transaction(self, method: str, args: list[str] = [], value: int = 0) -> dict:
         nonce = self.web3.eth.get_transaction_count(self.sender_address)
         gas = self.contract.functions[method](*args).estimate_gas({
             'from': self.sender_address,
@@ -50,7 +52,7 @@ class ContractClient:
         })
         return tx
 
-    def _sign_and_send_transaction(self, tx):
+    def _sign_and_send_transaction(self, tx: dict) -> dict:
         """
         Signs and sends a transaction to the blockchain.
         Returns any event outputs.
@@ -60,7 +62,7 @@ class ContractClient:
         receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
         return receipt
     
-    def _get_events_from_receipt(self, receipt, events: list):
+    def _get_events_from_receipt(self, receipt: dict, events: list[str]) -> dict:
         """
         Extracts events from a transaction receipt.
         """
@@ -73,9 +75,8 @@ class ContractClient:
                 warnings.filterwarnings(
                     "ignore",
                     message=".*MismatchedABI.*It has been discarded.*",
-                    category=UserWarning,
-                    module="web3.contract.base_contract"
-                )
+                    category=UserWarning
+                    )
                 events = event_obj().process_receipt(receipt)
             if events:
                 result[event_name] = [e['args'] for e in events]
@@ -83,7 +84,7 @@ class ContractClient:
                 result[event_name] = []
         return result
     
-    def write(self, method: str, inputs: list = [], events: list = [], value: int = 0):
+    def write(self, method: str, inputs: list = [], events: list = [], value: int = 0) -> dict:
         time.sleep(2)
         tx = self._build_transaction(method, inputs, value)
         receipt = self._sign_and_send_transaction(tx)
@@ -92,7 +93,7 @@ class ContractClient:
         self.fee_tracker.native_gas_fees += self.token_native.from_uba(fees)
         return {"receipt": receipt, "events": events}
     
-    def read(self, method: str, inputs: list = []):
+    def read(self, method: str, inputs: list = []) -> Any:
         time.sleep(2)
         return self.contract.functions[method](*inputs).call()
 

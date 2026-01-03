@@ -1,8 +1,8 @@
 from src.utils.data_structures import TokenNative, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
-from src.utils.contracts import get_contract_address, get_output_index
 from config.config_qa import agent_vault_path
+
 
 class AgentVault(ContractClient):
     def __init__(
@@ -14,5 +14,5 @@ class AgentVault(ContractClient):
         ):
         super().__init__(token_native, agent_vault_path, vault_address, sender_data, fee_tracker)
 
-    def collateral_pool(self):
+    def collateral_pool(self) -> str:
         return self.read("collateralPool")

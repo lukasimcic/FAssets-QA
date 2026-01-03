@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.utils.data_structures import Pool, PoolHolding, UserData
@@ -9,36 +11,36 @@ class PoolManager(User):
         super().__init__(user_data, fee_tracker)
         self.native_address = self.native_data.address
         
-    def enter_pool(self, pool, amount, log_steps=False):
+    def enter_pool(self, pool: str, amount: Decimal, log_steps: bool = False) -> None:
         """
         Enter the collateral pool by calling the CollateralPool contract.
-        Amount is in pool tokens, not in UBA.
+        Amount is in pool tokens (type Decimal), not in UBA (type int).
         """
         cp = CollateralPool(self.token_native, pool, self.native_data, self.fee_tracker)
         cpt = CollateralPoolToken(self.token_native, cp.pool_token())
         amount_UBA = cpt.to_uba(amount)
         cp.enter(amount_UBA)
 
-    def exit_pool(self, pool, amount, log_steps=False):
+    def exit_pool(self, pool: str, amount: Decimal, log_steps: bool = False) -> None:
         """
         Exit the collateral pool by calling the CollateralPool contract.
-        Amount is in pool tokens, not in UBA.
+        Amount is in pool tokens (type Decimal), not in UBA (type int).
         """
         cp = CollateralPool(self.token_native, pool, self.native_data, self.fee_tracker)
         cpt = CollateralPoolToken(self.token_native, cp.pool_token())
         amount_UBA = cpt.to_uba(amount)
         cp.exit(amount_UBA)
 
-    def withdraw_pool_fees(self, pool, fees, log_steps=False):
+    def withdraw_pool_fees(self, pool: str, fees: Decimal, log_steps: bool = False) -> None:
         """
         Withdraw fees from the collateral pool by calling the CollateralPool contract.
-        Fees is in fasset tokens, not in UBA.
+        Fees is in fasset tokens (type Decimal), not in UBA (type int).
         """
         cp = CollateralPool(self.token_native, pool, self.native_data, self.fee_tracker)
         fees_UBA = self.token_fasset.to_uba(fees)
         cp.withdraw_fees(fees_UBA)
 
-    def pools(self, chunk_size=10, log_steps=False) -> list[Pool]:
+    def pools(self, chunk_size: int = 10, log_steps: bool = False) -> list[Pool]:
         """
         Get dictionary of collateral pools and their details.
         """
@@ -58,7 +60,7 @@ class PoolManager(User):
             result.append(Pool(**pool_dict))
         return result
     
-    def pool_holdings(self, log_steps=False) -> list[PoolHolding]:
+    def pool_holdings(self, log_steps: bool = False) -> list[PoolHolding]:
         """
         Get the user's holdings and fasset fees of all pools.
         """
@@ -85,10 +87,10 @@ class PoolManager(User):
                 result.append(PoolHolding(**pool_dict))
         return result
     
-    def transfer_pool_tokens(self, pool_address, to_address, amount, log_steps=False):
+    def transfer_pool_tokens(self, pool_address: str, to_address: str, amount: Decimal, log_steps: bool = False) -> None:
         """
         Transfer pool tokens to another address.
-        Amount is in pool tokens, not in UBA.
+        Amount is in pool tokens (type Decimal), not in UBA (type int).
         """
         cp = CollateralPool(self.token_native, pool_address, self.native_data, self.fee_tracker)
         pool_token_address = cp.pool_token()

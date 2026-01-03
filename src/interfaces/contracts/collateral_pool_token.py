@@ -1,8 +1,10 @@
+from decimal import Decimal
+
 from src.utils.data_structures import TokenNative, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
 from config.config_qa import collateral_pool_token_path
-from decimal import Decimal
+
 
 class CollateralPoolToken(ContractClient):
     def __init__(
@@ -17,22 +19,22 @@ class CollateralPoolToken(ContractClient):
     def debt_free_balance_of(self, address: str) -> int:
         return self.read("debtFreeBalanceOf", inputs=[address])
 
-    def transfer(self, to_address, amount):
+    def transfer(self, to_address: str, amount: int) -> None:
         self.write("transfer", inputs=[to_address, amount])
 
-    def decimals(self):
+    def decimals(self) -> int:
         return self.read("decimals")
     
-    def to_uba(self, amount: float) -> int:
+    def to_uba(self, amount: Decimal) -> int:
         decimals = self.decimals()
-        return int(Decimal(str(amount)) * Decimal(10) ** decimals)
+        return int(amount * Decimal(10) ** decimals)
     
-    def from_uba(self, amount_uba: int) -> float:
+    def from_uba(self, amount_uba: int) -> Decimal:
         decimals = self.decimals()
-        return float(Decimal(amount_uba) / (Decimal(10) ** decimals))
+        return Decimal(amount_uba) / (Decimal(10) ** decimals)
 
-    def name(self):
+    def name(self) -> str:
         return self.read("name")
     
-    def total_supply(self):
+    def total_supply(self) -> int:
         return self.read("totalSupply")

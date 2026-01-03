@@ -1,11 +1,13 @@
+from decimal import Decimal
 from config.config_qa import fasset_bots_folder
+import re
+from contextlib import suppress
+import subprocess
+
 from src.utils.data_storage import DataStorageClient
 from src.utils.secrets import secrets_file
 from src.utils.data_structures import AgentInfo, Balances, MintStatus, PoolHolding, Pool, RedemptionStatus, UserData
 from src.interfaces.user.user import User
-import re
-from contextlib import suppress
-import subprocess
 
 
 class UserBot(User):
@@ -21,7 +23,7 @@ class UserBot(User):
         config_snippet = f"-c {config}" if config else ""
         self.command_prefix = f"yarn user-bot -s {secrets} {config_snippet} -f {self.token_fasset} "
 
-    def _execute(self, command, log_steps):
+    def _execute(self, command: str, log_steps: bool) -> list[str]:
         self.logger.info(f"Executing command: {command}")
         full_command = self.command_prefix + command
         p = subprocess.Popen(
@@ -48,7 +50,7 @@ class UserBot(User):
         self.logger.info(f"Command finished.")
         return lines
 
-    def help(self, log_steps=False):
+    def help(self, log_steps: bool = False) -> list[str]:
         """
         Returns the help message for the user bot.
         """
@@ -56,7 +58,7 @@ class UserBot(User):
 
     # Info commands
 
-    def get_balances(self, log_steps=False):
+    def get_balances(self, log_steps: bool = False) -> Balances:
         """
         Returns the balance of the user bot.
         """
@@ -67,7 +69,7 @@ class UserBot(User):
             balances[token] = float(amount)
         return Balances(data=balances)
 
-    def get_agents(self, log_steps=False) -> list[AgentInfo]:
+    def get_agents(self, log_steps: bool = False) -> list[AgentInfo]:
         """
         Returns a list of parsed agent dicts.
         Each dict contains the agent's address, max_lots and fee.
@@ -88,7 +90,7 @@ class UserBot(User):
                 self.logger.error(f"Error parsing agent line '{line}': {e}")
         return agents
 
-    def get_agent_info(self, agent, log_steps=False):
+    def get_agent_info(self, agent: str, log_steps: bool = False) -> dict:
         """
         Returns a dictionary with detailed info about the specified agent.
         """
@@ -104,7 +106,7 @@ class UserBot(User):
                 data[key] = value
         return data
 
-    def get_pools(self, log_steps=False):
+    def get_pools(self, log_steps: bool = False) -> list[Pool]:
         """
         Returns a list of pools available.
         Each pool is represented as a dictionary with keys like 'Pool address', 'Token symbol' and other pool data.
@@ -130,7 +132,7 @@ class UserBot(User):
             pools.append(Pool(**pool))
         return pools
 
-    def get_pool_holdings(self, log_steps=False):
+    def get_pool_holdings(self, log_steps: bool = False) -> list[PoolHolding]:
         """
         Returns a list of pool holdings.
         Each holding is represented as a dictionary with keys 'Pool address', 'Token symbol', 'Pool tokens'.
@@ -151,7 +153,7 @@ class UserBot(User):
 
     # Mint and redeem actions
 
-    def _get_record_id_from_output(self, output):
+    def _get_record_id_from_output(self, output: list[str]) -> str:
         """
         Extracts and returns the record ID from the output of a mint or redeem command.
         """
@@ -167,7 +169,7 @@ class UserBot(User):
                 break
         return record_id
 
-    def mint(self, amount, agent=None, log_steps=False):
+    def mint(self, amount: Decimal, agent: str | None = None, log_steps: bool = False) -> list[str]:
         """
         Mints the specified amount from agent if it is provided.
         Otherwise the agent with lowest fee that has the capacity for minting enough lots is chosen.
@@ -180,7 +182,7 @@ class UserBot(User):
         dsc.add_data(record_id, {"lots": amount})
         return lines
 
-    def redeem(self, amount, log_steps=False):
+    def redeem(self, amount: Decimal, log_steps: bool = False) -> list[str]:
         """
         Redeems the specified amount.
         """
@@ -191,21 +193,21 @@ class UserBot(User):
         dsc.add_data(record_id, {"lots": amount})
         return lines
 
-    def execute_mint(self, mint_id, log_steps=False):
+    def execute_mint(self, mint_id: int, log_steps: bool = False) -> list[str]:
         """
         Executes minting with the specified id.
         """
         command = f"mintExecute {mint_id}"
         return self._execute(command, log_steps)
 
-    def redeem_default(self, redemption_id, log_steps=False):
+    def redeem_default(self, redemption_id: int, log_steps: bool = False) -> list[str]:
         """
         Redeems the default redemption with the specified id.
         """
         command = f"redemptionDefault {redemption_id}"
         return self._execute(command, log_steps)
 
-    def get_mint_status(self, log_steps=False):
+    def get_mint_status(self, log_steps: bool = False) -> MintStatus:
         """
         Returns a dictionary describing mint status of the user bot.
         """
@@ -219,7 +221,7 @@ class UserBot(User):
                     mint_status[status] = mint_status[status] + [mint_id]
         return MintStatus(**mint_status)
 
-    def get_redemption_status(self, log_steps=False):
+    def get_redemption_status(self, log_steps: bool = False) -> RedemptionStatus:
         """
         Returns a dictionary describing remeption status of the user bot.
         """
@@ -237,14 +239,14 @@ class UserBot(User):
 
     # Pool actions
 
-    def enter_pool(self, pool_id, amount, log_steps=False):
+    def enter_pool(self, pool_id: int, amount: Decimal, log_steps: bool = False) -> list[str]:
         """
         Enters the specified pool with the given amount.
         """
         command = f"enterPool {pool_id} {amount}"
         return self._execute(command, log_steps)
 
-    def exit_pool(self, pool_id, amount=None, log_steps=False):
+    def exit_pool(self, pool_id: int, amount: Decimal | None = None, log_steps: bool = False) -> list[str]:
         """
         Exits the specified pool with the given amount.
         If the amount is not specified, it exits the entire pool.
@@ -252,7 +254,7 @@ class UserBot(User):
         command = f"exitPool {pool_id} {amount if amount else 'all'}"
         return self._execute(command, log_steps)
 
-    def withdraw_pool_fees(self, pool_id, fees, log_steps=False):
+    def withdraw_pool_fees(self, pool_id: int, fees: Decimal, log_steps: bool = False) -> list[str]:
         """
         Withdraws the fees from the specified pool.
         """

@@ -4,6 +4,7 @@ from .contract_client import ContractClient
 from src.utils.contracts import get_contract_address
 from config.config_qa import fdc_hub_path, fdc_hub_instance_name
 
+
 class FdcHub(ContractClient):
     def __init__(
             self, 
@@ -11,10 +12,10 @@ class FdcHub(ContractClient):
             sender_data: UserNativeData | None = None,
             fee_tracker: FeeTracker | None = None
         ):
-        fdc_hub_address =  get_contract_address(fdc_hub_instance_name)
+        fdc_hub_address =  get_contract_address(fdc_hub_instance_name, token_native)
         super().__init__(token_native, fdc_hub_path, fdc_hub_address, sender_data, fee_tracker)
 
-    def request_attestation(self, abi_encoded, required_fee):
+    def request_attestation(self, abi_encoded: bytes, required_fee: int) -> int:
         """
         Request attestation from FDC Hub contract.
         Returns the block number of the transaction.

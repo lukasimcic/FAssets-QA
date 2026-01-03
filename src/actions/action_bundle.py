@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
+
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.core_actions.core_actions_cli import CoreActionsCLI
 from src.actions.core_actions.core_actions_manual import CoreActionsManual
 from src.interfaces.user.user_bot import UserBot
 from src.interfaces.user.informer import Informer
 from src.utils.data_structures import FlowState, UserData
+
 
 class ActionBundle(ABC):
     def __init__(
@@ -56,25 +58,24 @@ class ActionBundle(ABC):
             self.ca_partner = CoreActionsCLI(partner_data)
         self.partner_involved = False  # set to True in subclasses where partner is involved
 
-
     @abstractmethod
-    def action(self):
+    def condition(self) -> bool:
         pass
 
     @abstractmethod
-    def condition(self):
+    def action(self) -> None:
         pass
 
     @property
     @abstractmethod
-    def expected_state(self):
+    def expected_state(self) -> FlowState | list[FlowState]:
         pass
 
-    def general_conditions(self):
+    def general_conditions(self) -> bool:
         enough_native = self.balances[self.token_native] > 10  # to avoid gas issues
         return enough_native
     
-    def update_partner_flow_state(self, partner_flow_state : FlowState):
+    def update_partner_flow_state(self, partner_flow_state : FlowState) -> None:
         self.partner_flow_state = partner_flow_state
         self.partner_balances = partner_flow_state.balances
         self.partner_mint_status = partner_flow_state.mint_status

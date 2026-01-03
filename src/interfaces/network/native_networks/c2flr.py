@@ -1,19 +1,19 @@
-from src.interfaces.network.native_networks.native_network import NativeBaseNetwork
-from src.utils.data_structures import TokenNative
+from decimal import Decimal
+import time
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 from eth_account import Account
-import requests, time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+from src.interfaces.network.native_networks.native_network import NativeBaseNetwork
+from src.utils.data_structures import TokenNative
 
 
 class C2FLR(NativeBaseNetwork):
-    def __init__(self, address, private_key):
+    def __init__(self, address: str, private_key: str):
         super().__init__()
         self.token_native = TokenNative.C2FLR
         self.web3 = Web3(Web3.HTTPProvider(self.token_native.rpc_url))
@@ -21,12 +21,12 @@ class C2FLR(NativeBaseNetwork):
         self.address = address
         self.private_key = private_key
 
-    def get_balance(self):
+    def get_balance(self) -> Decimal:
         time.sleep(2) # avoid rate limiting
         balance_uba = self.web3.eth.get_balance(self.address)
         return self.token_native.from_uba(balance_uba)
     
-    def send_transaction(self, to_address, amount):
+    def send_transaction(self, to_address: str, amount: Decimal) -> dict:
         nonce = self.web3.eth.get_transaction_count(self.address)
         amount_wei = self.token_native.to_uba(amount)
         tx = {
@@ -42,15 +42,15 @@ class C2FLR(NativeBaseNetwork):
         receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
         return receipt
 
-    def _get_current_block(self):
+    def _get_current_block(self) -> int:
         return self.web3.eth.block_number
     
-    def get_current_timestamp(self):
+    def get_current_timestamp(self) -> int:
         current_block = self._get_current_block()
         block = self.web3.eth.get_block(current_block)
         return block.timestamp
     
-    def generate_new_address(self):
+    def generate_new_address(self) -> dict:
         acct = Account.create()
         secrets = {
             "address": acct.address,
@@ -58,7 +58,7 @@ class C2FLR(NativeBaseNetwork):
         }
         return secrets
     
-    def request_funds(self):
+    def request_funds(self) -> int:
         driver = webdriver.Chrome()  # or webdriver.Firefox() if you use Firefox
 
         try:
@@ -78,9 +78,8 @@ class C2FLR(NativeBaseNetwork):
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, "p.mantine-focus-auto.m_b6d8b162.mantine-Text-root"))
             )[1]
             if not (success_message and success_message.text == f"Sent 100 C2FLR to {self.address}."):
-                value = 100
                 raise Exception(f"{'No output message.' if success_message is None else success_message.text}")
 
         finally:
             driver.quit()
-        return value
+        return 100

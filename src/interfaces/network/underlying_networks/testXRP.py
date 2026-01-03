@@ -1,6 +1,3 @@
-from src.interfaces.contracts import *
-from src.interfaces.network.underlying_networks.underlying_network import UnderlyingBaseNetwork
-from src.utils.data_structures import TokenUnderlying
 from xrpl.clients import JsonRpcClient
 from xrpl.wallet import Wallet
 from xrpl.models.transactions import Payment, Memo
@@ -8,19 +5,23 @@ from xrpl.utils import xrp_to_drops, drops_to_xrp
 from xrpl.models.requests import AccountInfo, ServerInfo, Tx
 from xrpl.transaction import sign, autofill, submit
 import requests
+from decimal import Decimal
 
+from src.interfaces.network.underlying_networks.underlying_network import UnderlyingBaseNetwork
+from src.utils.data_structures import TokenUnderlying
+from src.flow.fee_tracker import FeeTracker
 
 
 class TestXRP(UnderlyingBaseNetwork):
-    def __init__(self, public_key, private_key, fee_tracker):
+    def __init__(self, public_key: str, private_key: str, fee_tracker: FeeTracker | None = None):
         super().__init__(fee_tracker=fee_tracker)
         self.token_underlying = TokenUnderlying.testXRP
         self.client = JsonRpcClient(self.token_underlying.rpc_url)
-        if public_key and private_key: # otherwise this class is used for address non specific operations
+        if public_key and private_key: # otherwise this class is used for address-non-specific operations
             self.wallet = Wallet(public_key, private_key)
 
     @staticmethod
-    def generate_address():
+    def generate_address() -> dict:
         wallet = Wallet.create()
         secrets = {
             "public_key": wallet.public_key,
@@ -29,7 +30,7 @@ class TestXRP(UnderlyingBaseNetwork):
             }
         return secrets
 
-    def get_balance(self):
+    def get_balance(self) -> Decimal:
         # full balance
         acct_info = AccountInfo(
             account=self.wallet.classic_address, 
@@ -38,9 +39,9 @@ class TestXRP(UnderlyingBaseNetwork):
             )
         response = self.client.request(acct_info)
         if "error" in response.result and response.result["error"] == "actNotFound":
-            return 0.0
+            return Decimal(0)
         balance_drops = response.result["account_data"]["Balance"]
-        balance = float(drops_to_xrp(balance_drops))
+        balance = Decimal(drops_to_xrp(balance_drops))
         # reserved balance
         owner_count = response.result["account_data"].get("OwnerCount", 0)
         server_info = self.client.request(ServerInfo())
@@ -49,10 +50,10 @@ class TestXRP(UnderlyingBaseNetwork):
         reserve_inc = validated_ledger["reserve_inc_xrp"]
         reserved_balance = reserve_base + (owner_count * reserve_inc)
         # available balance
-        available_balance = balance - reserved_balance
+        available_balance = balance - Decimal(reserved_balance)
         return available_balance
     
-    def send_transaction(self, to_address, amount, memo_data=None):
+    def send_transaction(self, to_address: str, amount: Decimal, memo_data: str | None = None) -> dict:
         payment = Payment(
             account=self.wallet.classic_address,
             amount=xrp_to_drops(amount),
@@ -69,18 +70,18 @@ class TestXRP(UnderlyingBaseNetwork):
             "amount": amount
         }
     
-    def get_current_block(self):
+    def get_current_block(self) -> int:
         response = self.client.request(ServerInfo())
         return int(response.result["info"]["validated_ledger"]["seq"])
     
-    def get_block_of_tx(self, tx_hash):
+    def get_block_of_tx(self, tx_hash: str) -> int:
         """
         Returns the block number of the given transaction hash.
         """
         response = self.client.request(Tx(transaction=tx_hash))
         return int(response.result["ledger_index"])
     
-    def generate_new_address(self):
+    def generate_new_address(self) -> dict:
         wallet = Wallet.create()
         secrets = {
             "public_key": wallet.public_key,
@@ -89,7 +90,7 @@ class TestXRP(UnderlyingBaseNetwork):
             }
         return secrets
     
-    def request_funds(self):
+    def request_funds(self) -> int:
         response = requests.post(
             self.token_underlying.faucet_url, 
             json={"destination": self.wallet.classic_address}

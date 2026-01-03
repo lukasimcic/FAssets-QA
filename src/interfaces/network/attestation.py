@@ -1,7 +1,8 @@
+from src.flow.fee_tracker import FeeTracker
 from src.interfaces.contracts import *
 from config.config_qa import x_csrftoken
 from src.utils.encoding import pad_to_64_hex, to_utf8_hex_string, keccak256_text
-from src.utils.data_structures import TokenNative, TokenUnderlying
+from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
 
 from typing import Literal
 import requests
@@ -10,7 +11,14 @@ import time
 
 
 class Attestation():
-    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_native_data, indexer_api_key, fee_tracker=None):
+    def __init__(
+            self, 
+            token_native: TokenNative, 
+            token_underlying: TokenUnderlying, 
+            user_native_data: UserNativeData, 
+            indexer_api_key: str, 
+            fee_tracker: FeeTracker | None = None
+        ):
         self.token_native = token_native
         self.token_underlying = token_underlying
         self.contract_inputs = {
@@ -27,7 +35,7 @@ class Attestation():
 
     # utility functions
 
-    def _generate_fdc_url(self, endpoint, attestation_type=None):
+    def _generate_fdc_url(self, endpoint: str, attestation_type: str | None = None):
         if self.token_underlying == TokenUnderlying.testXRP:
             token_underlying = "xrp"
         if attestation_type is None:
@@ -35,13 +43,13 @@ class Attestation():
         else:
             return f"{self.token_native.fdc_url}/verifier/{token_underlying}/{attestation_type}/{endpoint}"
         
-    def _generate_source_id(self):
+    def _generate_source_id(self) -> str:
         return to_utf8_hex_string(self.token_underlying.name)
         
-    def _generate_attestation_type(self, attestation_type):
+    def _generate_attestation_type(self, attestation_type: str) -> str:
         return to_utf8_hex_string(attestation_type)
         
-    def _get_transaction_id(self, tx_hash):
+    def _get_transaction_id(self, tx_hash: str) -> str:
         url_transaction = self._generate_fdc_url("transaction")
         response = requests.get(url_transaction + f'/{tx_hash}', headers=self.headers).json()
         for _ in range(5):
@@ -52,11 +60,11 @@ class Attestation():
                 return response['data']['transactionId']
         raise ValueError("Transaction not found or still pending after multiple attempts")
         
-    def _current_round_id(self):
+    def _current_round_id(self) -> int:
         response = requests.get(self.token_native.da_url + '/api/v0/fsp/status').json()
         return response["latest_fdc"]["voting_round_id"]
 
-    def request_body_payment(self, tx_hash):
+    def request_body_payment(self, tx_hash: str) -> dict:
         return {
             "transactionId": self._get_transaction_id(tx_hash),
             "inUtxo": "0",
@@ -65,13 +73,13 @@ class Attestation():
     
     def request_body_referenced_payment_nonexistence(
             self,
-            destination_address,
-            payment_reference,
-            amount,
-            first_block,
-            last_block,
-            last_timestamp
-            ):
+            destination_address: str,
+            payment_reference: str,
+            amount: int,
+            first_block: int,
+            last_block: int,
+            last_timestamp: int
+            ) -> dict:
         return {
             "minimalBlockNumber": str(first_block),
             "deadlineBlockNumber": str(last_block),
@@ -85,7 +93,7 @@ class Attestation():
 
     # core functionality
 
-    def prepare_attestation_request(self, request_body, attestation_type : Literal["Payment", "ReferencedPaymentNonexistence"]):
+    def prepare_attestation_request(self, request_body: dict, attestation_type : Literal["Payment", "ReferencedPaymentNonexistence"]) -> dict:
         """
         Prepares an attestation request to the FDC.
         Returns response data.
@@ -102,7 +110,7 @@ class Attestation():
         )
         return response.json()
 
-    def submit_attestation_request(self, abi_encoded_request):
+    def submit_attestation_request(self, abi_encoded_request: bytes) -> int:
         """
         Sends a payment attestation request to the FDC.
         Returns round id.
@@ -115,7 +123,7 @@ class Attestation():
         round_id = r.get_voting_round_id(block_number)
         return round_id
 
-    def get_proof(self, abi_encoded_request, round_id):
+    def get_proof(self, abi_encoded_request: bytes, round_id: int) -> dict:
         """
         Retrieves the proof from the DA.
         Returns response data.
@@ -141,7 +149,7 @@ class Attestation():
                 return response
         raise ValueError("Proof not found after multiple attempts")
 
-    def get_block_range(self):
+    def get_block_range(self) -> tuple[int, int]:
         """
         Retrieves the range of available confirmed blocks in the indexer database.
         Returns (first_block, last_block).

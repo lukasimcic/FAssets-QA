@@ -1,5 +1,7 @@
-from src.utils.data_structures import TokenNative, UserNativeData
+from decimal import Decimal
 from abc import ABC, abstractmethod
+
+from src.utils.data_structures import TokenNative, UserNativeData
 
 
 class NativeBaseNetwork(ABC):
@@ -7,23 +9,23 @@ class NativeBaseNetwork(ABC):
         pass
 
     @abstractmethod
-    def get_balance(self):
+    def get_balance(self) -> Decimal:
         pass
 
     @abstractmethod
-    def send_transaction(self, to_address, amount):
+    def send_transaction(self, to_address: str, amount: Decimal) -> dict:
         pass
 
     @abstractmethod
-    def get_current_timestamp(self):
+    def get_current_timestamp(self) -> int:
         pass
 
     @abstractmethod
-    def generate_new_address(self):
+    def generate_new_address(self) -> dict:
         pass
 
     @abstractmethod
-    def request_funds(self):
+    def request_funds(self) -> int:
         pass
 
 class NativeNetwork:

@@ -39,7 +39,7 @@ def keccak256_text(data: str) -> str:
 def error_encode(error_name: str) -> str:
     return keccak256_text(f"{error_name}()")[:10]
 
-def get_error(error_names: list[str], encoded_error) -> str:
+def get_error(error_names: list[str], encoded_error: str) -> str:
     for name in error_names:
         encoded_name = error_encode(name)
         if encoded_name == encoded_error:
@@ -47,7 +47,7 @@ def get_error(error_names: list[str], encoded_error) -> str:
     return "Error not in list."
 
 # example folder: contracts_folder / "assetManager" / "facets"
-def save_errors(folder):
+def save_errors(folder: Path) -> None:
     error_file = Path(__file__).parent / "errors.json"
     if error_file.exists() and error_file.stat().st_size > 0:
         with open(error_file, "r") as f:

@@ -1,8 +1,9 @@
-from src.utils.data_structures import TokenNative
 import json
 
+from src.utils.data_structures import TokenNative
 
-def get_contract_address(contract_instance_name: str, token_native: TokenNative = TokenNative.C2FLR) -> str:
+
+def get_contract_address(contract_instance_name: str, token_native: TokenNative) -> str:
     with open(token_native.contracts_file, "r") as f:
         coston2_contracts = json.load(f)
     for contract in coston2_contracts:
