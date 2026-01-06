@@ -1,6 +1,5 @@
 import random
 from decimal import Decimal
-
 from src.interfaces.contracts.collateral_pool import CollateralPool
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import random_decimal_between, add_max_amount_to_stay_above_exit_CR, can_enter_pool, collateral_to_tokens, tokens_to_collateral

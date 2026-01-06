@@ -6,7 +6,6 @@ from xrpl.models.requests import AccountInfo, ServerInfo, Tx
 from xrpl.transaction import sign, autofill, submit
 import requests
 from decimal import Decimal
-
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingBaseNetwork
 from src.utils.data_structures import TokenUnderlying
 from src.flow.fee_tracker import FeeTracker
@@ -64,7 +63,7 @@ class TestXRP(UnderlyingBaseNetwork):
         signed_tx = sign(autofilled_tx, self.wallet)
         response = submit(signed_tx, self.client)
         if self.fee_tracker:
-            self.fee_tracker.underlying_gas_fees += float(drops_to_xrp(response.result["tx_json"]["Fee"]))
+            self.fee_tracker.underlying_gas_fees += drops_to_xrp(response.result["tx_json"]["Fee"])
         return {
             "tx_hash": response.result["tx_json"]["hash"],
             "amount": amount

@@ -1,7 +1,6 @@
 from decimal import Decimal
 import random
 import time
-
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_mint, can_enter_pool, collateral_to_tokens, random_decimal_between, tokens_to_collateral
 from src.interfaces.contracts import *
@@ -35,7 +34,8 @@ class Scenario1(ActionBundle):
 
         # mint and redeem
         max_lots = [agent.max_lots for agent in self.agents if agent.address == agent_address][0]
-        max_amount = min(self.balances[self.token_underlying] // self.lot_size, max_lots)
+        possible_lots = int(self.balances[self.token_underlying] // self.lot_size)
+        max_amount = min(possible_lots, max_lots)
         lot_amount = random.randint(1, max_amount)
         self.ca.mint(lot_amount, agent=agent_address, log_steps=True)
         time.sleep(10)
@@ -74,7 +74,7 @@ class Scenario1(ActionBundle):
         new_balances[self.token_fasset] += self.fee_amount
 
         # mint and redeem
-        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 1e2)
+        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount  
         new_balances[self.token_fasset] -= self.lot_size * (self.lot_amount - self.remaining_lots)
         dsc = DataStorageClient(self.user_data, "redeem")
@@ -91,8 +91,8 @@ class Scenario1(ActionBundle):
         new_balances_2 = new_balances.copy()
         new_redemption_status_2 = self.redemption_status.copy()
         new_redemption_status_2.success.extend(redemption_ids)
-        redemption_fee = AssetManager(self.token_native, self.token_underlying).redemption_fee_bips()
-        new_balances_2[self.token_underlying] -= self.lot_size * self.lot_amount * (redemption_fee / 1e2)
+        redemption_fee = AssetManager(self.token_native, self.token_underlying).redemption_fee()
+        new_balances_2[self.token_underlying] -= self.lot_size * self.lot_amount * redemption_fee
 
         # pool holdings
         new_pool_holdings = self.pool_holdings.copy()

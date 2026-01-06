@@ -3,10 +3,7 @@ my_files/
 .vscode/
 scripts/test*.py
 data/
-config/secrets/user/*
-config/secrets/user_partner/*
-config/secrets/agent/*
-!config/secrets/**/*.template.json
+config/secrets/
 
 # Other
 .DS_Store

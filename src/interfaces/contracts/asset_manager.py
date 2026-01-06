@@ -1,5 +1,5 @@
+from decimal import Decimal
 from typing import Any
-
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
@@ -60,11 +60,11 @@ class AssetManager(ContractClient):
         idx = get_output_index(self.path, "getSettings", "collateralPoolTokenTimelockSeconds")
         return settings[idx]
     
-    def lot_size(self) -> float:
+    def lot_size(self) -> int:
         settings = self.read("getSettings")
         idx = get_output_index(self.path, "getSettings", "lotSizeAMG")
         lot_size_uba = settings[idx]
-        return self.token_underlying.from_uba(lot_size_uba)
+        return int(self.token_underlying.from_uba(lot_size_uba))
 
     def asset_price_nat_wei(self) -> dict[str, int]:
         asset_price_mul, asset_price_div = self.read("assetPriceNatWei")
@@ -73,11 +73,11 @@ class AssetManager(ContractClient):
             "div": asset_price_div
         }
     
-    def redemption_fee_bips(self) -> int:
+    def redemption_fee(self) -> Decimal:
         settings = self.read("getSettings")
         idx = get_output_index(self.path, "getSettings", "redemptionFeeBIPS")
         fee_bips = settings[idx]
-        return fee_bips
+        return Decimal(fee_bips / 1e4)
 
     def max_redeemed_tickets(self) -> int:
         settings = self.read("getSettings")

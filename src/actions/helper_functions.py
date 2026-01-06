@@ -1,9 +1,9 @@
 from decimal import Decimal
 import random
-
 from src.interfaces.contracts.collateral_pool import CollateralPool
 from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
 from src.utils.data_structures import AgentInfo, PoolHolding, TokenUnderlying, TokenNative
+
 
 def max_lots_available(agents : list[AgentInfo]) -> int:
     if not agents:

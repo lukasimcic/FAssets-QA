@@ -1,5 +1,4 @@
 import random
-
 from src.utils.data_storage import DataStorageClient
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.action_bundle import ActionBundle
@@ -17,7 +16,8 @@ class RedeemRandomAmount(ActionBundle):
 
     def action(self) -> None:
         # action logic
-        lot_amount = random.randint(1, self.balances[self.token_fasset] // self.lot_size)
+        possible_lots = int(self.balances[self.token_fasset] // self.lot_size)
+        lot_amount = random.randint(1, possible_lots)
         remaining_lots = self.ca.redeem(lot_amount, log_steps=True)
         # data for expected_state
         self.lot_amount = lot_amount
@@ -58,9 +58,9 @@ class RedeemDefaultRandomRedemption(ActionBundle):
     def expected_state(self) -> FlowState:
         # balances
         lot_amount = self.record["lots"]
-        redemption_fee = AssetManager(self.token_native, self.token_underlying).redemption_fee_bips()
+        redemption_fee = AssetManager(self.token_native, self.token_underlying).redemption_fee()
         new_balances = self.balances.copy()
-        new_balances[self.token_underlying] += self.lot_size * lot_amount * (1 - redemption_fee / 1e2)
+        new_balances[self.token_underlying] += self.lot_size * lot_amount * (1 - redemption_fee)
         new_balances.subtract_fees(self.ca.fee_tracker)
         # redemption status
         new_redemption_status = self.redemption_status.copy()

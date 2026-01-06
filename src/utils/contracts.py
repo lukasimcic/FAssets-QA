@@ -1,5 +1,4 @@
 import json
-
 from src.utils.data_structures import TokenNative
 
 

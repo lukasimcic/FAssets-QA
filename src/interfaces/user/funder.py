@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from src.interfaces.user.informer import Informer
 from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork

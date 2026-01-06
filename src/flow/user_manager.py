@@ -1,5 +1,4 @@
 import os
-
 from src.interfaces.user.informer import Informer
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserData
 from src.utils.secrets import get_user_nums
@@ -22,11 +21,9 @@ class UserManager():
             "xrp_rpc": "4tg3AxysaZodxTqsCtcMnBdBIEkR6KDKGTdqBEA8g9MKq4bH",
             "native_rpc": "96526d46-91d8-4a1b-8ea7-80b2179ea840",
         }
-        if user_nums is None:
-            self.user_nums = get_user_nums()
-        else:
-            self.user_nums = user_nums
-        self.funder = Funder(self.token_native, self.token_underlying)
+        self.user_nums = user_nums
+        if self.funder_exists():
+            self.funder = Funder(self.token_native, self.token_underlying)
 
     def _generate_credentials(self) -> dict[str, dict[str, str]]:
         un = UnderlyingNetwork(self.token_underlying)
@@ -39,12 +36,24 @@ class UserManager():
         }
     
     def _get_next_user_num(self) -> int:
-        return max(self.user_nums + [0]) + 1
+        if self.user_nums is None:
+            user_nums = get_user_nums()
+        else:
+            user_nums = self.user_nums
+        return max(user_nums + [-1]) + 1
     
-    def generate(self) -> None:
-        user_num = self._get_next_user_num()
-        for user in ["user", "user_partner"]:
-            folder = secrets_folder / user
+    def generate(self, funder=False) -> None:
+        if funder:
+            folders = [secrets_folder]
+            files = ["funder.json"]
+        else:
+            user_num = self._get_next_user_num()
+            folders = []
+            files = []
+            for user in ["user", "user_partner"]:
+                folders.append(secrets_folder / user)
+                files.append(f"{user}_{user_num}.json")
+        for folder, file in zip(folders, files):
             if not folder.exists():
                 os.makedirs(folder)
             credentials = self._generate_credentials()
@@ -53,9 +62,12 @@ class UserManager():
                 "apiKey": self.api_key_data,
                 "user": credentials
             }
-            with open(folder / f"{user}_{user_num}.json", "w") as f:
+            with open(folder / file, "w") as f:
                 import json
                 json.dump(secrets, f, indent=4)
+
+    def funder_exists(self) -> bool:
+        return os.path.exists(secrets_folder / "funder.json")
 
     def request_funds(self) -> None:
         self.funder.request_funds()
@@ -65,5 +77,17 @@ class UserManager():
 
     def collect_funds(self) -> None:
         self.funder.collect_funds()
+
+    def print_funder_balances(self) -> None:
+        informer = Informer(
+            UserData(
+                token_native=self.token_native,
+                token_underlying=self.token_underlying,
+                funder=True
+            )
+        )
+        balances = informer.get_balances()
+        print(f"Funder balances: {balances}")
+
     
 

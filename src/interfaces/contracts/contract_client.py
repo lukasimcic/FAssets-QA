@@ -3,7 +3,6 @@ from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 import warnings
 import time
-
 from src.utils.contracts import get_contract_abi
 from src.flow.fee_tracker import FeeTracker
 from src.utils.data_structures import TokenNative, UserNativeData

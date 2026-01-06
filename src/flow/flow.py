@@ -1,12 +1,12 @@
 import traceback
 import random
 import time
-
 from src.actions.action_bundle import ActionBundle
 from src.actions.core_actions.core_actions_cli import CoreActionsCLI
 from src.actions.core_actions.core_actions_manual import CoreActionsManual
 from src.actions import ACTION_BUNDLE_CLASSES
 from src.utils.data_structures import UserData, FlowState
+
 
 class Flow():
     """
@@ -84,9 +84,13 @@ class Flow():
                 if bundle.general_conditions() and bundle.condition():
                     action_bundles.append(bundle)
         
-        if action_bundles:
+        if not action_bundles:
+            self.log("No action can be executed at this time.")
+            return None
+
+        else:
             bundle : ActionBundle = random.choice(action_bundles)
-            self.log(f"-- Executing action {bundle.__class__.__name__} --", both=False)
+            self.log(f"-- Executing action {bundle.__class__.__name__} --")
             
             successful = True
             if bundle.partner_involved:

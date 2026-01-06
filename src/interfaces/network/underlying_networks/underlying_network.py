@@ -1,6 +1,5 @@
 from decimal import Decimal
 from abc import ABC, abstractmethod
-
 from src.utils.data_structures import TokenUnderlying, UserUnderlyingData
 from src.flow.fee_tracker import FeeTracker
 

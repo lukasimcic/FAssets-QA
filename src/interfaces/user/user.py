@@ -1,6 +1,5 @@
 from abc import ABC
 import logging
-
 from config.config_qa import log_folder
 from src.utils.secrets import load_user_secrets
 from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData, UserUnderlyingData
@@ -36,6 +35,8 @@ class User(ABC):
         else:
             user_name = "funder"
             log_file = log_folder / f"{user_name}.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        log_file.touch()
         self.logger = logging.getLogger(user_name)
         if not self.logger.hasHandlers():
             self.logger.setLevel(logging.INFO)

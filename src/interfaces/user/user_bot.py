@@ -3,7 +3,6 @@ from config.config_qa import fasset_bots_folder
 import re
 from contextlib import suppress
 import subprocess
-
 from src.utils.data_storage import DataStorageClient
 from src.utils.secrets import secrets_file
 from src.utils.data_structures import AgentInfo, Balances, MintStatus, PoolHolding, Pool, RedemptionStatus, UserData
@@ -66,7 +65,7 @@ class UserBot(User):
         balances = {}
         for line in output:
             amount, token = line.split(":")[1].strip().split(" ")
-            balances[token] = float(amount)
+            balances[token] = Decimal(amount)
         return Balances(data=balances)
 
     def get_agents(self, log_steps: bool = False) -> list[AgentInfo]:
@@ -83,7 +82,7 @@ class UserBot(User):
                     {
                         "address": address,
                         "max_lots": int(max_lots),
-                        "fee": float(fee.strip("%")),
+                        "fee": Decimal(fee.strip("%") / 1e4),
                     })
                 )
             except Exception as e:
@@ -102,7 +101,7 @@ class UserBot(User):
                 key, value = line.split(':', 1)
                 key, value = key.strip(), value.strip()
                 with suppress(ValueError):
-                    value = float(value)
+                    value = Decimal(value)
                 data[key] = value
         return data
 
@@ -127,7 +126,7 @@ class UserBot(User):
             pool = {}
             for i, value in enumerate(data):
                 with suppress(ValueError):
-                    value = float(value)
+                    value = Decimal(value)
                 pool[key_mapping.get(header[i])] = value
             pools.append(Pool(**pool))
         return pools
@@ -145,7 +144,7 @@ class UserBot(User):
             holding = {}
             for i, value in enumerate(data):
                 with suppress(ValueError):
-                    value = float(value)
+                    value = Decimal(value)
                 key = header[i].replace(" ", "_").lower()
                 holding[key] = value
             holdings.append(PoolHolding(**holding))

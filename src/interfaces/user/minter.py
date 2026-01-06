@@ -145,8 +145,8 @@ class Minter(User):
             proof, 
             collateral_reservation_id
         )
-        self.log_step(f"Minting executed in transaction: {tx.blockHash.hex()}.", log_steps)
         self.dsc.remove_record(collateral_reservation_id)
+        self.log_step(f"Minting executed in transaction: {tx.blockHash.hex()}.", log_steps)
 
     def mint_status(self) -> MintStatus:
         """

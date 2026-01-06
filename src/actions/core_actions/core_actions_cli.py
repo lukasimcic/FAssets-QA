@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from src.interfaces.user.user_bot import UserBot
 from src.actions.core_actions.core_actions import CoreActions
 from src.utils.data_structures import Balances, MintStatus, RedemptionStatus, Pool, UserData, PoolHolding, AgentInfo

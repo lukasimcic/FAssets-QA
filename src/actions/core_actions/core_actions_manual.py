@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from src.actions.core_actions.core_actions import CoreActions
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.informer import Informer
@@ -8,6 +7,7 @@ from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
 from config.config_qa import zero_address
 from src.utils.data_structures import AgentInfo, Balances, MintStatus, RedemptionStatus, UserData, Pool, PoolHolding
+
 
 class CoreActionsManual(CoreActions):
     def __init__(self, user_data : UserData):
@@ -71,7 +71,7 @@ class CoreActionsManual(CoreActions):
             for k, v in agent.items():
                 if k in fields_mapping:
                     if k.endswith("BIPS"):
-                        d[fields_mapping[k]] = v / 1e2
+                        d[fields_mapping[k]] = Decimal(v / 1e4)
                     else:
                         d[fields_mapping[k]] = v
             result.append(AgentInfo(**d))

@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from src.utils.data_structures import TokenNative, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient

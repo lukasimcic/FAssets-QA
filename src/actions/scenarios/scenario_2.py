@@ -1,7 +1,6 @@
 from decimal import Decimal
 import random
 import time
-
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_enter_pool, collateral_to_tokens, random_decimal_between, tokens_to_collateral
 from src.interfaces.contracts import *
@@ -40,7 +39,7 @@ class Scenario2(ActionBundle):
         debt_free_tokens_UBA = cp.debt_free_tokens_of(self.native_data.address)
         debt_free_tokens = cpt.from_uba(debt_free_tokens_UBA)
         if debt_free_tokens == 0:
-            self.logger.info("No debt-free pool tokens available")
+            self.logger.info("No debt-free pool tokens available.")
         else:
             self.logger.info(f"Debt free pool tokens: {debt_free_tokens}")
             transfer_amount_tokens = min(enter_amount_tokens, debt_free_tokens)

@@ -1,35 +1,23 @@
 import random
 import threading
 import time
-
 from src.flow.flow import Flow
 from src.actions import ACTION_BUNDLE_CLASSES
 from src.utils.data_structures import UserData, TokenNative, TokenUnderlying
 from src.flow.user_manager import UserManager
+ALL_ACTIONS = [cls.__name__ for cls in ACTION_BUNDLE_CLASSES]
 
 # configuration
-request_funds = True
-user_nums = list(range(3))
 token_native = TokenNative.C2FLR
 token_underlying = TokenUnderlying.testXRP
+user_nums = list(range(4))
+request_funds = False
 cli = False
+total_time = 100
+actions = [
+    ALL_ACTIONS for _ in user_nums
+]
 
-# names of action classes to include in the flow
-all_actions = [
-    [cls.__name__ for cls in ACTION_BUNDLE_CLASSES] 
-    for _ in user_nums
-    ]
-mint_redeem_actions = [
-    [
-        "MintRandomAgentRandomAmount", 
-        "MintLowestFeeAgentRandomAmount",
-        "MintExecuteRandomMinting",
-        "RedeemRandomAmount",
-        "RedeemDefaultRandomRedemption"
-    ] 
-    for _ in user_nums
-    ]
-actions = all_actions
 
 def make_threads(actions):
     threads = []
@@ -42,7 +30,7 @@ def make_threads(actions):
             ),
             actions=actions[i],
             cli=cli,
-            total_time=60,
+            total_time=total_time,
             time_wait=5
             )
         t = threading.Thread(target=flow.run)
@@ -56,7 +44,7 @@ if __name__ == "__main__":
     um.distribute_funds()
     threads = make_threads(actions)
     for t in threads:
-        time.sleep(random.uniform(1, 1.5))
+        time.sleep(random.uniform(3, 3.5))
         t.start()
     for t in threads:
         t.join()

@@ -1,5 +1,4 @@
 import random
-
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_mint, max_lots_available
 from src.utils.data_storage import DataStorageClient
@@ -25,7 +24,8 @@ class MintLowestFeeAgentRandomAmount(ActionBundle):
         lowest_fee = min(fee for fee, agents in agent_fees_dict.items() if agents)
         agents = agent_fees_dict[lowest_fee]
         agent = random.choice(agents)
-        max_lots = min(agent.max_lots, self.balances[self.token_underlying] // self.lot_size)
+        possible_lots = int(self.balances[self.token_underlying] // self.lot_size)
+        max_lots = min(agent.max_lots, possible_lots)
         lot_amount = random.randint(1, max_lots)
         self.ca.mint(lot_amount, agent=agent.address, log_steps=True)
         # data for expected_state
@@ -35,7 +35,7 @@ class MintLowestFeeAgentRandomAmount(ActionBundle):
     @property
     def expected_state(self) -> FlowState:
         new_balances = self.balances.copy()
-        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 1e2)
+        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount
         new_balances.subtract_fees(self.ca.fee_tracker)
         return self.flow_state.replace([new_balances])
@@ -53,7 +53,8 @@ class MintRandomAgentRandomAmount(ActionBundle):
         # action logic
         agents = [agent for agent in self.agents_dict if agent.max_lots >= 1]
         agent = random.choice(agents)
-        max_lots = min(agent.max_lots, self.balances[self.token_underlying] // self.lot_size)
+        possible_lots = int(self.balances[self.token_underlying] // self.lot_size)
+        max_lots = min(agent.max_lots, possible_lots)
         lot_amount = random.randint(1, max_lots)
         self.ca.mint(lot_amount, agent=agent.address, log_steps=True)
         # data for expected_state
@@ -63,7 +64,7 @@ class MintRandomAgentRandomAmount(ActionBundle):
     @property
     def expected_state(self) -> FlowState:
         new_balances = self.balances.copy()
-        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee / 1e2)
+        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount
         new_balances.subtract_fees(self.ca.fee_tracker)
         return self.flow_state.replace([new_balances])

@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from decimal import Decimal
 import math
-
 from src.flow.fee_tracker import FeeTracker
 from config.config_qa import contracts_file_coston2, asset_manager_instance_name_testxrp, fasset_instance_name_testxrp, fdc_url, da_url, rpc_url, faucet_url
 
@@ -285,9 +284,9 @@ class FlowState:
                 new_flow_state.mint_status = change
             elif type(change) is RedemptionStatus:
                 new_flow_state.redemption_status = change
-            elif type(change) is list and len(change) > 0:
+            elif type(change) is list:
                 new_flow_state.pool_holdings = change
-        new_flow_state.pool_holdings = sorted(self.pool_holdings, key=lambda ph: ph.pool_address)
+        new_flow_state.pool_holdings = sorted(new_flow_state.pool_holdings, key=lambda ph: ph.pool_address)
         return new_flow_state
     
     def fields(self) -> list[str]:
@@ -323,7 +322,7 @@ class FlowState:
 class AgentInfo:
     address: str
     max_lots: int
-    fee: int # in BIPS
+    fee: Decimal
 
 
 # helper functions

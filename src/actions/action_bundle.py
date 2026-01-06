@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.core_actions.core_actions_cli import CoreActionsCLI
 from src.actions.core_actions.core_actions_manual import CoreActionsManual

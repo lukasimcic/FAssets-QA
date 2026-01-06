@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.utils.data_structures import TokenNative, UserNativeData
@@ -13,7 +12,8 @@ class CollateralPool(ContractClient):
     def __init__(
             self, 
             token_native: TokenNative,
-            pool_address: str, sender_data: UserNativeData | None = None, 
+            pool_address: str, 
+            sender_data: UserNativeData | None = None, 
             fee_tracker: FeeTracker | None = None
         ):
         super().__init__(token_native, collateral_pool_path, pool_address, sender_data, fee_tracker)

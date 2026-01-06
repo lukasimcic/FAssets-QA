@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.utils.data_structures import Pool, PoolHolding, UserData

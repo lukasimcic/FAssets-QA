@@ -1,3 +1,4 @@
+from decimal import Decimal
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
@@ -14,7 +15,7 @@ class Redeemer(User):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "redeem")
 
-    def redeem(self, lots: int, executor: str = zero_address, executor_fee: int = 0, log_steps: bool = False) -> int:
+    def redeem(self, lots: int, executor: str = zero_address, executor_fee: Decimal = Decimal(0), log_steps: bool = False) -> int:
         """
         Redeem underlying asset by calling the AssetManager contract.
         Saves redemption data for potential later default redemptions.
@@ -22,7 +23,8 @@ class Redeemer(User):
         """
         self.log_step(f"Starting redemption of {lots} lots.", log_steps)
         am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
-        events = am.redeem(lots, self.underlying_data.address, executor, executor_fee)
+        executor_fee_uba = self.token_native.to_uba(executor_fee)
+        events = am.redeem(lots, self.underlying_data.address, executor, executor_fee_uba)
         requested_redemptions, redemption_request_incomplete = events["RedemptionRequested"], events["RedemptionRequestIncomplete"]
         self.log_step(f"Redemption request submitted. Got {len(requested_redemptions)} requested redemptions.", log_steps)
         for requested_redemption in requested_redemptions:

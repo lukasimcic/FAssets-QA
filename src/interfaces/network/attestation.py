@@ -3,7 +3,6 @@ from src.interfaces.contracts import *
 from config.config_qa import x_csrftoken
 from src.utils.encoding import pad_to_64_hex, to_utf8_hex_string, keccak256_text
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
-
 from typing import Literal
 import requests
 import json
