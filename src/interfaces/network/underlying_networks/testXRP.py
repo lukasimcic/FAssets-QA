@@ -1,6 +1,6 @@
 from xrpl.clients import JsonRpcClient
 from xrpl.wallet import Wallet
-from xrpl.models.transactions import Payment, Memo
+from xrpl.models.transactions import Payment, Memo, AccountSet
 from xrpl.utils import xrp_to_drops, drops_to_xrp
 from xrpl.models.requests import AccountInfo, ServerInfo, Tx
 from xrpl.transaction import sign, autofill, submit
@@ -97,3 +97,23 @@ class TestXRP(UnderlyingBaseNetwork):
         if response.status_code != 200:
             raise Exception(f"Faucet request failed with status code {response.status_code}: {response.text}")
         return 100
+    
+    def block_all_deposits(self) -> None:
+        tx = AccountSet(
+            account=self.wallet.classic_address,
+            set_flag=9,
+        )
+        signed_tx = sign(autofill(tx, self.client), self.wallet)
+        response = submit(signed_tx, self.client)
+        if self.fee_tracker:
+            self.fee_tracker.underlying_gas_fees += drops_to_xrp(response.result["tx_json"]["Fee"])
+    
+    def unblock_all_deposits(self) -> None:
+        tx = AccountSet(
+            account=self.wallet.classic_address,
+            clear_flag=9,
+        )
+        signed_tx = sign(autofill(tx, self.client), self.wallet)
+        response = submit(signed_tx, self.client)
+        if self.fee_tracker:
+            self.fee_tracker.underlying_gas_fees += drops_to_xrp(response.result["tx_json"]["Fee"])

@@ -1,5 +1,6 @@
 from decimal import Decimal
 from abc import ABC, abstractmethod
+from requests import Response
 from src.utils.data_structures import TokenUnderlying, UserUnderlyingData
 from src.flow.fee_tracker import FeeTracker
 
@@ -35,6 +36,15 @@ class UnderlyingBaseNetwork(ABC):
     @abstractmethod
     def request_funds(self) -> int:
         pass
+
+    @abstractmethod
+    def block_all_deposits(self) -> Response:
+        pass
+
+    @abstractmethod
+    def unblock_all_deposits(self) -> Response:
+        pass
+
 
 class UnderlyingNetwork:
     def __new__(cls, token: TokenUnderlying, underlying_data : UserUnderlyingData | None = None, fee_tracker: FeeTracker | None = None):

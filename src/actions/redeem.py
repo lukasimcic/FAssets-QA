@@ -66,3 +66,27 @@ class RedeemDefaultRandomRedemption(ActionBundle):
         new_redemption_status = self.redemption_status.copy()
         new_redemption_status.default.remove(self.redemption_id)
         return self.flow_state.replace([new_balances, new_redemption_status])
+    
+
+class RedeemDefaultRandomRedemptionBlockUnderlying(RedeemDefaultRandomRedemption):
+    def __init__(self, user_data, flow_state, cli):
+        if cli:
+            raise Exception("RedeemDefaultRandomRedemptionBlockUnderlying is not available in CLI mode.")
+        super().__init__(user_data, flow_state, cli)
+
+    def action(self) -> None:
+        sm = self.ca.sm
+        sm.block_underlying_deposits()
+        try:
+            super().action()
+        finally:    
+            sm.unblock_underlying_deposits()
+
+    @property
+    def expected_state(self) -> FlowState:
+        normal_expected_state = super().expected_state
+        redemption_fee = AssetManager(self.token_native, self.token_underlying).redemption_fee()
+        lot_amount = self.record["lots"]
+        new_balances = normal_expected_state.balances.copy()
+        new_balances[self.token_underlying] += self.lot_size * lot_amount * (1 - redemption_fee)
+        return normal_expected_state.replace([new_balances])

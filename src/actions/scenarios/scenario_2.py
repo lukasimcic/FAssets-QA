@@ -9,6 +9,8 @@ from src.utils.data_structures import FlowState, PoolHolding
 
 class Scenario2(ActionBundle):
     def __init__(self, user_data, flow_state, cli):
+        if cli:
+            raise Exception("Scenario2 is not available in CLI mode.")
         super().__init__(user_data, flow_state, cli)
         self.partner_involved = True
     

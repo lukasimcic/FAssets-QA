@@ -40,20 +40,21 @@ When running `python -m scripts.run_flow`, the following occurs:
 ### Actions
 
 Each user repeatedly selects a random action from the following:
-  - Mint a random amount of lots against an agent with lowest fee.
-  - Mint a random amount of lots against a random agent.
-  - Execute a random pending mint.
-  - Redeem a random amount of lots.
-  - Redeem a random default redemption.
-  - Enter a random pool with a random amount.
-  - Exit a random (valid) pool with a random amount.
-  - Withdraw a random amount of fees from a random (valid) pool.
-  - specific scenarios described below (not all are supported in CLI mode):
 
-| Scenario number | Procedure       | CLI supported |
-|-----------------|-----------------|---------------|
-| 1               | - Enter a random pool with a random amount. <br>- Mint a random amount of lots against the agent that owns the entered collateral pool. <br>- Redeem the amount minted. <br>- Wait for the collateral pool token timelock period to expire. <br>- If possible, exit pool with all tokens. <br>- If possible, withdraw pool fees. | Yes |
-| 2               | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Transfer debt-free pool tokens (up to the amount originally entered) to the partner user bot. <br>- Exit pool from the partner user bot. |  No  |
+| Action name | Procedure       | CLI supported |
+|-------------|-----------------|---------------|
+| MintRandomAgentRandomAmount | Mint a random amount of lots against a random agent. | Yes |
+| MintLowestFeeAgentRandomAmount | Mint a random amount of lots against an agent with lowest fee. | Yes |
+| MintExecuteRandomMinting | Execute a random pending mint. | Yes |
+| MintRandomAgentRandomAmountBlockUnderlying | - Block all underlying deposits. <br>- Mint a random amount of lots against a random agent. <br>- Unblock all underlying deposits. | No |
+| RedeemRandomAmount | Redeem a random amount of lots. | Yes |
+| RedeemDefaultRandomRedemption | Redeem a random default redemption. | Yes |
+| RedeemDefaultRandomRedemptionBlockUnderlying | - Block all underlying deposits. <br>- Redeem a random amount of lots. <br>- Unblock all underlying deposits. | No |
+| EnterRandomPoolRandomAmount | Enter a random pool with a random amount. | Yes |
+| ExitRandomPoolRandomAmount | Exit a random (valid) pool with a random amount. | Yes |
+| WithdrawRandomPoolFees | Withdraw a random amount of fees from a random (valid) pool. | Yes |
+| Scenario1 | - Enter a random pool with a random amount. <br>- Mint a random amount of lots against the agent that owns the entered collateral pool. <br>- Redeem the amount minted. <br>- Wait for the collateral pool token timelock period to expire. <br>- If possible, exit pool with all tokens. <br>- If possible, withdraw pool fees. | Yes |
+| Scenario2 | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Transfer debt-free pool tokens (up to the amount originally entered) to the partner user bot. <br>- Exit pool from the partner user bot. |  No  |
 
 Each action is implemented as an "action bundle" class in `src/actions/`. Each bundle consists of:
 - condition: Checks to determine if the action can be executed.

@@ -85,7 +85,7 @@ class Flow():
                     action_bundles.append(bundle)
         
         if not action_bundles:
-            self.log("No action can be executed at this time.")
+            self.log("-- No action can be executed at this time. --")
             return None
 
         else:

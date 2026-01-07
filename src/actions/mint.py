@@ -98,3 +98,17 @@ class MintExecuteRandomMinting(ActionBundle):
         new_mint_status.pending.remove(self.mint_id)
         return self.flow_state.replace([new_balances, new_mint_status])
 
+
+class MintRandomAgentRandomAmountBlockUnderlying(MintRandomAgentRandomAmount):
+    def __init__(self, user_data, flow_state, cli):
+        if cli:
+            raise Exception("MintRandomAgentRandomAmountBlockUnderlying is not available in CLI mode.")
+        super().__init__(user_data, flow_state, cli)
+
+    def action(self) -> None:
+        sm = self.ca.sm
+        sm.block_underlying_deposits()
+        try:
+            super().action()
+        finally:    
+            sm.unblock_underlying_deposits()
