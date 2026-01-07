@@ -2,6 +2,11 @@ from decimal import Decimal
 from abc import ABC, abstractmethod
 from src.flow.fee_tracker import FeeTracker
 from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.actions.core_actions.core_actions_cli import CoreActionsCLI
+    from src.actions.core_actions.core_actions_manual import CoreActionsManual
 
 
 class CoreActions(ABC):
@@ -71,3 +76,12 @@ class CoreActions(ABC):
     @abstractmethod
     def redeem_default(self, redemption_id: int, log_steps: bool = False) -> None:
         pass
+
+
+def core_actions(user_data, cli: bool = False) -> "CoreActionsCLI | CoreActionsManual":
+    if cli:
+        from src.actions.core_actions.core_actions_cli import CoreActionsCLI
+        return CoreActionsCLI(user_data)
+    else:
+        from src.actions.core_actions.core_actions_manual import CoreActionsManual
+        return CoreActionsManual(user_data)

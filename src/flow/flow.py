@@ -2,8 +2,7 @@ import traceback
 import random
 import time
 from src.actions.action_bundle import ActionBundle
-from src.actions.core_actions.core_actions_cli import CoreActionsCLI
-from src.actions.core_actions.core_actions_manual import CoreActionsManual
+from src.actions.core_actions.core_actions import core_actions
 from src.actions import ACTION_BUNDLE_CLASSES
 from src.utils.data_structures import UserData, FlowState
 
@@ -42,12 +41,8 @@ class Flow():
         self.time_wait = time_wait
 
         # core actions for logging and state retrieval
-        if cli:
-            self.ca = CoreActionsCLI(user_data)
-            self.ca_partner = CoreActionsCLI(self.partner_data)
-        else:
-            self.ca = CoreActionsManual(user_data)
-            self.ca_partner = CoreActionsManual(self.partner_data)
+        self.ca = core_actions(user_data, cli)
+        self.ca_partner = core_actions(self.partner_data, cli)
 
     def log(self, message: str, both: bool = True) -> None:
         self.ca.log(message)

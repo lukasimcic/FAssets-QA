@@ -1,4 +1,5 @@
 import os
+from src.actions.core_actions.core_actions import core_actions
 from src.interfaces.user.state_manager import StateManager
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserData
 from src.utils.secrets import get_user_nums
@@ -6,6 +7,7 @@ from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.user.funder import Funder
 from config.config_qa import secrets_folder
+from src.utils.data_storage import remove_inactive_records_for_user
 
 
 # TODO: unify naming in secrets, check usage in fasset-bots
@@ -89,5 +91,13 @@ class UserManager():
         balances = sm.get_balances()
         print(f"Funder balances: {balances}")
 
-    
+    def remove_inactive_records(self, cli : bool = False) -> None:
+        for user_num in self.user_nums:
+            user_data = UserData(
+                token_native=self.token_native,
+                token_underlying=self.token_underlying,
+                num=user_num
+            )
+            ca = core_actions(user_data, cli)
+            remove_inactive_records_for_user(user_data, ca)
 

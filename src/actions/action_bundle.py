@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from src.interfaces.contracts.asset_manager import AssetManager
-from src.actions.core_actions.core_actions_cli import CoreActionsCLI
-from src.actions.core_actions.core_actions_manual import CoreActionsManual
+from src.actions.core_actions.core_actions import core_actions
 from src.interfaces.user.user_bot import UserBot
 from src.interfaces.user.state_manager import StateManager
 from src.utils.data_structures import FlowState, UserData
@@ -49,12 +48,8 @@ class ActionBundle(ABC):
         # flow logic
         self.lot_size = AssetManager(user_data.token_native, user_data.token_underlying).lot_size()
         partner_data = user_data.partner_data()
-        if not cli:
-            self.ca = CoreActionsManual(user_data)
-            self.ca_partner = CoreActionsManual(partner_data)
-        else:
-            self.ca = CoreActionsCLI(user_data)
-            self.ca_partner = CoreActionsCLI(partner_data)
+        self.ca = core_actions(user_data, cli)
+        self.ca_partner = core_actions(partner_data, cli)
         self.partner_involved = False  # set to True in subclasses where partner is involved
 
     @abstractmethod

@@ -75,7 +75,7 @@ class DataStorageClient():
         return list(set(existing_ids).difference(set(previous_ids)))
     
 
-def remove_inactive_records(user_data: UserData, ca: CoreActions) -> None:
+def remove_inactive_records_for_user(user_data: UserData, ca: CoreActions) -> None:
     # redemptions
     redemption_status = ca.get_redemption_status()
     inactive_ids = redemption_status.success + redemption_status.expired
