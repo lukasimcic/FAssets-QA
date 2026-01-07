@@ -1,5 +1,7 @@
 # FAssets-QA
 
+This repository contains a testing framework for FAssets protocol. It allows simulating multiple users performing various actions (minting, redeeming, interacting with collateral pools,...) in parallel, to test the protocol under load and ensure its correctness.
+
 ## Instructions
 
 1. Setup environment: 
