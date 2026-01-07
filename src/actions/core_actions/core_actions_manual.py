@@ -1,7 +1,7 @@
 from decimal import Decimal
 from src.actions.core_actions.core_actions import CoreActions
 from src.interfaces.contracts.asset_manager import AssetManager
-from src.interfaces.user.informer import Informer
+from src.interfaces.user.state_manager import StateManager
 from src.interfaces.user.minter import Minter
 from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
@@ -12,16 +12,16 @@ from src.utils.data_structures import AgentInfo, Balances, MintStatus, Redemptio
 class CoreActionsManual(CoreActions):
     def __init__(self, user_data : UserData):
         super().__init__()
-        self.informer = Informer(user_data)
+        self.sm = StateManager(user_data, fee_tracker=self.fee_tracker)
         self.minter = Minter(user_data, fee_tracker=self.fee_tracker)
         self.redeemer = Redeemer(user_data, fee_tracker=self.fee_tracker)
         self.pool_manager = PoolManager(user_data, fee_tracker=self.fee_tracker)
-        self.logger = self.informer.logger
+        self.logger = self.sm.logger
 
     # state retrieval
 
     def get_balances(self, log_steps: bool = False) -> Balances:
-        balances = self.informer.get_balances(log_steps=log_steps)
+        balances = self.sm.get_balances(log_steps=log_steps)
         if log_steps:
             self.logger.info(f"Balances: {balances}")
         return balances
@@ -53,7 +53,7 @@ class CoreActionsManual(CoreActions):
     def get_agents(self, chunk_size: int = 10, log_steps: bool = False) -> list[AgentInfo]:
         agent_list = []
         start = 0
-        am = AssetManager(self.informer.token_native, self.informer.token_underlying)
+        am = AssetManager(self.sm.token_native, self.sm.token_underlying)
         while True:
             new = am.get_available_agents_detailed_list(start, start + chunk_size)
             agent_list.extend(new)
@@ -80,7 +80,7 @@ class CoreActionsManual(CoreActions):
     # logic
 
     def log(self, message: str) -> None:
-        return self.informer.log_step(message, True)
+        return self.sm.log_step(message, True)
 
     # actions implementation
 

@@ -3,7 +3,7 @@ from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.core_actions.core_actions_cli import CoreActionsCLI
 from src.actions.core_actions.core_actions_manual import CoreActionsManual
 from src.interfaces.user.user_bot import UserBot
-from src.interfaces.user.informer import Informer
+from src.interfaces.user.state_manager import StateManager
 from src.utils.data_structures import FlowState, UserData
 
 
@@ -15,29 +15,29 @@ class ActionBundle(ABC):
             cli: bool
         ):
 
-        # informer for data extraction and logging
+        # sm for data extraction and logging
         self.user_data = user_data
         if cli:
-            informer = UserBot(user_data)
-            informer_partner = UserBot(user_data.partner_data())
+            sm = UserBot(user_data)
+            sm_partner = UserBot(user_data.partner_data())
         else:
-            informer = Informer(user_data)
-            informer_partner = Informer(user_data.partner_data())
+            sm = StateManager(user_data)
+            sm_partner = StateManager(user_data.partner_data())
         
         # tokens
-        self.token_native = informer.token_native
-        self.token_underlying = informer.token_underlying
-        self.token_fasset = informer.token_fasset
+        self.token_native = sm.token_native
+        self.token_underlying = sm.token_underlying
+        self.token_fasset = sm.token_fasset
         
         # secrets
-        self.native_data = informer.native_data
-        self.underlying_data = informer.underlying_data
-        self.partner_native_data = informer_partner.native_data
-        self.partner_underlying_data = informer_partner.underlying_data
+        self.native_data = sm.native_data
+        self.underlying_data = sm.underlying_data
+        self.partner_native_data = sm_partner.native_data
+        self.partner_underlying_data = sm_partner.underlying_data
         
         # loggers
-        self.logger = informer.logger
-        self.partner_logger = informer_partner.logger
+        self.logger = sm.logger
+        self.partner_logger = sm_partner.logger
 
         # state
         self.flow_state = flow_state

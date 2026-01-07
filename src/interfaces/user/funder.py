@@ -1,5 +1,5 @@
 from decimal import Decimal
-from src.interfaces.user.informer import Informer
+from src.interfaces.user.state_manager import StateManager
 from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.user.user import User
@@ -9,14 +9,17 @@ from src.utils.secrets import get_user_nums
 
 
 class Funder(User):
-    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying):
+    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_nums: list[int] | None = None):
         self.user_data = UserData(
             token_native=token_native,
             token_underlying=token_underlying,
             funder=True
         )
         super().__init__(self.user_data)
-        self.user_nums = get_user_nums()
+        if user_nums:
+            self.user_nums = user_nums
+        else:
+            self.user_nums = get_user_nums()
         self.funder_reserve = Decimal(len(self.user_nums) + 1)
         self.user_reserve = Decimal(1)
 
@@ -47,8 +50,8 @@ class Funder(User):
             token_underlying=self.token_underlying,
             num=num
         )
-        inf = Informer(user_data)
-        nn.send_transaction(inf.native_data.address, amount)
+        sm = StateManager(user_data)
+        nn.send_transaction(sm.native_data.address, amount)
 
     def _send_underlying_funds_to_user(self, num: int, amount: Decimal) -> None:
         un = UnderlyingNetwork(self.token_underlying, self.underlying_data)
@@ -57,8 +60,8 @@ class Funder(User):
             token_underlying=self.token_underlying,
             num=num
         )
-        inf = Informer(user_data)
-        un.send_transaction(inf.underlying_data.address, amount)
+        sm = StateManager(user_data)
+        un.send_transaction(sm.underlying_data.address, amount)
 
     def _check_reserves(self) -> None:
         """
@@ -67,7 +70,7 @@ class Funder(User):
         """
         for num in self.user_nums:
             for partner in [False, True]:
-                user_inf = Informer(
+                user_sm = StateManager(
                     UserData(
                         token_native=self.token_native,
                         token_underlying=self.token_underlying,
@@ -75,7 +78,7 @@ class Funder(User):
                         partner=partner
                     )
                 )
-                balances = user_inf.get_balances()
+                balances = user_sm.get_balances()
                 native_balance = balances.get(self.token_native)
                 if native_balance < self.user_reserve:
                     amount_to_send = self.user_reserve - native_balance
@@ -89,8 +92,8 @@ class Funder(User):
 
     def distribute_funds(self) -> None:
         self._check_reserves()
-        inf = Informer(self.user_data)
-        balances = inf.get_balances()
+        sm = StateManager(self.user_data)
+        balances = sm.get_balances()
         self.logger.info(f"Funder balances before fund distribution: {balances}.")
         native_to_send = (balances.get(self.token_native) - self.funder_reserve) / len(self.user_nums)
         underlying_to_send = (balances.get(self.token_underlying) - self.funder_reserve) / len(self.user_nums)
@@ -104,22 +107,22 @@ class Funder(User):
 
     def collect_funds(self) -> None:
         for num in self.user_nums:
-            user_inf = Informer(
+            user_sm = StateManager(
                 UserData(
                     token_native=self.token_native,
                     token_underlying=self.token_underlying,
                     num=num
                 )
             )
-            balances = user_inf.get_balances()
+            balances = user_sm.get_balances()
             self.logger.info(f"User {num} balances before collection: {balances}.")
             native_to_send = balances.get(self.token_native) - self.user_reserve * Decimal(1.01)
             if native_to_send > 0:
-                nn = NativeNetwork(self.token_native, user_inf.native_data)
+                nn = NativeNetwork(self.token_native, user_sm.native_data)
                 nn.send_transaction(self.native_data.address, native_to_send)
                 self.logger.info(f"Collected {native_to_send} {self.token_native.name} from user {num}.")
             underlying_to_send = balances.get(self.token_underlying) - self.user_reserve * Decimal(1.01)
             if underlying_to_send > 0:
-                un = UnderlyingNetwork(self.token_underlying, user_inf.underlying_data)
+                un = UnderlyingNetwork(self.token_underlying, user_sm.underlying_data)
                 un.send_transaction(self.underlying_data.address, underlying_to_send)
                 self.logger.info(f"Collected {underlying_to_send} {self.token_underlying.name} from user {num}.")

@@ -128,7 +128,7 @@ User types:
 - Minter: Responsible for minting related actions (minting lots, executing pending mintings, obtaining minting status).
 - Redeemer: Responsible for redeeming related actions (redeeming lots, executing default redeptions, obtaining redemption status).
 - PoolManager: Responsible for collateral pool related actions (entering/exiting pools, withdrawing fees, obtaining pool holdings and pools, transfering pool tokens).
-- Informer: Used to obtain user info (balances).
+- StateManager: Used to obtain user info (balances).
 - Funder: Responsible for funding users and collecting funds back.
 - UserBot: Bot user for CLI mode, using fasset-bots submodule. When in CLI mode all functionalities are provided by UserBot and no other user subclasses are used.
 

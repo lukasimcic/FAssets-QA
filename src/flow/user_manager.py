@@ -1,5 +1,5 @@
 import os
-from src.interfaces.user.informer import Informer
+from src.interfaces.user.state_manager import StateManager
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserData
 from src.utils.secrets import get_user_nums
 from src.interfaces.network.native_networks.native_network import NativeNetwork
@@ -23,7 +23,7 @@ class UserManager():
         }
         self.user_nums = user_nums
         if self.funder_exists():
-            self.funder = Funder(self.token_native, self.token_underlying)
+            self.funder = Funder(self.token_native, self.token_underlying, user_nums)
 
     def _generate_credentials(self) -> dict[str, dict[str, str]]:
         un = UnderlyingNetwork(self.token_underlying)
@@ -79,14 +79,14 @@ class UserManager():
         self.funder.collect_funds()
 
     def print_funder_balances(self) -> None:
-        informer = Informer(
+        sm = StateManager(
             UserData(
                 token_native=self.token_native,
                 token_underlying=self.token_underlying,
                 funder=True
             )
         )
-        balances = informer.get_balances()
+        balances = sm.get_balances()
         print(f"Funder balances: {balances}")
 
     
