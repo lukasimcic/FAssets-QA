@@ -1,6 +1,7 @@
 import traceback
 import random
 import time
+from typing import Literal, Optional
 from src.actions.action_bundle import ActionBundle
 from src.actions.core_actions.core_actions import core_actions
 from src.actions import ACTION_BUNDLE_CLASSES
@@ -30,7 +31,7 @@ class Flow():
         user_data: UserData,
         actions: list[str],
         cli: bool = False,
-        total_time: int | None = None, 
+        total_time: Optional[int]  = None, 
         time_wait: int = 60
     ):
         self.user_data = user_data
@@ -44,12 +45,16 @@ class Flow():
         self.ca = core_actions(user_data, cli)
         self.ca_partner = core_actions(self.partner_data, cli)
 
-    def log(self, message: str, both: bool = True) -> None:
-        self.ca.log(message)
-        if both:
-            self.ca_partner.log(message)
+    def _log(
+            self, 
+            message: str, level: Literal["info", "warning", "error"], 
+            partner: bool = False
+        ) -> None:
+        self.ca.log(message, level)
+        if partner:
+            self.ca_partner.log(message, level)
 
-    def update_flow_state(self, log_steps: bool = True) -> None:
+    def _update_flow_state(self, log_steps: bool = True) -> None:
         self.flow_state = FlowState(
             self.ca.get_balances(log_steps=log_steps),
             self.ca.get_mint_status(log_steps=log_steps),
@@ -57,7 +62,7 @@ class Flow():
             self.ca.get_pool_holdings(log_steps=log_steps)
         )
 
-    def get_partner_flow_state(self, log_steps: bool = True) -> FlowState:
+    def _get_partner_flow_state(self, log_steps: bool = True) -> FlowState:
         return FlowState(
             self.ca_partner.get_balances(log_steps=log_steps),
             self.ca_partner.get_mint_status(log_steps=log_steps),
@@ -65,8 +70,8 @@ class Flow():
             self.ca_partner.get_pool_holdings(log_steps=log_steps)
         )
     
-    def _step(self) -> bool | None:
-        self.update_flow_state()
+    def _step(self) -> Optional[bool] :
+        self._update_flow_state()
 
         action_bundles = []
         for cls in ACTION_BUNDLE_CLASSES:
@@ -80,35 +85,38 @@ class Flow():
                     action_bundles.append(bundle)
         
         if not action_bundles:
-            self.log("-- No action can be executed at this time. --")
+            self._log("-- No action can be executed at this time. --", level="info")
             return None
 
         else:
             bundle : ActionBundle = random.choice(action_bundles)
-            self.log(f"-- Executing action {bundle.__class__.__name__} --")
+            self._log(f"-- Executing action {bundle.__class__.__name__} --", level="info")
             
             successful = True
             if bundle.partner_involved:
-                partner_flow_state = self.get_partner_flow_state()
+                partner_flow_state = self._get_partner_flow_state()
                 bundle.update_partner_flow_state(partner_flow_state)
             try:
                 bundle.action()
             except Exception as e:
-                self.log(f"Action failed with exception: {e}\n{traceback.format_exc()}")
+                self._log(
+                    f"Action {bundle.__class__.__name__} failed with exception: {e}\n{traceback.format_exc()}",
+                    level="error"
+                )
                 successful = False
             
             if successful:
                 expected_state = bundle.expected_state
-                self.update_flow_state(log_steps=False)
+                self._update_flow_state(log_steps=False)
                 state_mismatches = self.flow_state.compare(expected_state)
                 if bundle.partner_involved:
-                    partner_flow_state = self.get_partner_flow_state(log_steps=False)
+                    partner_flow_state = self._get_partner_flow_state(log_steps=False)
                     partner_expected_state = bundle.partner_expected_state
                     partner_state_mismatches = partner_flow_state.compare(partner_expected_state)
                 else:
                     partner_state_mismatches = [{}]
                 if min(len(m) for m in state_mismatches) == min(len(m) for m in partner_state_mismatches) == 0:
-                    self.log("Action successfully executed.")
+                    self._log("Action successfully executed.", level="info")
                 else:
                     successful = False
                     for user, state_mismatches in zip(["", "Partner "], [state_mismatches, partner_state_mismatches]):
@@ -118,13 +126,13 @@ class Flow():
                                     f"{user}{field.capitalize()}:\n    expected: {expected}\n    actual:   {actual}"
                                     for field, (actual, expected) in state_mismatche.items()
                                 )
-                                self.log(
-                                    f"State mismatch after action execution!\n{mismatch_str}"
+                                self._log(
+                                    f"State mismatch after action execution!\n{mismatch_str}", level="warning"
                                 )
             return successful
 
     def run(self) -> None:
-        self.log(f"----- Starting flow. -----")
+        self._log(f"----- Starting flow. -----", level="info", partner=True)
         successful_steps = 0
         all_steps = 0
         t = time.time()
@@ -138,8 +146,8 @@ class Flow():
             if self.total_time:
                 self.total_time -= time.time() - t
                 if self.total_time <= 0:
-                    self.log("--- Total time reached, stopping flow. ---")
-                    self.log(f"----- Flow finished. Successful steps: {successful_steps}/{all_steps} -----")
+                    self._log("--- Total time reached, stopping flow. ---", level="info", partner=True)
+                    self._log(f"----- Flow finished. Successful steps: {successful_steps}/{all_steps} -----", level="info")
                     break
                 else:
-                    self.log(f"--- Step finished, time left: {self.total_time:.2f} seconds. ---")
+                    self._log(f"--- Step finished, time left: {self.total_time:.2f} seconds. ---", level="info")

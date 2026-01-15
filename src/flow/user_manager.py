@@ -1,4 +1,8 @@
+import json
 import os
+from pathlib import Path
+from typing import Optional
+import toml
 from src.actions.core_actions.core_actions import core_actions
 from src.interfaces.user.state_manager import StateManager
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserData
@@ -6,13 +10,15 @@ from src.utils.secrets import get_user_nums
 from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.user.funder import Funder
-from config.config_qa import secrets_folder
 from src.utils.data_storage import remove_inactive_records_for_user
+
+config = toml.load("config.toml")
+secrets_folder = Path(config["folder"]["secrets"])
 
 
 # TODO: unify naming in secrets, check usage in fasset-bots
 class UserManager():
-    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_nums: list[int] | None = None):
+    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_nums: Optional[list[int]]  = None):
         self.token_native = token_native
         self.token_underlying = token_underlying
         self.wallet_data = {
@@ -65,7 +71,6 @@ class UserManager():
                 "user": credentials
             }
             with open(folder / file, "w") as f:
-                import json
                 json.dump(secrets, f, indent=4)
 
     def funder_exists(self) -> bool:

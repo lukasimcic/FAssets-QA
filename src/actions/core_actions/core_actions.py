@@ -78,7 +78,7 @@ class CoreActions(ABC):
         pass
 
 
-def core_actions(user_data, cli: bool = False) -> "CoreActionsCLI | CoreActionsManual":
+def core_actions(user_data, cli: bool = False) -> "CoreActionsManual | CoreActionsCLI":
     if cli:
         from src.actions.core_actions.core_actions_cli import CoreActionsCLI
         return CoreActionsCLI(user_data)

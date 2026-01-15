@@ -46,7 +46,7 @@ def get_error(error_names: list[str], encoded_error: str) -> str:
             return name
     return "Error not in list."
 
-# example folder: contracts_folder / "assetManager" / "facets"
+# example folder: "fasset-bots/packages/fasset-bots-core/artifacts/contracts/assetManager/facets"
 def save_errors(folder: Path) -> None:
     error_file = Path(__file__).parent / "errors.json"
     if error_file.exists() and error_file.stat().st_size > 0:

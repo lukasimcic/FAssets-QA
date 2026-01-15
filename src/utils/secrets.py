@@ -1,6 +1,9 @@
 from pathlib import Path
 import json, os, re
-from config.config_qa import secrets_folder
+import toml
+
+config = toml.load("config.toml")
+secrets_folder = Path(config["folder"]["secrets"])
 
 
 def secrets_file(num: int, partner: bool, funder: bool = False) -> Path:

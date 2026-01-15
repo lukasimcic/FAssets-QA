@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Optional
 from src.interfaces.user.state_manager import StateManager
 from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
@@ -9,7 +10,7 @@ from src.utils.secrets import get_user_nums
 
 
 class Funder(User):
-    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_nums: list[int] | None = None):
+    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_nums: Optional[list[int]]  = None):
         self.user_data = UserData(
             token_native=token_native,
             token_underlying=token_underlying,

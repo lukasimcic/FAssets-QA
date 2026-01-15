@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 import warnings
@@ -14,9 +14,9 @@ class ContractClient:
             token_native: TokenNative,
             contract_path: str, 
             contract_address: str, 
-            sender_data: UserNativeData | None = None,
-            fee_tracker: FeeTracker | None = None,
-            timeout: int | None = None
+            sender_data: Optional[UserNativeData]  = None,
+            fee_tracker: Optional[FeeTracker]  = None,
+            timeout: Optional[int]  = None
         ):
         self.token_native = token_native
         self.sender_data = sender_data

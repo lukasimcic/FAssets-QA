@@ -1,5 +1,6 @@
 from decimal import Decimal
-from config.config_qa import fasset_bots_folder
+from typing import Optional
+import toml
 import re
 from contextlib import suppress
 import subprocess
@@ -7,6 +8,9 @@ from src.utils.data_storage import DataStorageClient
 from src.utils.secrets import secrets_file
 from src.utils.data_structures import AgentInfo, Balances, MintStatus, PoolHolding, Pool, RedemptionStatus, UserData
 from src.interfaces.user.user import User
+
+config = toml.load("config.toml")
+fasset_bots_folder = config["folder"]["fasset_bots"]
 
 
 class UserBot(User):
@@ -168,7 +172,7 @@ class UserBot(User):
                 break
         return record_id
 
-    def mint(self, amount: Decimal, agent: str | None = None, log_steps: bool = False) -> list[str]:
+    def mint(self, amount: Decimal, agent: Optional[str]  = None, log_steps: bool = False) -> list[str]:
         """
         Mints the specified amount from agent if it is provided.
         Otherwise the agent with lowest fee that has the capacity for minting enough lots is chosen.
@@ -245,7 +249,7 @@ class UserBot(User):
         command = f"enterPool {pool_id} {amount}"
         return self._execute(command, log_steps)
 
-    def exit_pool(self, pool_id: int, amount: Decimal | None = None, log_steps: bool = False) -> list[str]:
+    def exit_pool(self, pool_id: int, amount: Optional[Decimal]  = None, log_steps: bool = False) -> list[str]:
         """
         Exits the specified pool with the given amount.
         If the amount is not specified, it exits the entire pool.

@@ -2,13 +2,13 @@ import json
 from src.utils.data_structures import TokenNative
 
 
-def get_contract_address(contract_instance_name: str, token_native: TokenNative) -> str:
+def get_contract_address(contract_name: str, token_native: TokenNative) -> str:
     with open(token_native.contracts_file, "r") as f:
-        coston2_contracts = json.load(f)
-    for contract in coston2_contracts:
-        if contract.get("name") == contract_instance_name:
+        contracts = json.load(f)
+    for contract in contracts:
+        if contract.get("name") == contract_name:
             return contract.get("address")
-    raise ValueError(f"Contract {contract_instance_name} not found")
+    raise ValueError(f"Contract {contract_name} not found")
 
 def get_contract_abi(contract_path: str) -> list:
     with open(contract_path, "r") as f:

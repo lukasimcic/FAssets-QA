@@ -1,3 +1,4 @@
+from typing import Optional
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.interfaces.network.native_networks.native_network import NativeNetwork
@@ -9,7 +10,7 @@ from src.flow.fee_tracker import FeeTracker
 
 
 class Minter(User):
-    def __init__(self, user_data : UserData, fee_tracker : FeeTracker | None = None):
+    def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "mint")
 

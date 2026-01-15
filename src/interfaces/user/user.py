@@ -1,9 +1,21 @@
 from abc import ABC
+import os
+import requests
+from telegram import Bot
 import logging
-from config.config_qa import log_folder
+from pathlib import Path
+from typing import Literal
+import toml
 from src.utils.secrets import load_user_secrets
 from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData, UserUnderlyingData
 from src.flow.fee_tracker import FeeTracker
+
+config = toml.load("config.toml")
+log_folder = Path(config["folder"]["log"])
+bot_level = config["bot"]["level"]
+
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+BOT_CHANNEL_ID = int(os.environ["BOT_CHANNEL_ID"])
 
 
 class User(ABC):
@@ -15,6 +27,9 @@ class User(ABC):
             user_data.partner,
             user_data.funder
         )
+        self.num = num
+        self.partner = partner
+        self.funder = funder
         self.fee_tracker = fee_tracker
 
         # tokens
@@ -45,6 +60,30 @@ class User(ABC):
             file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
             self.logger.addHandler(file_handler)
 
-    def log_step(self, message: str, log_steps: bool) -> None:
+    def _send_telegram_message(self, message, level):
+        if BOT_TOKEN and BOT_CHANNEL_ID:
+            user_snippet = "funder" if self.funder else f"user{'_partner' if self.partner else ''} {self.num}"
+            message = f"{level.capitalize()} message for {user_snippet}: {message}"
+            url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+            data = {
+                "chat_id": BOT_CHANNEL_ID,
+                "text": message
+            }
+            requests.post(url, data=data)
+
+    def log_step(self, message: str, log_steps: bool = True, level: Literal["info", "warning", "error"] = "info") -> None:
         if log_steps:
-            self.logger.info(message)
+            match level:
+                case "info":
+                    self.logger.info(message)
+                    if bot_level in ["info"]:
+                        self._send_telegram_message(message, level)
+                case "warning":
+                    self.logger.warning(message)
+                    if bot_level in ["info", "warning"]:
+                        self._send_telegram_message(message, level)
+                case "error":
+                    self.logger.error(message)
+                    if bot_level in ["info", "warning", "error"]:
+                        self._send_telegram_message(message, level)
+        

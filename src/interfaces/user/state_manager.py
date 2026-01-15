@@ -1,3 +1,4 @@
+from typing import Optional
 from src.flow.fee_tracker import FeeTracker
 from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
@@ -7,7 +8,7 @@ from src.utils.data_structures import Balances, UserData
 
 
 class StateManager(User):
-    def __init__(self, user_data : UserData, fee_tracker : FeeTracker | None = None):
+    def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
         super().__init__(user_data, fee_tracker)
 
     def get_balances(self, log_steps: bool = False) -> Balances:

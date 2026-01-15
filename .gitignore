@@ -1,13 +1,13 @@
+# Local user files
+user_data
+
 # My files
 my_files/
-.vscode/
 scripts/test*.py
-data/
-config/secrets/
 
 # Other
 .DS_Store
-
+.vscode/
 
 #### Python files
 

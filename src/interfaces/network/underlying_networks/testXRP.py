@@ -1,3 +1,4 @@
+from typing import Optional
 from xrpl.clients import JsonRpcClient
 from xrpl.wallet import Wallet
 from xrpl.models.transactions import Payment, Memo, AccountSet
@@ -12,7 +13,7 @@ from src.flow.fee_tracker import FeeTracker
 
 
 class TestXRP(UnderlyingBaseNetwork):
-    def __init__(self, public_key: str, private_key: str, fee_tracker: FeeTracker | None = None):
+    def __init__(self, public_key: str, private_key: str, fee_tracker: Optional[FeeTracker]  = None):
         super().__init__(fee_tracker=fee_tracker)
         self.token_underlying = TokenUnderlying.testXRP
         self.client = JsonRpcClient(self.token_underlying.rpc_url)
@@ -52,7 +53,7 @@ class TestXRP(UnderlyingBaseNetwork):
         available_balance = balance - Decimal(reserved_balance)
         return available_balance
     
-    def send_transaction(self, to_address: str, amount: Decimal, memo_data: str | None = None) -> dict:
+    def send_transaction(self, to_address: str, amount: Decimal, memo_data: Optional[str]  = None) -> dict:
         payment = Payment(
             account=self.wallet.classic_address,
             amount=xrp_to_drops(amount),

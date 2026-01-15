@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Optional
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.utils.data_structures import Pool, PoolHolding, UserData
@@ -6,7 +7,7 @@ from src.flow.fee_tracker import FeeTracker
 
 
 class PoolManager(User):
-    def __init__(self, user_data : UserData, fee_tracker : FeeTracker | None = None):
+    def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
         super().__init__(user_data, fee_tracker)
         self.native_address = self.native_data.address
         

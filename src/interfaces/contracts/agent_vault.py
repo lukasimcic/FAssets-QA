@@ -1,7 +1,11 @@
+from typing import Optional
+import toml
 from src.utils.data_structures import TokenNative, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
-from config.config_qa import agent_vault_path
+
+config = toml.load(open("config.toml"))
+agent_vault_path = config["contract"]["abi_path"]["agent_vault"]
 
 
 class AgentVault(ContractClient):
@@ -9,8 +13,8 @@ class AgentVault(ContractClient):
             self, 
             token_native: TokenNative,
             vault_address: str, 
-            sender_data: UserNativeData | None = None, 
-            fee_tracker: FeeTracker | None = None
+            sender_data: Optional[UserNativeData]  = None, 
+            fee_tracker: Optional[FeeTracker]  = None
         ):
         super().__init__(token_native, agent_vault_path, vault_address, sender_data, fee_tracker)
 

@@ -1,9 +1,8 @@
 from src.flow.fee_tracker import FeeTracker
 from src.interfaces.contracts import *
-from config.config_qa import x_csrftoken
 from src.utils.encoding import pad_to_64_hex, to_utf8_hex_string, keccak256_text
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
-from typing import Literal
+from typing import Literal, Optional
 import requests
 import json
 import time
@@ -16,7 +15,7 @@ class Attestation():
             token_underlying: TokenUnderlying, 
             user_native_data: UserNativeData, 
             indexer_api_key: str, 
-            fee_tracker: FeeTracker | None = None
+            fee_tracker: Optional[FeeTracker]  = None
         ):
         self.token_native = token_native
         self.token_underlying = token_underlying
@@ -28,13 +27,12 @@ class Attestation():
         self.headers = {
             "accept": "application/json",
             "Content-Type": "application/json",
-            "X-API-KEY": indexer_api_key,
-            'X-CSRFTOKEN': x_csrftoken
+            "X-API-KEY": indexer_api_key
         }
 
     # utility functions
 
-    def _generate_fdc_url(self, endpoint: str, attestation_type: str | None = None):
+    def _generate_fdc_url(self, endpoint: str, attestation_type: Optional[str]  = None):
         if self.token_underlying == TokenUnderlying.testXRP:
             token_underlying = "xrp"
         if attestation_type is None:

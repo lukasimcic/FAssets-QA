@@ -9,28 +9,40 @@ This repository contains a testing framework for FAssets protocol. It allows sim
   - Clone this repository.
   - Run `git submodule update --init --recursive` to clone fasset-bots submodule.
   - Run `pip install -r requirements.txt` to install dependencies.
+2. Configure the environment:
+  - Copy `.env.template` to `.env` and set bot credentials if needed (see below).
+  - If needed, modify configuration parameters in `config.toml` (see below). 
 2. Generate users and a funder: 
-  - Configure parameters in `scripts/generate_users.py` file (see below).
-  - Run `python -m scripts.generate_users`.
+  - Run `python -m scripts.generate_users n` where n is the number of users to generate.
 3. Run the user flow:
-  - Configure the flow parameters in `scripts/run_flow.py` (see below).
-  - Run `python -m scripts.run_flow`.
+  - Run `python -m scripts.run_flow` (see below for possible parameters).
 
 
 ### Parameters
 
-The whole framework is dependent on two main parameters: native network and underlying network (instances of NativeToken and UnderlyingToken classes). These are set in both `scripts/generate_users.py` and `config/config_qa.py` files. Make sure to set the same values in both files.
+The whole framework is dependent on two main parameters: native network and underlying network (instances of NativeToken and UnderlyingToken classes). These are set in `config.toml` file. For now only `"C2FLR"` (native) and `"testXRP"` (underlying) networks are supported.
 
-In `scripts/generate_users.py`, you can also set the number of new users to generate. This can also be used if some users already exist.
+In `config.toml`, under `[bot]` section, you can change the parameter `level` to set the bot message level. Possible values are: `"info"`, `"warning"`, `"error"`. Only messages with level equal or higher than the set level will be sent to the Telegram bot.
 
-In `config/config_qa.py`, you can additionally set the following parameters:
-- `user_nums`: List of user indices (integers starting at 0) to include in the flow. Users must already be generated.
-- `request_funds`: Whether funder should request new funds at the start of the flow.
-- `cli`: Whether to run the flow in CLI mode. CLI mode uses bots defined in fasset-bots submodule. Not all actions are supported in CLI mode. See below for details.
-- `total_time`: Total duration (in seconds) for which each user should execute actions in the flow.
-- `actions`: List of action class names to include in the flow for each user. By default, all action classes are included for each user. You can customize this list per user if needed.
+Under section `[flow]`, you can set the following parameters:
+- `run_time`: Total duration in seconds for which each user should execute actions in the flow.
+- `user_nums`: List of user indices (integers starting at 0) to include in the flow. Users must already be generated. If left empty, all generated users will be included.
+- `actions`: List of action class names to include in the flow for each user. If left empty, all action classes are included for each user. You can customize this list per user if needed, for example for 2 users:
+```
+actions = [
+    ["RedeemRandomAmount", "WithdrawRandomPoolFees"],
+    ["Scenario2"],
+]
+```
+In this case, user 0 will only choose between `RedeemRandomAmount` and `WithdrawRandomPoolFees` actions and user 1 will only execute `Scenario2` action.
 
-If `request_funds` is set to True, new funds for both native and underlying tokens will be requested from faucets at the start of the flow. Because Coston2 faucet has no API support, manual intervention is needed to complete the funding process. After running `python -m scripts.run_flow`, follow the instructions printed in the console to complete the funding process.
+In `.env` file, set the given environment variables to configure the Telegram bot for notifications. Otherwise, leave them empty to disable bot notifications. For obtaining a bot token, follow instructions in [this guide](https://core.telegram.org/bots/features#creating-a-new-bot). Then, create a channel, add the bot as an admin to the channel and obtain the channel ID.
+
+When running the `run_flow.py` script, additional parameters can be set via command line arguments:
+- `--request-funds`: The funder should request new funds at the start of the flow.
+- `--cli`: Run the flow in CLI mode. CLI mode uses bots defined in fasset-bots submodule. Not all actions are supported in CLI mode. See below for details.
+
+If `request_funds` is set to True, new funds for both native and underlying tokens will be requested from faucets at the start of the flow. Because Coston2 faucet has no API support, manual intervention is needed to complete the funding process. For this, follow the instructions printed in the console to complete the funding process.
 
 ## Flow
 
@@ -75,13 +87,20 @@ CLI mode is limited and not advised for load testing. That is because:
 
 For these reasons, **CLI mode has not yet been tested for load testing**.
 
+For using fasset-bots submodule for specific actions of a user, follow instructions in `fasset-bots/README.md`. Make sure to first generate user(s) and set the environment variables to point to correct user config and secrets files. This is done by creating a `.env` file in `fasset-bots/` directory with the following content (n is the user index, for example 0):
+
+```
+FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston2-bot.json" 
+FASSET_USER_SECRETS="../secrets/user/user_n.json"
+FASSET_USER_DATA_DIR="../data/data_storage/user/user_n/"
+```
 
 ## Project Structure Overview
 
 ```
 ├── scripts/                            # Entry points
 │   ├── run_flow.py                     # Main script to run user flows
-│   ├── generate_users.py               # Script for new users and funder generation
+│   └─── generate_users.py               # Script for new users and funder generation
 ├── src/
 │   ├── actions/                        
 │   │   ├── core_actions/               # Core actions (mint, redeem, enter pool,...)
@@ -98,19 +117,14 @@ For these reasons, **CLI mode has not yet been tested for load testing**.
 │   │   ├── network/                    # Network interaction (see below)
 │   │   └── user/                       # User abstractions (see below)
 │   └── utils/                          # Utilities and shared code
-├── config/
-│   ├── config_fasset_bots.json         # FAsset bots configuration
-│   ├── config_qa.py                    # Main QA/testing configuration
-│   ├── contracts/                      # Contract names and addresses (one file per native network)
-│   └── secrets/                        # Secrets for agents, users, funders
-│       ├── agent/                      # Agent secrets (one file per agent)
-│       ├── funder.json                 # Funder account secret
-│       ├── user/                       # User secrets (one file per user)
-│       └── user_partner/               # Partner user secrets (one file per partner user)
-├── data/
+├── user_data/
 │   ├── data_storage/                   # Storage of active mintings and redeptions (see below)
-│   └── logs/                           # Log files for funder, users, and partners (see bolow)
-├── requirements.txt                    # Python dependencies
+│   ├── secrets/                        # Secrets for users and partners (see below)
+│   └── logs/                           # Log files for funder, users, and partners (see below)
+├── contracts/                          # Contract addresses and names for supported native networks
+├── config.toml                         # Non-sensitive configuration
+├── .env                                # Sensitive configuration
+└── requirements.txt                    # Python dependencies
 ```
 
 ### Network interaction
@@ -154,6 +168,10 @@ After redeeming lots, user must wait for the redemption to be processed by an ag
 ### Logs
 
 Each user and funder has its own log file in `data/logs/` directory. Logs contain detailed information about each action executed, state changes, state mismatches (if any) and possible errors. At the end of the flow, a success rate is also provided.
+
+### Secrets
+
+After generating users and funder, their credentials are stored in JSON files in `data/secrets/` directory. Each user and funder has its own secrets file.
 
 
 ## Known Issues

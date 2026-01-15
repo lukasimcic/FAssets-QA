@@ -1,12 +1,16 @@
 from decimal import Decimal
+from typing import Literal
+import toml
 from src.actions.core_actions.core_actions import CoreActions
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.state_manager import StateManager
 from src.interfaces.user.minter import Minter
 from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
-from config.config_qa import zero_address
 from src.utils.data_structures import AgentInfo, Balances, MintStatus, RedemptionStatus, UserData, Pool, PoolHolding
+
+config = toml.load("config.toml")
+zero_address = config["network"]["zero_address"]
 
 
 class CoreActionsManual(CoreActions):
@@ -79,8 +83,8 @@ class CoreActionsManual(CoreActions):
     
     # logic
 
-    def log(self, message: str) -> None:
-        return self.sm.log_step(message, True)
+    def log(self, message: str, level: Literal["info", "warning", "error"]) -> None:
+        return self.sm.log_step(message, True, level)
 
     # actions implementation
 

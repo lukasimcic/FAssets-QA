@@ -1,0 +1,63 @@
+# parameters
+
+[token]
+native = "C2FLR"
+underlying = "testXRP"
+
+[bot]
+level = "warning"
+
+[flow]
+run_time = 120
+user_nums = []
+actions = []
+
+# structure
+
+[folder]
+fasset_bots = "fasset-bots"
+secrets = "user_data/secrets"
+data_storage = "user_data/data_storage"
+log = "user_data/logs"
+ 
+# contracts
+
+[contract.file]
+coston2 = "contracts/coston2.json" 
+
+[contract.name]
+asset_manager_controller = "AssetManagerController"
+fdc_hub = "FdcHub"
+fdc_request_fee_configurations = "FdcRequestFeeConfigurations"
+relay = "Relay"
+asset_manager_testxrp = "AssetManager_FTestXRP"
+fasset_testxrp = "FTestXRP"
+
+[contract.abi_path]
+asset_manager = "fasset-bots/packages/fasset-bots-core/artifacts/contracts/assetManager/interfaces/IIAssetManager.sol/IIAssetManager.json"
+fasset = "fasset-bots/packages/fasset-bots-core/artifacts/contracts/fassetToken/interfaces/IIFAsset.sol/IIFAsset.json"
+collateral_pool = "fasset-bots/packages/fasset-bots-core/artifacts/contracts/collateralPool/interfaces/IICollateralPool.sol/IICollateralPool.json"
+collateral_pool_token = "fasset-bots/packages/fasset-bots-core/artifacts/contracts/collateralPool/implementation/CollateralPoolToken.sol/CollateralPoolToken.json"
+fdc_hub = "fasset-bots/packages/fasset-bots-core/artifacts/contracts/fdc/mock/FdcHubMock.sol/FdcHubMock.json"
+fdc_request_fee_configurations = "fasset-bots/packages/fasset-bots-core/artifacts/contracts/fdc/mock/FdcRequestFeeConfigurationsMock.sol/FdcRequestFeeConfigurationsMock.json"
+relay = "fasset-bots/packages/fasset-bots-core/artifacts/contracts/fdc/mock/RelayMock.sol/RelayMock.json"
+agent_vault = "fasset-bots/packages/fasset-bots-core/artifacts/contracts/agentVault/interfaces/IIAgentVault.sol/IIAgentVault.json"
+
+# networks
+
+[network.rpc_url]
+C2FLR = "https://coston2-api.flare.network/ext/C/rpc"
+testXRP = "https://s.altnet.rippletest.net:51234/"
+
+[network.faucet_url]
+C2FLR = "https://faucet.flare.network/coston2"
+testXRP = "https://faucet.altnet.rippletest.net/accounts"
+
+[network.fdc_url]
+C2FLR = "https://testnet-verifier-fdc-test.aflabs.org"
+
+[network.da_url]
+C2FLR = "https://ctn2-data-availability.flare.network"
+
+[network]
+zero_address = "0x0000000000000000000000000000000000000000"

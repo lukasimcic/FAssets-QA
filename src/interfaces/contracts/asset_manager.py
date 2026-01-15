@@ -1,10 +1,14 @@
 from decimal import Decimal
-from typing import Any
+from typing import Any, Optional
+import toml
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_address, get_output_index
-from config.config_qa import asset_manager_path, zero_address
+
+config = toml.load("config.toml")
+asset_manager_path = config["contract"]["abi_path"]["asset_manager"]
+zero_address = config["network"]["zero_address"]
 
 
 class AssetManager(ContractClient):
@@ -12,13 +16,13 @@ class AssetManager(ContractClient):
             self, 
             token_native: TokenNative,
             token_underlying: TokenUnderlying, 
-            sender_data: UserNativeData | None = None, 
-            fee_tracker: FeeTracker | None = None
+            sender_data: Optional[UserNativeData]  = None, 
+            fee_tracker: Optional[FeeTracker]  = None
         ):
         self.token_native = token_native
         self.token_underlying = token_underlying
         asset_manager_address =  get_contract_address(
-            token_underlying.asset_manager_instance_name, 
+            token_underlying.asset_manager_name, 
             token_native
             )
         super().__init__(token_native, asset_manager_path, asset_manager_address, sender_data, fee_tracker)

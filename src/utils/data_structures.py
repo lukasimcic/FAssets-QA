@@ -4,8 +4,17 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from decimal import Decimal
 import math
+import toml
 from src.flow.fee_tracker import FeeTracker
-from config.config_qa import contracts_file_coston2, asset_manager_instance_name_testxrp, fasset_instance_name_testxrp, fdc_url, da_url, rpc_url, faucet_url
+
+config = toml.load(Path("config.toml"))
+contracts_file_coston2 = config["contract"]["file"]["coston2"]
+asset_manager_testxrp_name = config["contract"]["name"]["asset_manager_testxrp"]
+fasset_testxrp_name = config["contract"]["name"]["fasset_testxrp"]
+rpc_url = config["network"]["rpc_url"]
+faucet_url = config["network"]["faucet_url"]
+fdc_url = config["network"]["fdc_url"]
+da_url = config["network"]["da_url"]
 
 
 # TODO C2FLR -> coston2
@@ -29,11 +38,11 @@ class TokenNative(Enum):
 
 
 class TokenUnderlying(Enum):
-    testXRP = ("testXRP", asset_manager_instance_name_testxrp, fasset_instance_name_testxrp, 6)
-    def __init__(self, name: str, asset_manager_instance_name: str, fasset_instance_name: str, decimals: int):
+    testXRP = ("testXRP", asset_manager_testxrp_name, fasset_testxrp_name, 6)
+    def __init__(self, name: str, asset_manager_name: str, fasset_name: str, decimals: int):
         self._name_ = name
-        self.asset_manager_instance_name = asset_manager_instance_name
-        self.fasset_instance_name = fasset_instance_name
+        self.asset_manager_name = asset_manager_name
+        self.fasset_name = fasset_name
         self.decimals = decimals
         self.compare_tolerance = 10 ** (-decimals + 1)
         self.rpc_url = rpc_url[name]
@@ -73,9 +82,9 @@ Token = Union[TokenNative, TokenUnderlying, TokenFasset]
 class UserData:
     token_native: TokenNative
     token_underlying: TokenUnderlying
-    num: int | None = None
-    partner: bool | None = False
-    funder: bool | None = False
+    num: Optional[int]  = None
+    partner: Optional[bool]  = False
+    funder: Optional[bool]  = False
 
     def __post_init__(self):
         if not isinstance(self.token_native, TokenNative):

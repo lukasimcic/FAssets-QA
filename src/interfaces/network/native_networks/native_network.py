@@ -1,5 +1,6 @@
 from decimal import Decimal
 from abc import ABC, abstractmethod
+from typing import Optional
 from src.utils.data_structures import TokenNative, UserNativeData
 
 
@@ -28,7 +29,7 @@ class NativeBaseNetwork(ABC):
         pass
 
 class NativeNetwork:
-    def __new__(cls, token: TokenNative, native_data : UserNativeData | None = None):
+    def __new__(cls, token: TokenNative, native_data : Optional[UserNativeData]  = None):
         """
         Factory method to create an instance of the appropriate network class.
         Must be initialized with the  token type, but other parameters depend on the specific network.

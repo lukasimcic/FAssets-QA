@@ -1,17 +1,22 @@
 from decimal import Decimal
+from typing import Optional
+import toml
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.attestation import Attestation
-from config.config_qa import zero_address
 from src.utils.data_storage import DataStorageClient
 from src.utils.encoding import pad_0x, unpad_0x
 from src.utils.data_structures import RedemptionStatus, UserData
 from src.flow.fee_tracker import FeeTracker
 
+config = toml.load("config.toml")
+zero_address = config["network"]["zero_address"]
+
+
 class Redeemer(User):
-    def __init__(self, user_data : UserData, fee_tracker : FeeTracker | None = None):
+    def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "redeem")
 

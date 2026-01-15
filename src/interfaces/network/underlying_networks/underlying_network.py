@@ -1,12 +1,13 @@
 from decimal import Decimal
 from abc import ABC, abstractmethod
+from typing import Optional
 from requests import Response
 from src.utils.data_structures import TokenUnderlying, UserUnderlyingData
 from src.flow.fee_tracker import FeeTracker
 
 
 class UnderlyingBaseNetwork(ABC):
-    def __init__(self, fee_tracker: FeeTracker | None = None):
+    def __init__(self, fee_tracker: Optional[FeeTracker]  = None):
         self.fee_tracker = fee_tracker
 
     @abstractmethod
@@ -47,7 +48,7 @@ class UnderlyingBaseNetwork(ABC):
 
 
 class UnderlyingNetwork:
-    def __new__(cls, token: TokenUnderlying, underlying_data : UserUnderlyingData | None = None, fee_tracker: FeeTracker | None = None):
+    def __new__(cls, token: TokenUnderlying, underlying_data : Optional[UserUnderlyingData]  = None, fee_tracker: Optional[FeeTracker]  = None):
         """
         Factory method to create an instance of the appropriate network class.
         Must be initialized with the token type, but other parameters depend on the specific network.
