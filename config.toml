@@ -23,7 +23,7 @@ log = "user_data/logs"
 # contracts
 
 [contract.file]
-coston2 = "contracts/coston2.json" 
+coston2 = "src/interfaces/contracts/addresses/coston2.json" 
 
 [contract.name]
 asset_manager_controller = "AssetManagerController"

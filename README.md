@@ -121,7 +121,6 @@ FASSET_USER_DATA_DIR="../data/data_storage/user/user_n/"
 │   ├── data_storage/                   # Storage of active mintings and redeptions (see below)
 │   ├── secrets/                        # Secrets for users and partners (see below)
 │   └── logs/                           # Log files for funder, users, and partners (see below)
-├── contracts/                          # Contract addresses and names for supported native networks
 ├── config.toml                         # Non-sensitive configuration
 ├── .env                                # Sensitive configuration
 └── requirements.txt                    # Python dependencies
@@ -136,6 +135,8 @@ Although the framework is designed to be extensible to multiple native and under
 ### Contract interaction
 
 Each contract is represented as a subclass of `ContractClient`. Each subclass implements methods for interacting with the specific contract's functions (e.g., minting, redeeming, entering/exiting pools, etc.). Each contract intance is dependent on a native network (NativeNetwork subclass) and optionally user native data (UserNativeData subclass, user's native credentials).
+
+In the `addresses` folder, contract addresses for different networks are stored in JSON files. Each file contains addresses for all contracts deployed on a specific native network.
 
 ### User abstractions
 
