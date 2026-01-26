@@ -11,16 +11,13 @@ from src.utils.encoding import pad_0x, unpad_0x
 from src.utils.data_structures import RedemptionStatus, UserData
 from src.flow.fee_tracker import FeeTracker
 
-config = toml.load("config.toml")
-zero_address = config["network"]["zero_address"]
-
 
 class Redeemer(User):
     def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "redeem")
 
-    def redeem(self, lots: int, executor: str = zero_address, executor_fee: Decimal = Decimal(0), log_steps: bool = False) -> int:
+    def redeem(self, lots: int, executor: Optional[str] = None, executor_fee: Decimal = Decimal(0), log_steps: bool = False) -> int:
         """
         Redeem underlying asset by calling the AssetManager contract.
         Saves redemption data for potential later default redemptions.
@@ -28,6 +25,8 @@ class Redeemer(User):
         """
         self.log_step(f"Starting redemption of {lots} lots.", log_steps)
         am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
+        if not executor:
+            executor = self.token_native.zero_address
         executor_fee_uba = self.token_native.to_uba(executor_fee)
         events = am.redeem(lots, self.underlying_data.address, executor, executor_fee_uba)
         requested_redemptions, redemption_request_incomplete = events["RedemptionRequested"], events["RedemptionRequestIncomplete"]

@@ -4,13 +4,13 @@ import json
 import os
 from datetime import datetime, timezone
 import toml
+from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.core_actions.core_actions import CoreActions
 from src.utils.contracts import get_contract_address
 from src.utils.data_structures import TokenFasset, UserData
 
 config = toml.load("config.toml")
 data_storage_folder = Path(config["folder"]["data_storage"])
-asset_manager_controller_name = config["contract"]["name"]["asset_manager_controller"]
 
 
 class DataStorageClient():
@@ -19,7 +19,7 @@ class DataStorageClient():
             raise ValueError("action_type must be either 'redeem' or 'mint'")
         # set file name to match fasset-bots project format
         asset_manager_controller_snippet = get_contract_address(
-            asset_manager_controller_name, 
+            AssetManager(user_data.token_native, user_data.token_underlying).instance_name, 
             user_data.token_native
             )[2:10]
         user_name = f"user{'_partner' if user_data.partner else ''}_{user_data.num}"

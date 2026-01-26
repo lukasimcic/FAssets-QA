@@ -1,12 +1,10 @@
 from decimal import Decimal
 from typing import Optional
-import toml
 from src.utils.data_structures import TokenNative, UserNativeData
 from src.flow.fee_tracker import FeeTracker
+from src.utils.contracts import get_contract_names
 from .contract_client import ContractClient
 
-config = toml.load("config.toml")
-collateral_pool_token_path = config["contract"]["abi_path"]["collateral_pool_token"]
 
 class CollateralPoolToken(ContractClient):
     def __init__(
@@ -16,7 +14,8 @@ class CollateralPoolToken(ContractClient):
             sender_data: Optional[UserNativeData]  = None, 
             fee_tracker: Optional[FeeTracker]  = None
         ):
-        super().__init__(token_native, collateral_pool_token_path, pool_address, sender_data, fee_tracker)
+        names = get_contract_names(self)
+        super().__init__(names, token_native, pool_address, sender_data=sender_data, fee_tracker=fee_tracker)
 
     def debt_free_balance_of(self, address: str) -> int:
         return self.read("debtFreeBalanceOf", inputs=[address])

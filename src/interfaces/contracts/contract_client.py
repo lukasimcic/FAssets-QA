@@ -3,27 +3,27 @@ from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 import warnings
 import time
-from src.utils.contracts import get_contract_abi
+from src.utils.contracts import get_contract_abi, get_contract_address
 from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import TokenNative, UserNativeData
+from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
 
 
 class ContractClient:
     def __init__(
             self, 
-            token_native: TokenNative,
-            contract_path: str, 
-            contract_address: str, 
+            contract_names: dict[str, str],
+            token_native: TokenNative, 
+            address: Optional[str] = None,
             sender_data: Optional[UserNativeData]  = None,
             fee_tracker: Optional[FeeTracker]  = None,
             timeout: Optional[int]  = None
         ):
+        self.interface_name = contract_names["interface"]
+        self.instance_name = contract_names["instance"]
         self.token_native = token_native
         self.sender_data = sender_data
         self.sender_address = sender_data.address if sender_data else None
         self.sender_private_key = sender_data.private_key if sender_data else None
-        self.path = contract_path
-        self.address = contract_address
         self.fee_tracker = fee_tracker
         
         kwargs = {}
@@ -32,8 +32,11 @@ class ContractClient:
         self.web3 = Web3(Web3.HTTPProvider(self.token_native.rpc_url, request_kwargs=kwargs))
         self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         assert self.web3.is_connected()
-        contract_abi = get_contract_abi(contract_path)
-        self.contract = self.web3.eth.contract(contract_address, abi=contract_abi)
+        
+        abi = get_contract_abi(self.interface_name)
+        if address is None:
+            address = get_contract_address(self.instance_name, self.token_native)
+        self.contract = self.web3.eth.contract(address, abi=abi)
 
     def _build_transaction(self, method: str, args: list[str] = [], value: int = 0) -> dict:
         nonce = self.web3.eth.get_transaction_count(self.sender_address)

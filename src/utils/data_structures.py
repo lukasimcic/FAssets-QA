@@ -8,27 +8,29 @@ import toml
 from src.flow.fee_tracker import FeeTracker
 
 config = toml.load(Path("config.toml"))
-contracts_file_coston2 = config["contract"]["file"]["coston2"]
-asset_manager_testxrp_name = config["contract"]["name"]["asset_manager_testxrp"]
-fasset_testxrp_name = config["contract"]["name"]["fasset_testxrp"]
+contracts_file = config["file"]["contract_addresses"]
 rpc_url = config["network"]["rpc_url"]
 faucet_url = config["network"]["faucet_url"]
 fdc_url = config["network"]["fdc_url"]
 da_url = config["network"]["da_url"]
+zero_address = config["network"]["zero_address"]
+composer_address = config["network"]["composer_address"]
 
 
 # TODO C2FLR -> coston2
 class TokenNative(Enum):
-    C2FLR = ("C2FLR", contracts_file_coston2, 18)
-    def __init__(self, name: str, contracts_file: Path, decimals: int):
+    C2FLR = ("C2FLR", 18)
+    def __init__(self, name: str, decimals: int):
         self._name_ = name
-        self.contracts_file = contracts_file
         self.decimals = decimals
         self.compare_tolerance = 10 ** (-decimals + 6)
+        self.contracts_file = contracts_file[name]
         self.rpc_url = rpc_url[name]
         self.faucet_url = faucet_url[name]
         self.fdc_url = fdc_url[name]
         self.da_url = da_url[name]
+        self.zero_address = zero_address[name]
+        self.composer_address = composer_address[name]
 
     def to_uba(self, amount: Decimal) -> int:
         return int(amount * 10 ** self.decimals)
@@ -38,11 +40,9 @@ class TokenNative(Enum):
 
 
 class TokenUnderlying(Enum):
-    testXRP = ("testXRP", asset_manager_testxrp_name, fasset_testxrp_name, 6)
-    def __init__(self, name: str, asset_manager_name: str, fasset_name: str, decimals: int):
+    testXRP = ("testXRP", 6)
+    def __init__(self, name: str, decimals: int):
         self._name_ = name
-        self.asset_manager_name = asset_manager_name
-        self.fasset_name = fasset_name
         self.decimals = decimals
         self.compare_tolerance = 10 ** (-decimals + 1)
         self.rpc_url = rpc_url[name]

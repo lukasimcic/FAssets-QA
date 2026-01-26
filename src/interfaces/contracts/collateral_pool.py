@@ -1,14 +1,11 @@
 from decimal import Decimal
 from typing import Optional
-import toml
 from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.utils.data_structures import TokenNative, UserNativeData
 from src.flow.fee_tracker import FeeTracker
+from src.utils.contracts import get_contract_names
 from .contract_client import ContractClient
-
-config = toml.load("config.toml")
-collateral_pool_path = config["contract"]["abi_path"]["collateral_pool"]
 
 
 class CollateralPool(ContractClient):
@@ -20,7 +17,8 @@ class CollateralPool(ContractClient):
             sender_data: Optional[UserNativeData]  = None, 
             fee_tracker: Optional[FeeTracker]  = None
         ):
-        super().__init__(token_native, collateral_pool_path, pool_address, sender_data, fee_tracker)
+        names = get_contract_names(self)
+        super().__init__(names, token_native, pool_address, sender_data=sender_data, fee_tracker=fee_tracker)
 
     def agent_vault(self) -> str:
         return self.read("agentVault")

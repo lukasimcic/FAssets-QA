@@ -1,14 +1,9 @@
 from decimal import Decimal
 from typing import Any, Optional
-import toml
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
-from src.utils.contracts import get_contract_address, get_output_index
-
-config = toml.load("config.toml")
-asset_manager_path = config["contract"]["abi_path"]["asset_manager"]
-zero_address = config["network"]["zero_address"]
+from src.utils.contracts import get_contract_names, get_output_index
 
 
 class AssetManager(ContractClient):
@@ -19,19 +14,15 @@ class AssetManager(ContractClient):
             sender_data: Optional[UserNativeData]  = None, 
             fee_tracker: Optional[FeeTracker]  = None
         ):
-        self.token_native = token_native
         self.token_underlying = token_underlying
-        asset_manager_address =  get_contract_address(
-            token_underlying.asset_manager_name, 
-            token_native
-            )
-        super().__init__(token_native, asset_manager_path, asset_manager_address, sender_data, fee_tracker)
+        names = get_contract_names(self, token_underlying)
+        super().__init__(names, token_native, sender_data=sender_data, fee_tracker=fee_tracker)
 
     # info
 
     def agent_attribute(self, agent_vault: str, attribute: str) -> Any:
         agent_info = self.read("getAgentInfo", inputs=[agent_vault])
-        idx = get_output_index(self.path, "getAgentInfo", attribute)
+        idx = get_output_index(self.interface_name, "getAgentInfo", attribute)
         return agent_info[idx]
 
     def get_available_agents_detailed_list(self, start: int, end: int) -> list[dict[str, Any]]:
@@ -49,7 +40,7 @@ class AssetManager(ContractClient):
         ]
         for field in fields:
             idxs[field] = get_output_index(
-                asset_manager_path,
+                self.interface_name,
                 "getAvailableAgentsDetailedList",
                 field
             )
@@ -61,12 +52,12 @@ class AssetManager(ContractClient):
 
     def collateral_pool_token_timelock_seconds(self) -> int:
         settings = self.read("getSettings")
-        idx = get_output_index(self.path, "getSettings", "collateralPoolTokenTimelockSeconds")
+        idx = get_output_index(self.interface_name, "getSettings", "collateralPoolTokenTimelockSeconds")
         return settings[idx]
     
     def lot_size(self) -> int:
         settings = self.read("getSettings")
-        idx = get_output_index(self.path, "getSettings", "lotSizeAMG")
+        idx = get_output_index(self.interface_name, "getSettings", "lotSizeAMG")
         lot_size_uba = settings[idx]
         return int(self.token_underlying.from_uba(lot_size_uba))
 
@@ -79,13 +70,13 @@ class AssetManager(ContractClient):
     
     def redemption_fee(self) -> Decimal:
         settings = self.read("getSettings")
-        idx = get_output_index(self.path, "getSettings", "redemptionFeeBIPS")
+        idx = get_output_index(self.interface_name, "getSettings", "redemptionFeeBIPS")
         fee_bips = settings[idx]
         return Decimal(fee_bips / 1e4)
 
     def max_redeemed_tickets(self) -> int:
         settings = self.read("getSettings")
-        idx = get_output_index(self.path, "getSettings", "maxRedeemedTickets")
+        idx = get_output_index(self.interface_name, "getSettings", "maxRedeemedTickets")
         max_tickets = settings[idx]
         return max_tickets
 
@@ -101,7 +92,9 @@ class AssetManager(ContractClient):
         fee = self.read("collateralReservationFee", inputs=[lots])
         return fee
     
-    def reserve_collateral(self, agentVault: str, lots: int, executor: str = zero_address) -> dict:
+    def reserve_collateral(self, agentVault: str, lots: int, executor: Optional[str] = None) -> dict:
+        if not executor:
+            executor = self.token_native.zero_address
         agent_fee_BIPS = self.agent_attribute(agentVault, "feeBIPS")
         collateral_reservation_fee = self.collateral_reservation_fee(lots)
         collateralReserved = self.write(

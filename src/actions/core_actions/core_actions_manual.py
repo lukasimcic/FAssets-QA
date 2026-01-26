@@ -1,6 +1,5 @@
 from decimal import Decimal
-from typing import Literal
-import toml
+from typing import Literal, Optional
 from src.actions.core_actions.core_actions import CoreActions
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.state_manager import StateManager
@@ -8,9 +7,6 @@ from src.interfaces.user.minter import Minter
 from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
 from src.utils.data_structures import AgentInfo, Balances, MintStatus, RedemptionStatus, UserData, Pool, PoolHolding
-
-config = toml.load("config.toml")
-zero_address = config["network"]["zero_address"]
 
 
 class CoreActionsManual(CoreActions):
@@ -94,8 +90,16 @@ class CoreActionsManual(CoreActions):
         self.logger.info(f"Proving underlying payment and executing minting.")
         self.minter.prove_and_execute_minting(mint_id, log_steps=log_steps)
 
-    def redeem(self, lot_amount: int, executor: str = zero_address, executor_fee: Decimal = Decimal(0), log_steps: bool = False) -> int:
+    def redeem(
+            self, 
+            lot_amount: int, 
+            executor: Optional[str] = None, 
+            executor_fee: Decimal = Decimal(0), 
+            log_steps: bool = False
+        ) -> int:
         self.logger.info(f"Redeeming {lot_amount} lots.")
+        if not executor:
+            executor = self.sm.token_native.zero_address
         remaining_lots = self.redeemer.redeem(
             lots=lot_amount, 
             executor=executor, 
