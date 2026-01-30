@@ -2,7 +2,7 @@ import json
 from typing import Optional
 import toml
 from pathlib import Path
-from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, TokenUnderlying
+from src.utils.data_structures import TokenBridged, TokenFasset, TokenNative, TokenUnderlying, TokenUnderlying
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.interfaces.contracts.contract_client import ContractClient
@@ -19,7 +19,7 @@ def get_contract_names(cl: "ContractClient", token_underlying: Optional[TokenUnd
         names["instance"] += f"_{token_fasset.name}"
     return names
 
-def get_contract_address(instance_name: str, token_native: TokenNative) -> str:
+def get_contract_address(instance_name: str, token_native: TokenNative | TokenBridged) -> str:
     with open(token_native.contracts_file, "r") as f:
         contracts = json.load(f)
     for contract in contracts:

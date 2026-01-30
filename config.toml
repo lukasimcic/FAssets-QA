@@ -23,12 +23,14 @@ contract_interfaces = "contracts/interfaces"
 
 [file.contract_addresses]
 C2FLR = "contracts/addresses/coston2.json"
+hyperliquid_testnet = "contracts/addresses/hyperliquid_testnet.json"
 
 # networks
 
 [network.rpc_url]
 C2FLR = "https://coston2-api.flare.network/ext/C/rpc"
 testXRP = "https://s.altnet.rippletest.net:51234/"
+hyperliquid_testnet = "https://rpc.hyperliquid-testnet.xyz/evm"
 
 [network.faucet_url]
 C2FLR = "https://faucet.flare.network/coston2"
@@ -46,6 +48,5 @@ C2FLR = "0x0000000000000000000000000000000000000000"
 [network.composer_address]
 C2FLR = "0xF32eB6bf2Bc005Fa85eb61dBdc55Fcd60054B281"
 
-[hyperliquid]
-eid = 40294
-
+[network.eid]
+hyperliquid_testnet = 40362

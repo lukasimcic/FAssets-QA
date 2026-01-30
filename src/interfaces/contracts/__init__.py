@@ -1,4 +1,6 @@
+from .agent_vault import AgentVault
 from .asset_manager import AssetManager
+from .asset_manager_controller import AssetManagerController
 from .collateral_pool import CollateralPool
 from .collateral_pool_token import CollateralPoolToken
 from .agent_vault import AgentVault
@@ -6,3 +8,4 @@ from .fdc_hub import FdcHub
 from .fdc_request_fee_configurations import FdcRequestFeeConfigurations
 from .relay import Relay
 from .fasset import FAsset
+from .fasset_oft_adapter import FAssetOFTAdapter

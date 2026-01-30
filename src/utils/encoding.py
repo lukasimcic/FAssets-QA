@@ -1,11 +1,16 @@
 from web3 import Web3
 from pathlib import Path
 import json
+from eth_abi import decode
+import binascii
 
 # padding
 
 def pad_to_64_hex(data: str) -> str:
     return data.ljust(64, "0")
+
+def pad_to_40_hex(data: str) -> str:
+    return data.ljust(40, "0")
 
 def pad_0x(data: str) -> str:
     if not data.startswith("0x"):
@@ -37,7 +42,7 @@ def keccak256_text(data: str) -> str:
 # error decoding
 
 def error_encode(error_name: str) -> str:
-    return keccak256_text(f"{error_name}()")[:10]
+    return pad_0x(keccak256_text(f"{error_name}()")[:8])
 
 def get_error(error_names: list[str], encoded_error: str) -> str:
     for name in error_names:
@@ -55,16 +60,18 @@ def save_errors(folder: Path) -> None:
     else:
         errors = {}
     for subfolder in folder.iterdir():
-        if subfolder.is_dir():
-            subfolder_name = subfolder.name
-            if subfolder_name.endswith(".sol"):
-                contract_name = subfolder_name[:-4]
-                with open(subfolder / f"{contract_name}.json", "r") as f:
-                    contract_abi = json.load(f)["abi"]
-                    for item in contract_abi:
-                        if item["type"] == "error":
-                            error_name = item["name"]
-                            encoded_error = error_encode(error_name)
-                            errors[error_name] = encoded_error
+        with open(subfolder, "r") as f:
+            contract_abi = json.load(f)["abi"]
+            for item in contract_abi:
+                if item["type"] == "error":
+                    error_name = item["name"]
+                    encoded_error = error_encode(error_name)
+                    errors[error_name] = encoded_error
     with open(error_file, "w") as f:
         json.dump(errors, f, indent=4)
+
+def decode_revert_reason(data: str) -> str:
+    error_data = data[10:] # remove '0x' and selector (8 chars after '0x')
+    error_bytes = binascii.unhexlify(error_data)
+    decoded = decode(['string'], error_bytes)
+    print(decoded[0])

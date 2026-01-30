@@ -13,7 +13,7 @@ This repository contains a testing framework for FAssets protocol. It allows sim
   - Copy `.env.template` to `.env` and set bot credentials if needed (see below).
   - If needed, modify configuration parameters in `config.toml` (see below). 
 2. Generate users and a funder: 
-  - Run `python -m scripts.generate_users n` where n is the number of users to generate.
+  - Run `python -m scripts.generate_users n` where n is the number of users to generate. If existing users are to be used, generate new users and then change user credentials in `user_data/secrets/user/user_i.json` files accordingly.
 3. Run the user flow:
   - Run `python -m scripts.run_flow` (see below for possible parameters).
 

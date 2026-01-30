@@ -16,9 +16,14 @@ da_url = config["network"]["da_url"]
 zero_address = config["network"]["zero_address"]
 composer_address = config["network"]["composer_address"]
 
+    
+class UbaMixin:
+    def to_uba(self, amount: Decimal) -> int:
+        return int(amount * 10 ** self.decimals)
+    def from_uba(self, amount_uba: int) -> Decimal:
+        return Decimal(amount_uba) / Decimal(10) ** self.decimals
 
-# TODO C2FLR -> coston2
-class TokenNative(Enum):
+class TokenNative(UbaMixin, Enum):
     C2FLR = ("C2FLR", 18)
     def __init__(self, name: str, decimals: int):
         self._name_ = name
@@ -32,14 +37,7 @@ class TokenNative(Enum):
         self.zero_address = zero_address[name]
         self.composer_address = composer_address[name]
 
-    def to_uba(self, amount: Decimal) -> int:
-        return int(amount * 10 ** self.decimals)
-    
-    def from_uba(self, amount_uba: int) -> Decimal:
-        return Decimal(amount_uba) / Decimal(10) ** self.decimals
-
-
-class TokenUnderlying(Enum):
+class TokenUnderlying(UbaMixin, Enum):
     testXRP = ("testXRP", 6)
     def __init__(self, name: str, decimals: int):
         self._name_ = name
@@ -48,34 +46,30 @@ class TokenUnderlying(Enum):
         self.rpc_url = rpc_url[name]
         self.faucet_url = faucet_url[name]
 
-    def to_uba(self, amount: Decimal) -> int:
-        return int(amount * 10 ** self.decimals)
-    
-    def from_uba(self, amount_uba: int) -> Decimal:
-        return Decimal(amount_uba) / Decimal(10) ** self.decimals
-
-
-class TokenFasset(Enum):
-    testXRP_fasset = ("FTestXRP", TokenUnderlying.testXRP)
+class TokenFasset(UbaMixin, Enum):
+    FtestXRP = ("FTestXRP", TokenUnderlying.testXRP)
     def __init__(self, name: str, token_underlying: TokenUnderlying):
         self._name_ = name
         self.token_underlying = token_underlying
         self.decimals = token_underlying.decimals
         self.compare_tolerance = 10 ** -self.decimals
-
     @classmethod
     def from_underlying(cls, underlying: TokenUnderlying):
-        name = f"{underlying.name}_fasset"
+        name = f"F{underlying.name}"
         return cls[name]
     
-    def to_uba(self, amount: Decimal) -> int:
-        return int(amount * 10 ** self.decimals)
-    
-    def from_uba(self, amount_uba: int) -> Decimal:
-        return Decimal(amount_uba) / Decimal(10) ** self.decimals
-    
+class TokenBridged(UbaMixin, Enum):
+    FtestXRP_hyperevm = ("FTestXRP_hyperevm", TokenFasset.FtestXRP, "hyperliquid_testnet")
+    FtestXRP_hypercore = ("FTestXRP_hypercore", TokenFasset.FtestXRP, "hyperliquid_testnet")
+    def __init__(self, name: str, token_fasset: TokenFasset, network: str):
+        self._name_ = name
+        self.token_fasset = token_fasset
+        self.decimals = token_fasset.decimals
+        self.compare_tolerance = 10 ** -self.decimals
+        self.rpc_url = rpc_url[network]
+        self.contracts_file = contracts_file[network]
 
-Token = Union[TokenNative, TokenUnderlying, TokenFasset]
+Token = Union[TokenNative, TokenUnderlying, TokenFasset, TokenBridged]
 
 
 @dataclass
@@ -277,12 +271,13 @@ class PoolHolding:
 @dataclass
 class FlowState:
     balances: Balances
-    mint_status: MintStatus
-    redemption_status: RedemptionStatus
-    pool_holdings: list[PoolHolding]
+    mint_status: Optional[MintStatus] = None
+    redemption_status: Optional[RedemptionStatus] = None
+    pool_holdings: Optional[list[PoolHolding]] = None
 
     def __post_init__(self):
-        self.pool_holdings = sorted(self.pool_holdings, key=lambda ph: ph.pool_address)
+        if self.pool_holdings:
+            self.pool_holdings = sorted(self.pool_holdings, key=lambda ph: ph.pool_address)
 
     def replace(self, changes : list) -> "FlowState":
         new_flow_state = self.copy()
@@ -326,6 +321,14 @@ class FlowState:
             all_mismatches.append(mismatches)
         return all_mismatches
     
+
+@dataclass
+class RelevantInfo:
+    tokens: list[Token]
+    mint_status: bool = False
+    redemption_status: bool = False
+    pool_holdings: bool = False
+
 
 @dataclass
 class AgentInfo:

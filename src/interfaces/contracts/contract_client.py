@@ -5,14 +5,14 @@ import warnings
 import time
 from src.utils.contracts import get_contract_abi, get_contract_address
 from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
+from src.utils.data_structures import TokenBridged, TokenNative, TokenUnderlying, UserNativeData
 
 
 class ContractClient:
     def __init__(
             self, 
             contract_names: dict[str, str],
-            token_native: TokenNative, 
+            token_native: TokenNative | TokenBridged, 
             address: Optional[str] = None,
             sender_data: Optional[UserNativeData]  = None,
             fee_tracker: Optional[FeeTracker]  = None,
@@ -21,6 +21,7 @@ class ContractClient:
         self.interface_name = contract_names["interface"]
         self.instance_name = contract_names["instance"]
         self.token_native = token_native
+        self.address = address
         self.sender_data = sender_data
         self.sender_address = sender_data.address if sender_data else None
         self.sender_private_key = sender_data.private_key if sender_data else None
@@ -35,8 +36,8 @@ class ContractClient:
         
         abi = get_contract_abi(self.interface_name)
         if address is None:
-            address = get_contract_address(self.instance_name, self.token_native)
-        self.contract = self.web3.eth.contract(address, abi=abi)
+            self.address = get_contract_address(self.instance_name, self.token_native)
+        self.contract = self.web3.eth.contract(self.address, abi=abi)
 
     def _build_transaction(self, method: str, args: list[str] = [], value: int = 0) -> dict:
         nonce = self.web3.eth.get_transaction_count(self.sender_address)

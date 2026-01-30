@@ -3,7 +3,7 @@ from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.core_actions.core_actions import core_actions
 from src.interfaces.user.user_bot import UserBot
 from src.interfaces.user.state_manager import StateManager
-from src.utils.data_structures import FlowState, UserData
+from src.utils.data_structures import FlowState, RelevantInfo, UserData
 
 
 class ActionBundle(ABC):
@@ -75,3 +75,8 @@ class ActionBundle(ABC):
         self.partner_mint_status = partner_flow_state.mint_status
         self.partner_redemption_status = partner_flow_state.redemption_status
         self.partner_pool_holdings = partner_flow_state.pool_holdings
+
+    @property 
+    @abstractmethod
+    def relevant_info(self) -> RelevantInfo:
+        pass

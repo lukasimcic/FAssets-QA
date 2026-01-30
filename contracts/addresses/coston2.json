@@ -15,20 +15,23 @@
     "address": "0x191a1282Ac700edE65c5B0AaF313BAcC3eA7fC7e"
   },
   {
-    "name": "AssetManagerController",
+    "name": "AssetManagerController_FTestXRP",
     "contractName": "AssetManagerControllerProxy.sol",
-    "address": "0x4741f1DfC58dF2169F88fe8c6bEb94FdAb6fF5ba",
-    "mustSwitchToProduction": true
+    "address": "0x1C772F700308aF4c13897cc7b9c41EFfB82c50C0"
   },
   {
     "name": "AssetManager_FTestXRP",
     "contractName": "AssetManager.sol",
-    "address": "0xFcd44194Dad1c4927706D6f74780393528a40Ed6",
-    "mustSwitchToProduction": true
+    "address": "0xc1Ca88b937d0b528842F95d5731ffB586f4fbDFA"
   },
   {
     "name": "FAsset_FTestXRP",
     "contractName": "FAssetProxy.sol",
-    "address": "0x47e2edB147e79D6eab9c85A42cb13055f2938ed5"
+    "address": "0x0b6A3645c240605887a5532109323A3E12273dc7"
+  },
+  {
+    "name": "FAssetOFTAdapter_FTestXRP",
+    "contractName": "OFTAdapterFeeUpgradeable.sol",
+    "address": "0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639"
   }
 ]

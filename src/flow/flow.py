@@ -133,6 +133,11 @@ class Flow():
 
     def run(self) -> None:
         self._log(f"----- Starting flow. -----", level="info", partner=True)
+        all_actions = len(ACTION_BUNDLE_CLASSES) == len(self.actions)
+        if all_actions:
+            self._log("----- All actions available. -----", level="info")
+        else:
+            self._log(f"----- Available actions: {', '.join(self.actions)}. -----", level="info")
         successful_steps = 0
         all_steps = 0
         t = time.time()

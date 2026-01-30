@@ -1,0 +1,71 @@
+from decimal import Decimal
+import toml
+from typing import Optional
+from web3 import Web3
+from src.interfaces.contracts.asset_manager import AssetManager
+from src.interfaces.contracts.fasset_oft_adapter import FAssetOFTAdapter
+from src.interfaces.user.state_manager import StateManager
+from src.interfaces.contracts.fasset import FAsset
+from src.flow.fee_tracker import FeeTracker
+from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData
+from src.utils.encoding import pad_to_40_hex, pad_to_64_hex, pad_0x, unpad_0x
+
+config = toml.load("config.toml")
+eids = config["network"]["eid"]
+
+
+def destination_address(native_address: str) -> str:
+    return pad_0x(pad_to_64_hex(unpad_0x(native_address)))
+
+def bridged_address(native_address: str) -> str:
+    return Web3.to_checksum_address(pad_to_40_hex(native_address[26:]))
+
+
+class Bridge():
+    def __init__(
+            self, 
+            token_native: TokenNative, 
+            token_underlying: TokenUnderlying, 
+            user_native_data: UserNativeData, 
+            fee_tracker: Optional[FeeTracker]  = None
+        ):
+        self.token_native = token_native
+        self.token_underlying = token_underlying
+        self.user_native_data = user_native_data
+        self.ft = fee_tracker
+        self.token_fasset = TokenFasset.from_underlying(token_underlying)
+
+    def _approve_tokens(self, spender: str, amount: Decimal, composer: bool = True):
+        amount_uba = self.token_fasset.to_uba(amount)
+        f = FAsset(self.token_native, self.token_underlying, self.user_native_data, self.ft)
+        f.approve(spender, amount_uba)
+        if composer:
+            f.approve(self.token_native.composer_address, amount_uba)
+    
+    def _get_send_params(self, dst_eid: int, amount_uba: int, options: str) -> dict:
+        return {
+            "dstEid": dst_eid,
+            "to": destination_address(self.user_native_data.address),
+            "amountLD": amount_uba,
+            "minAmountLD": amount_uba,
+            "extraOptions": options,
+            "composeMsg": "0x",
+            "oftCmd": "0x",
+        }
+
+    def to_hyperevm_testnet(self, lots: int):
+        eid = eids["hyperliquid_testnet"]
+        lot_size = AssetManager(self.token_native, self.token_underlying).lot_size()
+        amount = Decimal(lots * lot_size) # TODO 10% buffer: * Decimal(1.1) 
+        foa = FAssetOFTAdapter(
+            self.token_native, 
+            self.token_underlying, 
+            self.user_native_data, 
+            self.ft
+            )
+        self._approve_tokens(foa.address, amount)
+        amount_uba = self.token_fasset.to_uba(amount)
+        options = foa.combine_options(eid)
+        send_params = self._get_send_params(eid, amount_uba, options)
+        native_fee = foa.quote_native_fee(send_params, False)
+        return foa.send(send_params, native_fee, 0, self.user_native_data.address)

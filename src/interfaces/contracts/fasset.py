@@ -3,7 +3,6 @@ from typing import Optional
 from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
-from src.interfaces.contracts.asset_manager import AssetManager
 from src.utils.contracts import get_contract_names
 
 
