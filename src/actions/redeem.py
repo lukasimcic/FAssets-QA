@@ -2,7 +2,7 @@ import random
 from src.utils.data_storage import DataStorageClient
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.action_bundle import ActionBundle
-from src.utils.data_structures import FlowState
+from src.utils.data_structures import FlowState, RelevantInfo
 
 
 class RedeemRandomAmount(ActionBundle):
@@ -36,6 +36,11 @@ class RedeemRandomAmount(ActionBundle):
         new_redemption_status.pending.extend(redemption_ids)
         return self.flow_state.replace([new_balances, new_redemption_status])
 
+    def relevant_info(self) -> RelevantInfo:
+        return RelevantInfo(
+            tokens=[self.token_underlying, self.token_native, self.token_fasset],
+            redemption_status=True
+        )
 
 class RedeemDefaultRandomRedemption(ActionBundle):
     def __init__(self, user_data, flow_state, cli):
@@ -67,6 +72,11 @@ class RedeemDefaultRandomRedemption(ActionBundle):
         new_redemption_status.default.remove(self.redemption_id)
         return self.flow_state.replace([new_balances, new_redemption_status])
     
+    def relevant_info(self) -> RelevantInfo:
+        return RelevantInfo(
+            tokens=[self.token_underlying, self.token_native, self.token_fasset],
+            redemption_status=True
+        )
 
 class RedeemDefaultRandomRedemptionBlockUnderlying(RedeemDefaultRandomRedemption):
     def __init__(self, user_data, flow_state, cli):
@@ -90,3 +100,9 @@ class RedeemDefaultRandomRedemptionBlockUnderlying(RedeemDefaultRandomRedemption
         new_balances = normal_expected_state.balances.copy()
         new_balances[self.token_underlying] += self.lot_size * lot_amount * (1 - redemption_fee)
         return normal_expected_state.replace([new_balances])
+    
+    def relevant_info(self) -> RelevantInfo:
+        return RelevantInfo(
+            tokens=[self.token_underlying, self.token_native, self.token_fasset],
+            redemption_status=True
+        )

@@ -5,7 +5,7 @@ from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_mint, can_enter_pool, collateral_to_tokens, random_decimal_between, tokens_to_collateral
 from src.interfaces.contracts import *
 from src.utils.data_storage import DataStorageClient
-from src.utils.data_structures import FlowState
+from src.utils.data_structures import FlowState, RelevantInfo
 
 
 class Scenario1(ActionBundle):
@@ -105,3 +105,12 @@ class Scenario1(ActionBundle):
             self.flow_state.replace([new_balances_1, new_redemption_status_1_2, new_pool_holdings]),
             self.flow_state.replace([new_balances_2, new_redemption_status_2, new_pool_holdings])
             ]
+    
+    
+    def relevant_info(self) -> RelevantInfo:
+        return RelevantInfo(
+            tokens=[self.token_underlying, self.token_native, self.token_fasset],
+            mint_status=True,
+            redemption_status=True,
+            pool_holdings=True
+        )

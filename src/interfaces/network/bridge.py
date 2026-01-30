@@ -4,7 +4,6 @@ from typing import Optional
 from web3 import Web3
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.contracts.fasset_oft_adapter import FAssetOFTAdapter
-from src.interfaces.user.state_manager import StateManager
 from src.interfaces.contracts.fasset import FAsset
 from src.flow.fee_tracker import FeeTracker
 from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData

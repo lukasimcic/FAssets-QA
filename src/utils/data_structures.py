@@ -290,7 +290,8 @@ class FlowState:
                 new_flow_state.redemption_status = change
             elif type(change) is list:
                 new_flow_state.pool_holdings = change
-        new_flow_state.pool_holdings = sorted(new_flow_state.pool_holdings, key=lambda ph: ph.pool_address)
+        if new_flow_state.pool_holdings:
+            new_flow_state.pool_holdings = sorted(new_flow_state.pool_holdings, key=lambda ph: ph.pool_address)
         return new_flow_state
     
     def fields(self) -> list[str]:
@@ -300,12 +301,14 @@ class FlowState:
         return getattr(self, key)
     
     def copy(self) -> "FlowState":
-        return FlowState(
-            balances=self.balances.copy(),
-            mint_status=self.mint_status.copy(),
-            redemption_status=self.redemption_status.copy(),
-            pool_holdings=self.pool_holdings.copy()
-        )
+        flow_state = FlowState(balances=self.balances.copy())
+        if self.mint_status:
+            flow_state.mint_status = self.mint_status.copy()
+        if self.redemption_status:
+            flow_state.redemption_status = self.redemption_status.copy()
+        if self.pool_holdings:
+            flow_state.pool_holdings = [ph.copy() for ph in self.pool_holdings]
+        return flow_state
     
     def compare(self, others: Union[list["FlowState"], "FlowState"]) -> list[dict]:
         if not isinstance(others, list):
@@ -321,6 +324,15 @@ class FlowState:
             all_mismatches.append(mismatches)
         return all_mismatches
     
+    @classmethod
+    def new(cls) -> "FlowState":
+        return cls(
+            balances=Balances(),
+            mint_status=MintStatus(),
+            redemption_status=RedemptionStatus(),
+            pool_holdings=[]
+        )  
+    
 
 @dataclass
 class RelevantInfo:
@@ -328,6 +340,27 @@ class RelevantInfo:
     mint_status: bool = False
     redemption_status: bool = False
     pool_holdings: bool = False
+
+    @classmethod
+    def union(cls, objs: list["RelevantInfo"]) -> "RelevantInfo":
+        tokens = set()
+        mint_status = False
+        redemption_status = False
+        pool_holdings = False
+        for obj in objs:
+            tokens.update(obj.tokens)
+            mint_status = mint_status or obj.mint_status
+            redemption_status = redemption_status or obj.redemption_status
+            pool_holdings = pool_holdings or obj.pool_holdings
+        return RelevantInfo(
+            tokens=list(tokens),
+            mint_status=mint_status,
+            redemption_status=redemption_status,
+            pool_holdings=pool_holdings
+        )
+    
+    def __repr__(self) -> str:
+        return _repr_none_filtered(self)
 
 
 @dataclass

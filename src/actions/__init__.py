@@ -9,4 +9,4 @@ def all_subclasses(cls):
         [s for c in cls.__subclasses__() for s in all_subclasses(c)]
     )
 
-ACTION_BUNDLE_CLASSES = all_subclasses(ActionBundle)
+ACTION_BUNDLE_CLASSES : set[type[ActionBundle]] = all_subclasses(ActionBundle)

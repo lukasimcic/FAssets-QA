@@ -76,7 +76,6 @@ class ActionBundle(ABC):
         self.partner_redemption_status = partner_flow_state.redemption_status
         self.partner_pool_holdings = partner_flow_state.pool_holdings
 
-    @property 
     @abstractmethod
     def relevant_info(self) -> RelevantInfo:
         pass

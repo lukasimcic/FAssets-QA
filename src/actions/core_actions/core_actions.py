@@ -1,7 +1,7 @@
 from decimal import Decimal
 from abc import ABC, abstractmethod
 from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus
+from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus, Token
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ class CoreActions(ABC):
     # state (user-specific) retrieval
 
     @abstractmethod
-    def get_balances(self, log_steps: bool = False) -> Balances:
+    def get_balances(self, tokens: list[Token], log_steps: bool = False) -> Balances:
         pass
 
     @abstractmethod

@@ -3,7 +3,7 @@ from decimal import Decimal
 from src.interfaces.contracts.collateral_pool import CollateralPool
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import random_decimal_between, add_max_amount_to_stay_above_exit_CR, can_enter_pool, collateral_to_tokens, tokens_to_collateral
-from src.utils.data_structures import FlowState, PoolHolding
+from src.utils.data_structures import FlowState, PoolHolding, RelevantInfo
 
 
 class EnterRandomPoolRandomAmount(ActionBundle):
@@ -46,6 +46,12 @@ class EnterRandomPoolRandomAmount(ActionBundle):
             ))
         return self.flow_state.replace([new_balances, new_pool_holdings])
 
+    def relevant_info(self) -> RelevantInfo:
+        return RelevantInfo(
+            tokens=[self.token_native, self.token_fasset],
+            pool_holdings=True
+        )
+
 
 class ExitRandomPoolRandomAmount(ActionBundle):
     def __init__(self, user_data, flow_state, cli):
@@ -85,6 +91,11 @@ class ExitRandomPoolRandomAmount(ActionBundle):
                 pool_holding.max_amount_to_exit = None
         return self.flow_state.replace([new_balances, new_pool_holdings])
 
+    def relevant_info(self) -> RelevantInfo:
+        return RelevantInfo(
+            tokens=[self.token_native, self.token_fasset],
+            pool_holdings=True
+        )
 
 class WithdrawPoolFeesRandomPool(ActionBundle):
     def __init__(self, user_data, flow_state, cli):
@@ -117,3 +128,9 @@ class WithdrawPoolFeesRandomPool(ActionBundle):
             if pool_holding.pool_address == self.pool_address:
                 pool_holding.fasset_fees -= self.amount
         return self.flow_state.replace([new_balances, new_pool_holdings])
+
+    def relevant_info(self) -> RelevantInfo:
+        return RelevantInfo(
+            tokens=[self.token_native, self.token_fasset],
+            pool_holdings=True
+        )

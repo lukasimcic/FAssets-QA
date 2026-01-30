@@ -1,7 +1,7 @@
 from decimal import Decimal
 from src.interfaces.user.user_bot import UserBot
 from src.actions.core_actions.core_actions import CoreActions
-from src.utils.data_structures import Balances, MintStatus, RedemptionStatus, Pool, UserData, PoolHolding, AgentInfo
+from src.utils.data_structures import Balances, MintStatus, RedemptionStatus, Pool, Token, UserData, PoolHolding, AgentInfo
 
 
 class CoreActionsCLI(CoreActions):
@@ -11,7 +11,7 @@ class CoreActionsCLI(CoreActions):
 
     # state retrieval
 
-    def get_balances(self, log_steps: bool = False) -> Balances:
+    def get_balances(self, tokens: list[Token], log_steps: bool = False) -> Balances:
         return self.user_bot.get_balances(log_steps=log_steps)
 
     def get_pools(self, log_steps: bool = False) -> list[Pool]:

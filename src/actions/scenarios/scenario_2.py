@@ -4,7 +4,7 @@ import time
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_enter_pool, collateral_to_tokens, random_decimal_between, tokens_to_collateral
 from src.interfaces.contracts import *
-from src.utils.data_structures import FlowState, PoolHolding
+from src.utils.data_structures import FlowState, PoolHolding, RelevantInfo
 
 
 class Scenario2(ActionBundle):
@@ -122,3 +122,10 @@ class Scenario2(ActionBundle):
                 if pool_holding.pool_address == self.pool_address:
                     pool_holding.pool_tokens = new_token_amount
         return self.partner_flow_state.replace([new_balances, new_pool_holdings])
+    
+
+    def relevant_info(self) -> RelevantInfo:
+        return RelevantInfo(
+            tokens=[self.token_native, self.token_fasset],
+            pool_holdings=True
+        )

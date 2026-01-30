@@ -3,9 +3,9 @@ import random
 import time
 from typing import Literal, Optional
 from src.actions.action_bundle import ActionBundle
-from src.actions.core_actions.core_actions import core_actions
+from src.actions.core_actions.core_actions import CoreActions, core_actions
 from src.actions import ACTION_BUNDLE_CLASSES
-from src.utils.data_structures import UserData, FlowState
+from src.utils.data_structures import RelevantInfo, UserData, FlowState
 
 
 class Flow():
@@ -44,6 +44,10 @@ class Flow():
         # core actions for logging and state retrieval
         self.ca = core_actions(user_data, cli)
         self.ca_partner = core_actions(self.partner_data, cli)
+        self.relevant_info = RelevantInfo.union([
+            ab(self.user_data, FlowState.new(), self.cli).relevant_info()
+            for ab in ACTION_BUNDLE_CLASSES if ab.__name__ in actions
+            ])
 
     def _log(
             self, 
@@ -54,21 +58,22 @@ class Flow():
         if partner:
             self.ca_partner.log(message, level)
 
+    @staticmethod
+    def _flow_state(ca: CoreActions, relevant_info: RelevantInfo, log_steps: bool) -> FlowState:
+        flow_state = FlowState(ca.get_balances(relevant_info.tokens, log_steps))
+        if relevant_info.mint_status:
+            flow_state.mint_status = ca.get_mint_status(log_steps)
+        if relevant_info.redemption_status:
+            flow_state.redemption_status = ca.get_redemption_status(log_steps)
+        if relevant_info.pool_holdings:
+            flow_state.pool_holdings = ca.get_pool_holdings(log_steps)
+        return flow_state
+
     def _update_flow_state(self, log_steps: bool = True) -> None:
-        self.flow_state = FlowState(
-            self.ca.get_balances(log_steps=log_steps),
-            self.ca.get_mint_status(log_steps=log_steps),
-            self.ca.get_redemption_status(log_steps=log_steps),
-            self.ca.get_pool_holdings(log_steps=log_steps)
-        )
+        self.flow_state = self._flow_state(self.ca, self.relevant_info, log_steps)
 
     def _get_partner_flow_state(self, log_steps: bool = True) -> FlowState:
-        return FlowState(
-            self.ca_partner.get_balances(log_steps=log_steps),
-            self.ca_partner.get_mint_status(log_steps=log_steps),
-            self.ca_partner.get_redemption_status(log_steps=log_steps),
-            self.ca_partner.get_pool_holdings(log_steps=log_steps)
-        )
+        return self._flow_state(self.ca_partner, self.relevant_info, log_steps)
     
     def _step(self) -> Optional[bool] :
         self._update_flow_state()

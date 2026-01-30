@@ -6,7 +6,7 @@ from src.interfaces.user.state_manager import StateManager
 from src.interfaces.user.minter import Minter
 from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
-from src.utils.data_structures import AgentInfo, Balances, MintStatus, RedemptionStatus, UserData, Pool, PoolHolding
+from src.utils.data_structures import AgentInfo, Balances, MintStatus, RedemptionStatus, Token, UserData, Pool, PoolHolding
 
 
 class CoreActionsManual(CoreActions):
@@ -20,8 +20,8 @@ class CoreActionsManual(CoreActions):
 
     # state retrieval
 
-    def get_balances(self, log_steps: bool = False) -> Balances:
-        balances = self.sm.get_balances(log_steps=log_steps)
+    def get_balances(self, tokens: list[Token], log_steps: bool = False) -> Balances:
+        balances = self.sm.get_balances(tokens, log_steps=log_steps)
         if log_steps:
             self.logger.info(f"Balances: {balances}")
         return balances
