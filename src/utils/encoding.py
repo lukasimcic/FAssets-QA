@@ -7,10 +7,7 @@ import binascii
 # padding
 
 def pad_to_64_hex(data: str) -> str:
-    return data.ljust(64, "0")
-
-def pad_to_40_hex(data: str) -> str:
-    return data.ljust(40, "0")
+    return data.rjust(64, "0")
 
 def pad_0x(data: str) -> str:
     if not data.startswith("0x"):

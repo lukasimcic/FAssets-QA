@@ -6,18 +6,11 @@ from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.contracts.fasset_oft_adapter import FAssetOFTAdapter
 from src.interfaces.contracts.fasset import FAsset
 from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData
-from src.utils.encoding import pad_to_40_hex, pad_to_64_hex, pad_0x, unpad_0x
+from src.utils.data_structures import TokenBridged, TokenFasset, TokenNative, TokenUnderlying, UserNativeData
+from src.utils.encoding import pad_to_64_hex, pad_0x, unpad_0x
 
 config = toml.load("config.toml")
 eids = config["network"]["eid"]
-
-
-def destination_address(native_address: str) -> str:
-    return pad_0x(pad_to_64_hex(unpad_0x(native_address)))
-
-def bridged_address(native_address: str) -> str:
-    return Web3.to_checksum_address(pad_to_40_hex(native_address[26:]))
 
 
 class Bridge():
@@ -44,7 +37,7 @@ class Bridge():
     def _get_send_params(self, dst_eid: int, amount_uba: int, options: str) -> dict:
         return {
             "dstEid": dst_eid,
-            "to": destination_address(self.user_native_data.address),
+            "to": pad_0x(pad_to_64_hex(unpad_0x(self.user_native_data.address))),
             "amountLD": amount_uba,
             "minAmountLD": amount_uba,
             "extraOptions": options,
@@ -55,7 +48,7 @@ class Bridge():
     def to_hyperevm_testnet(self, lots: int):
         eid = eids["hyperliquid_testnet"]
         lot_size = AssetManager(self.token_native, self.token_underlying).lot_size()
-        amount = Decimal(lots * lot_size) # TODO 10% buffer: * Decimal(1.1) 
+        amount = Decimal(lots * lot_size)
         foa = FAssetOFTAdapter(
             self.token_native, 
             self.token_underlying, 
@@ -63,6 +56,22 @@ class Bridge():
             self.ft
             )
         self._approve_tokens(foa.address, amount)
+        amount_uba = self.token_fasset.to_uba(amount)
+        options = foa.combine_options(eid)
+        send_params = self._get_send_params(eid, amount_uba, options)
+        native_fee = foa.quote_native_fee(send_params, False)
+        return foa.send(send_params, native_fee, 0, self.user_native_data.address)
+    
+    def from_hyperevm_testnet(self, lots: int):
+        eid = eids[self.token_native.name]
+        lot_size = AssetManager(self.token_native, self.token_underlying).lot_size()
+        amount = Decimal(lots * lot_size)
+        foa = FAssetOFTAdapter(
+            TokenBridged.FtestXRP_hyperevm, 
+            self.token_underlying,
+            self.user_native_data,
+            self.ft
+            )
         amount_uba = self.token_fasset.to_uba(amount)
         options = foa.combine_options(eid)
         send_params = self._get_send_params(eid, amount_uba, options)

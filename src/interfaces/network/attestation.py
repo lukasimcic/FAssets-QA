@@ -77,6 +77,10 @@ class Attestation():
             last_block: int,
             last_timestamp: int
             ) -> dict:
+        print({
+            "payment_reference": payment_reference,
+            "standardPaymentReference": pad_to_64_hex(payment_reference),
+        })
         return {
             "minimalBlockNumber": str(first_block),
             "deadlineBlockNumber": str(last_block),

@@ -1,5 +1,5 @@
 from typing import Optional
-from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
+from src.utils.data_structures import TokenBridged, TokenNative, TokenUnderlying, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_names
@@ -8,7 +8,7 @@ from src.utils.contracts import get_contract_names
 class FAssetOFTAdapter(ContractClient):
     def __init__(
             self,
-            token_native: TokenNative,
+            token_native: TokenNative | TokenBridged,
             token_underlying: TokenUnderlying,
             sender_data: Optional[UserNativeData] = None,
             fee_tracker: Optional[FeeTracker] = None

@@ -1,6 +1,5 @@
 from decimal import Decimal
 from typing import Optional
-from src.interfaces.network.bridge import bridged_address
 from src.utils.data_structures import TokenBridged, UserNativeData
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
@@ -19,6 +18,6 @@ class OFTUpgradeable(ContractClient):
         super().__init__(names, token_bridged, sender_data=sender_data, fee_tracker=fee_tracker)
 
     def get_balance(self) -> Decimal:
-        balance_uba = self.read("balanceOf", [bridged_address(self.sender_address)])
+        balance_uba = self.read("balanceOf", [self.sender_address])
         return self.token_fasset.from_uba(balance_uba)
     
