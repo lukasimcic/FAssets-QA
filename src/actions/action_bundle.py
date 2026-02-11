@@ -27,12 +27,16 @@ class ActionBundle(ABC):
         self.token_native = sm.token_native
         self.token_underlying = sm.token_underlying
         self.token_fasset = sm.token_fasset
+
+        # networks
+        self.native_network = sm.native_network
+        self.underlying_network = sm.underlying_network
         
         # secrets
-        self.native_data = sm.native_data
-        self.underlying_data = sm.underlying_data
-        self.partner_native_data = sm_partner.native_data
-        self.partner_underlying_data = sm_partner.underlying_data
+        self.native_credentials = sm.native_credentials
+        self.underlying_credentials = sm.underlying_credentials
+        self.partner_native_credentials = sm_partner.native_credentials
+        self.partner_underlying_credentials = sm_partner.underlying_credentials
         
         # loggers
         self.logger = sm.logger
@@ -46,7 +50,7 @@ class ActionBundle(ABC):
         self.pool_holdings = flow_state.pool_holdings
         
         # flow logic
-        self.lot_size = AssetManager(user_data.token_native, user_data.token_underlying).lot_size()
+        self.lot_size = AssetManager(self.native_network, self.token_fasset).lot_size()
         partner_data = user_data.partner_data()
         self.ca = core_actions(user_data, cli)
         self.ca_partner = core_actions(partner_data, cli)

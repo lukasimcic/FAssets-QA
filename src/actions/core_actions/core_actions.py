@@ -1,9 +1,9 @@
 from decimal import Decimal
 from abc import ABC, abstractmethod
 from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus, Token
 from typing import TYPE_CHECKING
-
+from src.interfaces.network.tokens import Token
+from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus
 if TYPE_CHECKING:
     from src.actions.core_actions.core_actions_cli import CoreActionsCLI
     from src.actions.core_actions.core_actions_manual import CoreActionsManual

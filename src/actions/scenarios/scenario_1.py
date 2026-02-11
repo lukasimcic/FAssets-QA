@@ -25,11 +25,11 @@ class Scenario1(ActionBundle):
         agents = [agent for agent in self.agents if agent.max_lots >= 1]
         agent = random.choice(agents)
         agent_address = agent.address
-        pool_address = AgentVault(self.token_native, agent_address, self.native_data).collateral_pool()
+        pool_address = AgentVault(self.native_network, agent_address, self.native_credentials).collateral_pool()
 
         # enter pool
         amount = random_decimal_between(Decimal(1), self.balances[self.token_native])
-        token_amount = collateral_to_tokens(self.token_native, pool_address, amount)
+        token_amount = collateral_to_tokens(self.native_network, pool_address, amount)
         self.ca.enter_pool(pool_address, token_amount, log_steps=True)
 
         # mint and redeem
@@ -42,15 +42,15 @@ class Scenario1(ActionBundle):
         remaining_lots = self.ca.redeem(lot_amount, log_steps=True)
 
         # wait timelock
-        am = AssetManager(self.token_native, self.token_underlying)
+        am = AssetManager(self.native_network, self.token_fasset)
         collateral_pool_token_timelock = am.collateral_pool_token_timelock_seconds()
         time.sleep(collateral_pool_token_timelock + 1)
 
         # exit pool and withdraw all fees
         self.ca.exit_pool(pool_address, token_amount, log_steps=True)
-        collateral_amount = tokens_to_collateral(self.token_native, pool_address, token_amount)
-        cp = CollateralPool(self.token_native, pool_address)
-        fee_amount_uba = cp.fAsset_fees_of(self.native_data.address)
+        collateral_amount = tokens_to_collateral(self.native_network, pool_address, token_amount)
+        cp = CollateralPool(self.native_network, pool_address)
+        fee_amount_uba = cp.fAsset_fees_of(self.native_credentials.address)
         fee_amount = self.token_fasset.from_uba(fee_amount_uba)
         self.ca.withdraw_pool_fees(pool_address, fee_amount, log_steps=True)
 
@@ -91,7 +91,7 @@ class Scenario1(ActionBundle):
         new_balances_2 = new_balances.copy()
         new_redemption_status_2 = self.redemption_status.copy()
         new_redemption_status_2.success.extend(redemption_ids)
-        redemption_fee = AssetManager(self.token_native, self.token_underlying).redemption_fee()
+        redemption_fee = AssetManager(self.native_network, self.token_fasset).redemption_fee()
         new_balances_2[self.token_underlying] -= self.lot_size * self.lot_amount * redemption_fee
 
         # pool holdings

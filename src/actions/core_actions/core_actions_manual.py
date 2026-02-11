@@ -6,7 +6,8 @@ from src.interfaces.user.state_manager import StateManager
 from src.interfaces.user.minter import Minter
 from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
-from src.utils.data_structures import AgentInfo, Balances, MintStatus, RedemptionStatus, Token, UserData, Pool, PoolHolding
+from src.interfaces.network.tokens import Token
+from src.utils.data_structures import AgentInfo, Balances, MintStatus, RedemptionStatus, UserData, Pool, PoolHolding
 
 
 class CoreActionsManual(CoreActions):
@@ -53,7 +54,7 @@ class CoreActionsManual(CoreActions):
     def get_agents(self, chunk_size: int = 10, log_steps: bool = False) -> list[AgentInfo]:
         agent_list = []
         start = 0
-        am = AssetManager(self.sm.token_native, self.sm.token_underlying)
+        am = AssetManager(self.sm.native_network, self.sm.token_fasset)
         while True:
             new = am.get_available_agents_detailed_list(start, start + chunk_size)
             agent_list.extend(new)
@@ -99,7 +100,7 @@ class CoreActionsManual(CoreActions):
         ) -> int:
         self.logger.info(f"Redeeming {lot_amount} lots.")
         if not executor:
-            executor = self.sm.token_native.zero_address
+            executor = self.sm.native_network.zero_address()
         remaining_lots = self.redeemer.redeem(
             lots=lot_amount, 
             executor=executor, 

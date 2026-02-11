@@ -1,11 +1,10 @@
 from typing import Optional
+from src.interfaces.network.tokens import Token, TokenNative, TokenUnderlying, TokenFAsset, TokenExternalNative, TokenExternalFAsset
 from src.interfaces.contracts.oft_upgradeable import OFTUpgradeable
 from src.flow.fee_tracker import FeeTracker
-from src.interfaces.network.native_networks.native_network import NativeNetwork
-from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.utils.data_structures import Balances, Token, TokenBridged, UserData, TokenNative, TokenUnderlying, TokenFasset
+from src.utils.data_structures import Balances, UserData
 
 
 class StateManager(User):
@@ -18,42 +17,35 @@ class StateManager(User):
         balances_dict = {}
         for token in tokens:
             if isinstance(token, TokenNative):
-                nn = NativeNetwork(
-                    self.token_native,
-                    self.native_data
-                )
-                balance = nn.get_balance()
+                nn = self.token_native.network(self.native_credentials)
+                balances_dict[token] = nn.get_balance()
             elif isinstance(token, TokenUnderlying):
-                un = UnderlyingNetwork(
-                    self.token_underlying,
-                    self.underlying_data
-                )
-                balance = un.get_balance()
-            elif isinstance(token, TokenFasset):
+                un = self.token_underlying.network(self.underlying_credentials)
+                balances_dict[token] = un.get_balance()
+            elif isinstance(token, TokenFAsset):
                 f = FAsset(
-                    self.token_native,
-                    self.token_underlying,
-                    self.native_data
+                    self.native_network,
+                    self.token_fasset,
+                    self.native_credentials
                 )
-                balance = f.get_balance()
-            elif isinstance(token, TokenBridged):
-                ou = OFTUpgradeable(token, self.native_data)
-                balance = ou.get_balance()
-            balances_dict[token] = balance
+                balances_dict[token] = f.get_balance()
+            elif isinstance(token, TokenExternalNative):
+                # TODO: implement external native balance retrieval
+                for token_fasset in tokens:
+                    if isinstance(token_fasset, TokenFAsset):
+                        token = TokenExternalFAsset.from_underlying(token_fasset.token_underlying, token)
+                        balances_dict[token] = OFTUpgradeable(
+                            token_fasset,
+                            self.native_credentials
+                        ).get_balance()
         balances = Balances(data=balances_dict)
         return balances
     
     def block_underlying_deposits(self) -> None:
-        un = UnderlyingNetwork(
-            self.token_underlying,
-            self.underlying_data
-        )
+        un = self.token_underlying.network(self.underlying_credentials)
         un.block_all_deposits()
 
     def unblock_underlying_deposits(self) -> None:
-        un = UnderlyingNetwork(
-            self.token_underlying,
-            self.underlying_data
-        )
+        un = self.token_underlying.network(self.underlying_credentials)
         un.unblock_all_deposits()
     

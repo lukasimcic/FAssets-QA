@@ -31,7 +31,7 @@ class EnterRandomPoolRandomAmount(ActionBundle):
         new_balances[self.token_native] -= self.amount
         new_balances.subtract_fees(self.ca.fee_tracker)
         # pool holdings
-        token_amount = collateral_to_tokens(self.token_native, self.pool.address, self.amount)
+        token_amount = collateral_to_tokens(self.native_network, self.pool.address, self.amount)
         new_pool_holdings = self.pool_holdings.copy()
         pool_already_in_holdings = False
         for pool_holding in new_pool_holdings:
@@ -58,7 +58,7 @@ class ExitRandomPoolRandomAmount(ActionBundle):
         super().__init__(user_data, flow_state, cli)
 
     def condition(self) -> bool:
-        self.pool_holdings = add_max_amount_to_stay_above_exit_CR(self.pool_holdings, self.token_native, self.token_underlying)
+        self.pool_holdings = add_max_amount_to_stay_above_exit_CR(self.pool_holdings, self.native_network, self.token_fasset)
         for pool_holding in self.pool_holdings:
             if pool_holding.max_amount_to_exit > 0:
                 return True
@@ -77,7 +77,7 @@ class ExitRandomPoolRandomAmount(ActionBundle):
     def expected_state(self) -> FlowState:
         # balances
         new_balances = self.balances.copy()
-        new_balances[self.token_native] += tokens_to_collateral(self.token_native, self.pool_holding.pool_address, self.amount)
+        new_balances[self.token_native] += tokens_to_collateral(self.native_network, self.pool_holding.pool_address, self.amount)
         new_balances.subtract_fees(self.ca.fee_tracker)
         # pool holdings
         new_pool_holdings = self.pool_holdings.copy()
@@ -96,6 +96,7 @@ class ExitRandomPoolRandomAmount(ActionBundle):
             tokens=[self.token_native, self.token_fasset],
             pool_holdings=True
         )
+
 
 class WithdrawPoolFeesRandomPool(ActionBundle):
     def __init__(self, user_data, flow_state, cli):

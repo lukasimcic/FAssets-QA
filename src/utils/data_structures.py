@@ -1,90 +1,19 @@
-from enum import Enum
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from decimal import Decimal
 import math
-import toml
 from src.flow.fee_tracker import FeeTracker
-
-config = toml.load(Path("config.toml"))
-contracts_file = config["file"]["contract_addresses"]
-rpc_url = config["network"]["rpc_url"]
-faucet_url = config["network"]["faucet_url"]
-fdc_url = config["network"]["fdc_url"]
-da_url = config["network"]["da_url"]
-zero_address = config["network"]["zero_address"]
-composer_address = config["network"]["composer_address"]
-
-    
-class UbaMixin:
-    def to_uba(self, amount: Decimal) -> int:
-        return int(amount * 10 ** self.decimals)
-    def from_uba(self, amount_uba: int) -> Decimal:
-        return Decimal(amount_uba) / Decimal(10) ** self.decimals
-
-class TokenNative(UbaMixin, Enum):
-    C2FLR = ("C2FLR", 18)
-    def __init__(self, name: str, decimals: int):
-        self._name_ = name
-        self.decimals = decimals
-        self.compare_tolerance = 10 ** (-decimals + 6)
-        self.contracts_file = contracts_file[name]
-        self.rpc_url = rpc_url[name]
-        self.faucet_url = faucet_url[name]
-        self.fdc_url = fdc_url[name]
-        self.da_url = da_url[name]
-        self.zero_address = zero_address[name]
-        self.composer_address = composer_address[name]
-
-class TokenUnderlying(UbaMixin, Enum):
-    testXRP = ("testXRP", 6)
-    def __init__(self, name: str, decimals: int):
-        self._name_ = name
-        self.decimals = decimals
-        self.compare_tolerance = 10 ** (-decimals + 1)
-        self.rpc_url = rpc_url[name]
-        self.faucet_url = faucet_url[name]
-
-class TokenFasset(UbaMixin, Enum):
-    FtestXRP = ("FTestXRP", TokenUnderlying.testXRP)
-    def __init__(self, name: str, token_underlying: TokenUnderlying):
-        self._name_ = name
-        self.token_underlying = token_underlying
-        self.decimals = token_underlying.decimals
-        self.compare_tolerance = 10 ** -self.decimals
-    @classmethod
-    def from_underlying(cls, underlying: TokenUnderlying):
-        name = f"F{underlying.name}"
-        return cls[name]
-    
-class TokenBridged(UbaMixin, Enum):
-    FtestXRP_hyperevm = ("FTestXRP_hyperevm", TokenFasset.FtestXRP, "hyperliquid_testnet")
-    FtestXRP_hypercore = ("FTestXRP_hypercore", TokenFasset.FtestXRP, "hyperliquid_testnet")
-    def __init__(self, name: str, token_fasset: TokenFasset, network: str):
-        self._name_ = name
-        self.token_fasset = token_fasset
-        self.decimals = token_fasset.decimals
-        self.compare_tolerance = 10 ** -self.decimals
-        self.rpc_url = rpc_url[network]
-        self.contracts_file = contracts_file[network]
-
-Token = Union[TokenNative, TokenUnderlying, TokenFasset, TokenBridged]
+from src.interfaces.network.tokens import Token, TokenExternalNative, TokenNative, TokenUnderlying
 
 
 @dataclass
 class UserData:
     token_native: TokenNative
     token_underlying: TokenUnderlying
+    tokens_external: Optional[list[TokenExternalNative]] = field(default_factory=list)
     num: Optional[int]  = None
     partner: Optional[bool]  = False
     funder: Optional[bool]  = False
-
-    def __post_init__(self):
-        if not isinstance(self.token_native, TokenNative):
-            self.token_native = TokenNative(self.token_native)
-        if not isinstance(self.token_underlying, TokenUnderlying):
-            self.token_underlying = TokenUnderlying(self.token_underlying)
 
     def partner_data(self) -> "UserData":
         return UserData(
@@ -96,16 +25,10 @@ class UserData:
     
 
 @dataclass
-class UserUnderlyingData:
+class UserCredentials:
     address: str
     private_key: str
-    public_key: str
-
-
-@dataclass
-class UserNativeData:
-    address: str
-    private_key: str
+    public_key: Optional[str] = None
 
 
 @dataclass
@@ -145,12 +68,9 @@ class Balances:
             items.append(f"{k.name}: {v:.{int(-math.log10(k.compare_tolerance))}f}")
         return f"Balances({{{', '.join(items)}}})"
     
-    def subtract_fees(self, fee_tracker: FeeTracker) -> None:   
+    def subtract_fees(self, fee_tracker: FeeTracker) -> None:
         for token in self.data:
-            if isinstance(token, TokenNative):
-                self.data[token] -= fee_tracker.native_fees()
-            elif isinstance(token, TokenUnderlying):
-                self.data[token] -= fee_tracker.underlying_fees()
+            self.data[token] -= fee_tracker.get_fees(token)
 
 
 @dataclass

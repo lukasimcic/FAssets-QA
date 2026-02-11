@@ -22,31 +22,32 @@ log = "user_data/logs"
 contract_interfaces = "contracts/interfaces"
 
 [file.contract_addresses]
-C2FLR = "contracts/addresses/coston2.json"
-hyperliquid_testnet = "contracts/addresses/hyperliquid_testnet.json"
+Coston2 = "contracts/addresses/Coston2.json"
+HyperEVM_testnet = "contracts/addresses/hyperliquid_testnet.json"
 
 # networks
 
 [network.rpc_url]
-C2FLR = "https://coston2-api.flare.network/ext/C/rpc"
-testXRP = "https://s.altnet.rippletest.net:51234/"
-hyperliquid_testnet = "https://rpc.hyperliquid-testnet.xyz/evm"
+Coston2 = "https://coston2-api.flare.network/ext/C/rpc"
+XRPL_testnet = "https://s.altnet.rippletest.net:51234/"
+HyperEVM_testnet = "https://rpc.hyperliquid-testnet.xyz/evm"
 
 [network.faucet_url]
-C2FLR = "https://faucet.flare.network/coston2"
-testXRP = "https://faucet.altnet.rippletest.net/accounts"
+Coston2 = "https://faucet.flare.network/coston2"
+XRPL_testnet = "https://faucet.altnet.rippletest.net/accounts"
 
 [network.fdc_url]
-C2FLR = "https://testnet-verifier-fdc-test.aflabs.org"
+Coston2 = "https://testnet-verifier-fdc-test.aflabs.org"
 
 [network.da_url]
-C2FLR = "https://ctn2-data-availability.flare.network"
+Coston2 = "https://ctn2-data-availability.flare.network"
 
 [network.zero_address]
-C2FLR = "0x0000000000000000000000000000000000000000"
+Coston2 = "0x0000000000000000000000000000000000000000"
 
 [network.composer_address]
-C2FLR = "0xF32eB6bf2Bc005Fa85eb61dBdc55Fcd60054B281"
+Coston2 = "0xF32eB6bf2Bc005Fa85eb61dBdc55Fcd60054B281"
 
 [network.eid]
-hyperliquid_testnet = 40362
+Coston2 = 40294
+HyperEVM_testnet = 40362

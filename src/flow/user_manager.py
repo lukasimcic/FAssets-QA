@@ -7,8 +7,6 @@ from src.actions.core_actions.core_actions import core_actions
 from src.interfaces.user.state_manager import StateManager
 from src.utils.data_structures import TokenNative, TokenUnderlying, UserData
 from src.utils.secrets import get_user_nums
-from src.interfaces.network.native_networks.native_network import NativeNetwork
-from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.user.funder import Funder
 from src.utils.data_storage import remove_inactive_records_for_user
 
@@ -34,9 +32,9 @@ class UserManager():
             self.funder = Funder(self.token_native, self.token_underlying, user_nums)
 
     def _generate_credentials(self) -> dict[str, dict[str, str]]:
-        un = UnderlyingNetwork(self.token_underlying)
+        un = self.token_underlying.network()
         secrets_underlying = un.generate_new_address()
-        nn = NativeNetwork(self.token_native)
+        nn = self.token_native.network()
         secrets_native = nn.generate_new_address()
         return {
             "native": secrets_native,  

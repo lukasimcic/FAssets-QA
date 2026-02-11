@@ -1,5 +1,5 @@
-from decimal import Decimal
 import time
+from typing import Optional, TYPE_CHECKING
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 from eth_account import Account
@@ -7,31 +7,32 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from src.interfaces.network.native_networks.native_network import NativeBaseNetwork
-from src.utils.data_structures import TokenNative
+from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+if TYPE_CHECKING:
+    from src.utils.data_structures import UserCredentials
 
 
-class C2FLR(NativeBaseNetwork):
-    def __init__(self, address: str, private_key: str):
+class Coston2(NativeNetwork):
+    def __init__(self, credentials: Optional["UserCredentials"] = None):
         super().__init__()
-        self.token_native = TokenNative.C2FLR
-        self.web3 = Web3(Web3.HTTPProvider(self.token_native.rpc_url))
+        self.web3 = Web3(Web3.HTTPProvider(self.rpc_url()))
         self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-        self.address = address
-        self.private_key = private_key
+        if credentials:
+            self.address = credentials.address
+            self.private_key = credentials.private_key
 
-    def get_balance(self) -> Decimal:
+    def get_balance(self) -> int:
         time.sleep(2) # avoid rate limiting
         balance_uba = self.web3.eth.get_balance(self.address)
-        return self.token_native.from_uba(balance_uba)
+        balance = self.web3.from_wei(balance_uba, 'ether')
+        return balance
     
-    def send_transaction(self, to_address: str, amount: Decimal) -> dict:
+    def send_transaction(self, to_address: str, amount_uba: int) -> dict:
         nonce = self.web3.eth.get_transaction_count(self.address)
-        amount_wei = self.token_native.to_uba(amount)
         tx = {
             'nonce': nonce,
             'to': to_address,
-            'value': amount_wei,
+            'value': amount_uba,
             'gas': 21000,
             'gasPrice': self.web3.eth.gas_price,
             'chainId': self.web3.eth.chain_id,
@@ -61,7 +62,7 @@ class C2FLR(NativeBaseNetwork):
         driver = webdriver.Chrome()  # or webdriver.Firefox() if you use Firefox
 
         try:
-            driver.get(self.token_native.faucet_url)
+            driver.get(self.faucet_url())
             wait = WebDriverWait(driver, 10)
             input_field = wait.until(EC.presence_of_element_located(
                 (By.XPATH, "//input[@placeholder='Flare address']")

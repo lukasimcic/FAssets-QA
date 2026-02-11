@@ -1,14 +1,28 @@
 from decimal import Decimal
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from pathlib import Path
 from typing import Optional
 from requests import Response
-from src.utils.data_structures import TokenUnderlying, UserUnderlyingData
+import toml
+from src.interfaces.network.networks.network import Network
 from src.flow.fee_tracker import FeeTracker
 
+config = toml.load(Path("config.toml"))
+rpc_url = config["network"]["rpc_url"]
+faucet_url = config["network"]["faucet_url"]
 
-class UnderlyingBaseNetwork(ABC):
+
+class UnderlyingNetwork(Network):
     def __init__(self, fee_tracker: Optional[FeeTracker]  = None):
         self.fee_tracker = fee_tracker
+
+    @classmethod
+    def rpc_url(cls):
+        return rpc_url[cls.__name__]
+    
+    @classmethod
+    def faucet_url(cls):
+        return faucet_url[cls.__name__]
 
     @abstractmethod
     def send_transaction(self, target: str, value: Decimal) -> dict:
@@ -45,20 +59,3 @@ class UnderlyingBaseNetwork(ABC):
     @abstractmethod
     def unblock_all_deposits(self) -> Response:
         pass
-
-
-class UnderlyingNetwork:
-    def __new__(cls, token: TokenUnderlying, underlying_data : Optional[UserUnderlyingData]  = None, fee_tracker: Optional[FeeTracker]  = None):
-        """
-        Factory method to create an instance of the appropriate network class.
-        Must be initialized with the token type, but other parameters depend on the specific network.
-        """
-        if token == TokenUnderlying.testXRP:
-            from src.interfaces.network.underlying_networks.testXRP import TestXRP
-            return TestXRP(
-                underlying_data.public_key if underlying_data else None, 
-                underlying_data.private_key if underlying_data else None,
-                fee_tracker=fee_tracker
-            )
-
-

@@ -1,6 +1,8 @@
 from decimal import Decimal
 from typing import Any, Optional
-from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
+from src.interfaces.network.tokens import TokenFAsset
+from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+from src.utils.data_structures import UserCredentials
 from src.flow.fee_tracker import FeeTracker
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_names, get_output_index
@@ -9,14 +11,14 @@ from src.utils.contracts import get_contract_names, get_output_index
 class AssetManager(ContractClient):
     def __init__(
             self, 
-            token_native: TokenNative,
-            token_underlying: TokenUnderlying, 
-            sender_data: Optional[UserNativeData]  = None, 
+            network: NativeNetwork,
+            token_fasset: TokenFAsset, 
+            sender_data: Optional[UserCredentials]  = None, 
             fee_tracker: Optional[FeeTracker]  = None
         ):
-        self.token_underlying = token_underlying
-        names = get_contract_names(self, token_underlying)
-        super().__init__(names, token_native, sender_data=sender_data, fee_tracker=fee_tracker)
+        self.token_fasset = token_fasset
+        names = get_contract_names(self, token_fasset)
+        super().__init__(names, network, sender_data=sender_data, fee_tracker=fee_tracker)
 
     # info
 
@@ -59,7 +61,7 @@ class AssetManager(ContractClient):
         settings = self.read("getSettings")
         idx = get_output_index(self.interface_name, "getSettings", "lotSizeAMG")
         lot_size_uba = settings[idx]
-        return int(self.token_underlying.from_uba(lot_size_uba))
+        return int(self.token_fasset.from_uba(lot_size_uba))
 
     def asset_price_nat_wei(self) -> dict[str, int]:
         asset_price_mul, asset_price_div = self.read("assetPriceNatWei")
@@ -94,16 +96,17 @@ class AssetManager(ContractClient):
     
     def reserve_collateral(self, agentVault: str, lots: int, executor: Optional[str] = None) -> dict:
         if not executor:
-            executor = self.token_native.zero_address
+            executor = self.network.zero_address()
         agent_fee_BIPS = self.agent_attribute(agentVault, "feeBIPS")
-        collateral_reservation_fee = self.collateral_reservation_fee(lots)
+        collateral_reservation_fee_uba = self.collateral_reservation_fee(lots)
+        collateral_reservation_fee = self.network.coin.from_uba(collateral_reservation_fee_uba)
         collateralReserved = self.write(
             "reserveCollateral",
             inputs=[agentVault, lots, agent_fee_BIPS, executor],
             events=["CollateralReserved"],
-            value=collateral_reservation_fee
+            value=collateral_reservation_fee_uba
         )["events"]
-        self.fee_tracker.native_other_fees += self.token_native.from_uba(collateral_reservation_fee)
+        self.fee_tracker.update_fees(self.network.coin, other_fees=collateral_reservation_fee)
         return collateralReserved["CollateralReserved"][0]
 
     def execute_minting(self, proof: tuple, collateral_reservation_id: int) -> dict:

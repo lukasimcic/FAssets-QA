@@ -63,7 +63,7 @@ class RedeemDefaultRandomRedemption(ActionBundle):
     def expected_state(self) -> FlowState:
         # balances
         lot_amount = self.record["lots"]
-        redemption_fee = AssetManager(self.token_native, self.token_underlying).redemption_fee()
+        redemption_fee = AssetManager(self.native_network, self.token_fasset).redemption_fee()
         new_balances = self.balances.copy()
         new_balances[self.token_underlying] += self.lot_size * lot_amount * (1 - redemption_fee)
         new_balances.subtract_fees(self.ca.fee_tracker)
@@ -95,7 +95,7 @@ class RedeemDefaultRandomRedemptionBlockUnderlying(RedeemDefaultRandomRedemption
     @property
     def expected_state(self) -> FlowState:
         normal_expected_state = super().expected_state
-        redemption_fee = AssetManager(self.token_native, self.token_underlying).redemption_fee()
+        redemption_fee = AssetManager(self.native_network, self.token_fasset).redemption_fee()
         lot_amount = self.record["lots"]
         new_balances = normal_expected_state.balances.copy()
         new_balances[self.token_underlying] += self.lot_size * lot_amount * (1 - redemption_fee)

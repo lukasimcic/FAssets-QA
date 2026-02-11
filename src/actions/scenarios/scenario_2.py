@@ -27,18 +27,18 @@ class Scenario2(ActionBundle):
         # enter pool
         min_amount = CollateralPool.min_nat_to_enter
         enter_amount_collateral = random_decimal_between(Decimal(min_amount), self.balances[self.token_native])
-        enter_amount_tokens = collateral_to_tokens(self.token_native, pool_address, enter_amount_collateral)
+        enter_amount_tokens = collateral_to_tokens(self.native_network, pool_address, enter_amount_collateral)
         self.ca.enter_pool(pool_address, enter_amount_collateral, log_steps=True)
 
         # wait timelock
-        am = AssetManager(self.token_native, self.token_underlying)
+        am = AssetManager(self.native_network, self.token_fasset)
         collateral_pool_token_timelock = am.collateral_pool_token_timelock_seconds()
         time.sleep(collateral_pool_token_timelock + 1)
 
         # get the amount of debt-free pool tokens
-        cp = CollateralPool(self.token_native, pool_address)
-        cpt = CollateralPoolToken(self.token_native, cp.pool_token())
-        debt_free_tokens_UBA = cp.debt_free_tokens_of(self.native_data.address)
+        cp = CollateralPool(self.native_network, pool_address)
+        cpt = CollateralPoolToken(self.native_network, cp.pool_token())
+        debt_free_tokens_UBA = cp.debt_free_tokens_of(self.native_credentials.address)
         debt_free_tokens = cpt.from_uba(debt_free_tokens_UBA)
         if debt_free_tokens == 0:
             self.logger.info("No debt-free pool tokens available.")
@@ -49,14 +49,14 @@ class Scenario2(ActionBundle):
             # transfer pool tokens to partner bot
             self.ca.transfer_pool_tokens(
                 pool_address, 
-                self.partner_native_data.address, 
+                self.partner_native_credentials.address, 
                 transfer_amount_tokens
                 )
             self.partner_logger.info(f"Got {transfer_amount_tokens} of pool tokens from user bot.")
 
             # exit pool from partner bot
             time.sleep(5)
-            max_exit_amount = cp.max_amount_to_stay_above_exit_CR(self.token_underlying)
+            max_exit_amount = cp.max_amount_to_stay_above_exit_CR(self.token_fasset)
             exit_amount_tokens = min(transfer_amount_tokens, max_exit_amount)
             if max_exit_amount == 0:
                 self.partner_logger.info("No collateral can be exited from the pool without going below exit CR.")
@@ -102,7 +102,7 @@ class Scenario2(ActionBundle):
     def partner_expected_state(self) -> FlowState:
         # balances
         new_balances = self.partner_balances.copy()
-        new_balances[self.token_native] += tokens_to_collateral(self.token_native, self.pool_address, self.exit_amount_tokens)
+        new_balances[self.token_native] += tokens_to_collateral(self.native_network, self.pool_address, self.exit_amount_tokens)
         new_balances.subtract_fees(self.ca_partner.fee_tracker)
         # pool holdings
         new_pool_holdings = self.partner_pool_holdings.copy()

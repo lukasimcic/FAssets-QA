@@ -1,8 +1,10 @@
 from decimal import Decimal
 import random
+from src.interfaces.network.tokens import TokenFAsset, TokenNative, TokenUnderlying
+from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
 from src.interfaces.contracts.collateral_pool import CollateralPool
 from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
-from src.utils.data_structures import AgentInfo, PoolHolding, TokenUnderlying, TokenNative
+from src.utils.data_structures import AgentInfo, PoolHolding
 
 
 def max_lots_available(agents : list[AgentInfo]) -> int:
@@ -19,15 +21,15 @@ def can_enter_pool(balances, token_native: TokenNative) -> bool:
     min_amount = CollateralPool.min_nat_to_enter
     return token_native in balances and balances[token_native] >= min_amount
 
-def add_max_amount_to_stay_above_exit_CR(pool_holdings: list[PoolHolding], token_native: TokenNative, token_underlying: TokenUnderlying) -> list[PoolHolding]:
+def add_max_amount_to_stay_above_exit_CR(pool_holdings: list[PoolHolding], native_network: NativeNetwork, token_fasset: TokenFAsset) -> list[PoolHolding]:
     for pool_holding in pool_holdings:
-        cp = CollateralPool(token_native, pool_holding.pool_address)
-        pool_holding.max_amount_to_exit = cp.max_amount_to_stay_above_exit_CR(token_underlying)
+        cp = CollateralPool(native_network, pool_holding.pool_address)
+        pool_holding.max_amount_to_exit = cp.max_amount_to_stay_above_exit_CR(token_fasset)
     return pool_holdings
 
-def collateral_to_tokens(token_native: TokenNative, pool: str, amount_native: Decimal) -> Decimal:
-    cp = CollateralPool(token_native, pool)   
-    cpt = CollateralPoolToken(token_native, cp.pool_token())
+def collateral_to_tokens(native_network: NativeNetwork, pool: str, amount_native: Decimal) -> Decimal:
+    cp = CollateralPool(native_network, pool)   
+    cpt = CollateralPoolToken(native_network, cp.pool_token())
     collateral = cpt.to_uba(amount_native)
     total_collateral = cp.total_collateral()
     total_pool_tokens = cpt.total_supply()
@@ -36,18 +38,18 @@ def collateral_to_tokens(token_native: TokenNative, pool: str, amount_native: De
     tokens = (total_pool_tokens * collateral) / total_collateral
     return cpt.from_uba(tokens)
 
-def tokens_to_collateral(token_native: TokenNative, pool: str, amount_pool_tokens: Decimal) -> Decimal:
-    cp = CollateralPool(token_native, pool)   
-    cpt = CollateralPoolToken(token_native, cp.pool_token())
+def tokens_to_collateral(native_network: NativeNetwork, pool: str, amount_pool_tokens: Decimal) -> Decimal:
+    cp = CollateralPool(native_network, pool)   
+    cpt = CollateralPoolToken(native_network, cp.pool_token())
     pool_tokens = cpt.to_uba(amount_pool_tokens)
     total_collateral = cp.total_collateral()
     total_pool_tokens = cpt.total_supply()
     collateral = (total_collateral * pool_tokens) / total_pool_tokens
     return cpt.from_uba(collateral)
     
-def tokens_to_fees(token_native: TokenNative, pool: str, amount_pool_tokens: Decimal) -> Decimal:
-    cp = CollateralPool(token_native, pool)   
-    cpt = CollateralPoolToken(token_native, cp.pool_token())
+def tokens_to_fees(native_network: NativeNetwork, pool: str, amount_pool_tokens: Decimal) -> Decimal:
+    cp = CollateralPool(native_network, pool)   
+    cpt = CollateralPoolToken(native_network, cp.pool_token())
     pool_tokens = cpt.to_uba(amount_pool_tokens)
     total_fees = cp.total_fAsset_fees()
     total_pool_tokens = cpt.total_supply()

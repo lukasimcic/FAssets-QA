@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 import toml
 import typer
+from src.interfaces.network.tokens import TokenNative, TokenUnderlying
 from src.flow.flow import Flow
 from src.actions import ACTION_BUNDLE_CLASSES
-from src.utils.data_structures import UserData, TokenNative, TokenUnderlying
+from src.utils.data_structures import UserData
 from src.flow.user_manager import UserManager
 from src.utils.secrets import get_user_nums
 

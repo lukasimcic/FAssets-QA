@@ -1,8 +1,7 @@
 from typing import Optional
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.interfaces.network.native_networks.native_network import NativeNetwork
-from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
+from src.interfaces.network.networks.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.network.attestation import Attestation
 from src.utils.data_storage import DataStorageClient
 from src.utils.data_structures import MintStatus, UserData
@@ -19,7 +18,7 @@ class Minter(User):
         Reserve collateral with the AssetManager contract.
         Returns paymentAddress, valueUBA, feeUBA, paymentReference.
         """
-        am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
+        am = AssetManager(self.native_network, self.token_fasset, self.native_credentials, self.fee_tracker)
         outputs = am.reserve_collateral(agent_vault, lots, executor)
         return outputs
 
@@ -28,7 +27,7 @@ class Minter(User):
         Pay underlying asset after reserving collateral.
         Returns dictionary including transaction hash, amount and fees paid.
         """
-        un = UnderlyingNetwork(self.token_underlying, self.underlying_data, self.fee_tracker)
+        un = self.token_underlying.network(self.underlying_credentials, self.fee_tracker)
         amount = self.token_underlying.from_uba(value_UBA + fee_UBA)
         response = un.send_transaction(
             to_address=payment_address,
@@ -38,7 +37,7 @@ class Minter(User):
         return response
     
     def _get_payment_proof(self, underlying_hash: str) -> dict:
-        a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key, self.fee_tracker)
+        a = Attestation(self.native_network, self.token_underlying, self.native_credentials, self.indexer_api_key, self.fee_tracker)
         request_body = a.request_body_payment(underlying_hash)
         response = a.prepare_attestation_request(request_body, "Payment")
         abi_encoded_request = response["abiEncodedRequest"]
@@ -91,7 +90,7 @@ class Minter(User):
         """
         Execute minting after receiving attestation proof.
         """
-        am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
+        am = AssetManager(self.native_network, self.token_fasset, self.native_credentials, self.fee_tracker)
         tx = am.execute_minting(proof, collateral_reservation_id)
         return tx
     
@@ -99,7 +98,7 @@ class Minter(User):
         """
         Save mint request data to data storage.
         """
-        current_timestamp = NativeNetwork(self.token_native).get_current_timestamp()
+        current_timestamp = self.token_native.network().get_current_timestamp()
         request_data = {
             "type" : "mint",
             "requestId": str(reserve_collateral_data.collateralReservationId),
@@ -153,14 +152,14 @@ class Minter(User):
         """
         Returns the status of all mint requests in storage.
         """
-        a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key)
+        a = Attestation(self.native_network, self.token_underlying, self.native_credentials, self.indexer_api_key)
         first_block, _ = a.get_block_range()
         records = self.dsc.get_records()
         statuses = {"pending": [], "expired": []}
         for record in records:
             tx_hash = record["transactionHash"]
             request_id = int(record["requestId"])
-            un = UnderlyingNetwork(self.token_underlying)
+            un = self.token_underlying.network()
             tx_block = un.get_block_of_tx(tx_hash)
             if tx_block < first_block:
                 statuses["expired"].append(request_id)

@@ -4,9 +4,11 @@ import json
 import os
 from datetime import datetime, timezone
 import toml
+from src.interfaces.network.tokens import TokenFAsset
 from src.interfaces.contracts.asset_manager_controller import AssetManagerController
 from src.actions.core_actions.core_actions import CoreActions
-from src.utils.data_structures import TokenFasset, UserData
+from src.utils.data_structures import UserData
+
 
 config = toml.load("config.toml")
 data_storage_folder = Path(config["folder"]["data_storage"])
@@ -17,11 +19,12 @@ class DataStorageClient():
         if action_type not in ["redeem", "mint"]:
             raise ValueError("action_type must be either 'redeem' or 'mint'")
         # set file name to match fasset-bots project format
-        asset_manager_controller_snippet = (
-            AssetManagerController(user_data.token_native, user_data.token_underlying).address
-            )[2:10]
+        asset_manager_controller_snippet = AssetManagerController(
+            user_data.token_native.network, 
+            TokenFAsset.from_underlying(user_data.token_underlying)
+            ).address[2:10]
         user_name = f"user{'_partner' if user_data.partner else ''}_{user_data.num}"
-        token_fasset = TokenFasset.from_underlying(user_data.token_underlying)
+        token_fasset = TokenFAsset.from_underlying(user_data.token_underlying)
         folder_name = f"{asset_manager_controller_snippet}-{token_fasset.name}-{action_type}"
         self.folder = data_storage_folder / user_name[:-2] / user_name / folder_name
         if not self.folder.exists():

@@ -3,24 +3,26 @@ from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 import warnings
 import time
+from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
+from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
 from src.utils.contracts import get_contract_abi, get_contract_address
 from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import TokenBridged, TokenNative, TokenUnderlying, UserNativeData
+from src.utils.data_structures import UserCredentials
 
 
 class ContractClient:
     def __init__(
             self, 
             contract_names: dict[str, str],
-            token_native: TokenNative | TokenBridged, 
+            network: NativeNetwork | ExternalNetwork, 
             address: Optional[str] = None,
-            sender_data: Optional[UserNativeData]  = None,
+            sender_data: Optional[UserCredentials]  = None,
             fee_tracker: Optional[FeeTracker]  = None,
             timeout: Optional[int]  = None
         ):
         self.interface_name = contract_names["interface"]
         self.instance_name = contract_names["instance"]
-        self.token_native = token_native
+        self.network = network
         self.address = address
         self.sender_data = sender_data
         self.sender_address = sender_data.address if sender_data else None
@@ -30,13 +32,13 @@ class ContractClient:
         kwargs = {}
         if timeout is not None:
             kwargs['timeout'] = timeout
-        self.web3 = Web3(Web3.HTTPProvider(self.token_native.rpc_url, request_kwargs=kwargs))
+        self.web3 = Web3(Web3.HTTPProvider(self.network.rpc_url(), request_kwargs=kwargs))
         self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         assert self.web3.is_connected()
         
         abi = get_contract_abi(self.interface_name)
         if address is None:
-            self.address = get_contract_address(self.instance_name, self.token_native)
+            self.address = get_contract_address(self.instance_name, self.network)
         self.contract = self.web3.eth.contract(self.address, abi=abi)
 
     def _build_transaction(self, method: str, args: list[str] = [], value: int = 0) -> dict:
@@ -92,8 +94,9 @@ class ContractClient:
         tx = self._build_transaction(method, inputs, value)
         receipt = self._sign_and_send_transaction(tx)
         events = self._get_events_from_receipt(receipt, events)
-        fees = receipt.gasUsed * getattr(receipt, 'effectiveGasPrice', tx['gasPrice'])
-        self.fee_tracker.native_gas_fees += self.token_native.from_uba(fees)
+        fees_uba = receipt.gasUsed * getattr(receipt, 'effectiveGasPrice', tx['gasPrice'])
+        fees = self.network.coin.from_uba(fees_uba)
+        self.fee_tracker.update_fees(self.network.coin, gas_fees=fees)
         return {"receipt": receipt, "events": events}
     
     def read(self, method: str, inputs: list = []) -> Any:

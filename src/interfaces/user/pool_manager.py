@@ -9,15 +9,15 @@ from src.flow.fee_tracker import FeeTracker
 class PoolManager(User):
     def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
         super().__init__(user_data, fee_tracker)
-        self.native_address = self.native_data.address
+        self.native_address = self.native_credentials.address
         
     def enter_pool(self, pool: str, amount: Decimal, log_steps: bool = False) -> None:
         """
         Enter the collateral pool by calling the CollateralPool contract.
         Amount is in pool tokens (type Decimal), not in UBA (type int).
         """
-        cp = CollateralPool(self.token_native, pool, self.native_data, self.fee_tracker)
-        cpt = CollateralPoolToken(self.token_native, cp.pool_token())
+        cp = CollateralPool(self.native_network, pool, self.native_credentials, self.fee_tracker)
+        cpt = CollateralPoolToken(self.native_network, cp.pool_token())
         amount_UBA = cpt.to_uba(amount)
         cp.enter(amount_UBA)
 
@@ -26,8 +26,8 @@ class PoolManager(User):
         Exit the collateral pool by calling the CollateralPool contract.
         Amount is in pool tokens (type Decimal), not in UBA (type int).
         """
-        cp = CollateralPool(self.token_native, pool, self.native_data, self.fee_tracker)
-        cpt = CollateralPoolToken(self.token_native, cp.pool_token())
+        cp = CollateralPool(self.native_network, pool, self.native_credentials, self.fee_tracker)
+        cpt = CollateralPoolToken(self.native_network, cp.pool_token())
         amount_UBA = cpt.to_uba(amount)
         cp.exit(amount_UBA)
 
@@ -36,7 +36,7 @@ class PoolManager(User):
         Withdraw fees from the collateral pool by calling the CollateralPool contract.
         Fees is in fasset tokens (type Decimal), not in UBA (type int).
         """
-        cp = CollateralPool(self.token_native, pool, self.native_data, self.fee_tracker)
+        cp = CollateralPool(self.native_network, pool, self.native_credentials, self.fee_tracker)
         fees_UBA = self.token_fasset.to_uba(fees)
         cp.withdraw_fees(fees_UBA)
 
@@ -46,7 +46,7 @@ class PoolManager(User):
         """
         agent_list = []
         start = 0
-        am = AssetManager(self.token_native, self.token_underlying)
+        am = AssetManager(self.native_network, self.token_fasset)
         while True:
             new = am.get_available_agents_detailed_list(start, start + chunk_size)
             agent_list.extend(new)
@@ -70,12 +70,12 @@ class PoolManager(User):
             pool_address = pool.address
             pool_dict = {"pool_address": pool_address}
             # holdings
-            cp = CollateralPool(self.token_native, pool_address)
+            cp = CollateralPool(self.native_network, pool_address)
             debt_free_tokens = cp.debt_free_tokens_of(self.native_address)
             debt_locked_tokens = cp.debt_locked_tokens_of(self.native_address)
             tokens = debt_free_tokens + debt_locked_tokens
             if tokens > 0:
-                cpt = CollateralPoolToken(self.token_native, cp.pool_token())
+                cpt = CollateralPoolToken(self.native_network, cp.pool_token())
                 tokens = cpt.from_uba(tokens)
                 pool_dict["pool_tokens"] = tokens
             # fasset fees
@@ -92,8 +92,8 @@ class PoolManager(User):
         Transfer pool tokens to another address.
         Amount is in pool tokens (type Decimal), not in UBA (type int).
         """
-        cp = CollateralPool(self.token_native, pool_address, self.native_data, self.fee_tracker)
+        cp = CollateralPool(self.native_network, pool_address, self.native_credentials, self.fee_tracker)
         pool_token_address = cp.pool_token()
-        cpt = CollateralPoolToken(self.token_native, pool_token_address, self.native_data, self.fee_tracker)
+        cpt = CollateralPoolToken(self.native_network, pool_token_address, self.native_credentials, self.fee_tracker)
         amount_UBA = cpt.to_uba(amount)
         cpt.transfer(to_address, amount_UBA)

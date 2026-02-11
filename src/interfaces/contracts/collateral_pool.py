@@ -1,8 +1,10 @@
 from decimal import Decimal
 from typing import Optional
+from src.interfaces.network.tokens import TokenFAsset
+from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
 from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
 from src.interfaces.contracts.asset_manager import AssetManager
-from src.utils.data_structures import TokenNative, UserNativeData
+from src.utils.data_structures import UserCredentials
 from src.flow.fee_tracker import FeeTracker
 from src.utils.contracts import get_contract_names
 from .contract_client import ContractClient
@@ -12,13 +14,13 @@ class CollateralPool(ContractClient):
     min_nat_to_enter = Decimal(1)
     def __init__(
             self, 
-            token_native: TokenNative,
+            network: NativeNetwork,
             pool_address: str, 
-            sender_data: Optional[UserNativeData]  = None, 
+            sender_data: Optional[UserCredentials]  = None, 
             fee_tracker: Optional[FeeTracker]  = None
         ):
         names = get_contract_names(self)
-        super().__init__(names, token_native, pool_address, sender_data=sender_data, fee_tracker=fee_tracker)
+        super().__init__(names, network, pool_address, sender_data=sender_data, fee_tracker=fee_tracker)
 
     def agent_vault(self) -> str:
         return self.read("agentVault")
@@ -53,12 +55,12 @@ class CollateralPool(ContractClient):
     def fAsset_fees_of(self, address: str) -> int:
         return self.read("fAssetFeesOf", [address])
     
-    def max_amount_to_stay_above_exit_CR(self, token_underlying) -> Decimal:
+    def max_amount_to_stay_above_exit_CR(self, token_fasset: TokenFAsset) -> Decimal:
         """
         Returns the maximum amount of collateral that can be exited from the pool.
         """
-        am = AssetManager(self.token_native, token_underlying)
-        cpt = CollateralPoolToken(self.token_native, self.pool_token())
+        am = AssetManager(self.network, token_fasset)
+        cpt = CollateralPoolToken(self.network, self.pool_token())
         asset_price = am.asset_price_nat_wei()
         backed_fAssets = am.get_fAssets_backed_by_pool(self.agent_vault())
         exit_cr = self.exit_collateral_ratio_bips() / 1e4

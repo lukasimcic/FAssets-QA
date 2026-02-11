@@ -1,9 +1,10 @@
 import json
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import toml
 from pathlib import Path
-from src.utils.data_structures import TokenBridged, TokenFasset, TokenNative, TokenUnderlying, TokenUnderlying
-from typing import TYPE_CHECKING
+from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
+from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+from src.interfaces.network.tokens import TokenFAsset
 if TYPE_CHECKING:
     from src.interfaces.contracts.contract_client import ContractClient
 
@@ -11,16 +12,15 @@ config = toml.load("config.toml")
 contract_interfaces_folder = config["folder"]["contract_interfaces"]
 
 
-def get_contract_names(cl: "ContractClient", token_underlying: Optional[TokenUnderlying] = None) -> str:
+def get_contract_names(cl: "ContractClient", token_fasset: Optional[TokenFAsset] = None) -> str:
     name = cl.__class__.__name__
     names = {"instance": name, "interface": name}
-    if token_underlying:
-        token_fasset = TokenFasset.from_underlying(token_underlying)
+    if token_fasset:
         names["instance"] += f"_{token_fasset.name}"
     return names
 
-def get_contract_address(instance_name: str, token_native: TokenNative | TokenBridged) -> str:
-    with open(token_native.contracts_file, "r") as f:
+def get_contract_address(instance_name: str, network: NativeNetwork | ExternalNetwork) -> str:
+    with open(network.contracts_file(), "r") as f:
         contracts = json.load(f)
     for contract in contracts:
         if contract.get("name") == instance_name:
