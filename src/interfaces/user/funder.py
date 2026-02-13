@@ -1,15 +1,16 @@
 from decimal import Decimal
-from typing import Optional
-from src.interfaces.network.tokens import TokenNative, TokenUnderlying
+from typing import TYPE_CHECKING, Optional
 from src.interfaces.user.state_manager import StateManager
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.utils.data_structures import UserData
 from src.utils.secrets import get_user_nums
+if TYPE_CHECKING:
+    from src.interfaces.network.tokens import TokenNative, TokenUnderlying
 
 
 class Funder(User):
-    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_nums: Optional[list[int]]  = None):
+    def __init__(self, token_native: "TokenNative", token_underlying: "TokenUnderlying", user_nums: Optional[list[int]]  = None):
         self.user_data = UserData(
             token_native=token_native,
             token_underlying=token_underlying,

@@ -1,26 +1,27 @@
 from decimal import Decimal
-from typing import Optional
-from src.interfaces.network.tokens import TokenFAsset
-from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
-from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
-from src.interfaces.contracts.asset_manager import AssetManager
-from src.utils.data_structures import UserCredentials
-from src.flow.fee_tracker import FeeTracker
+from typing import Optional, TYPE_CHECKING
 from src.utils.contracts import get_contract_names
 from .contract_client import ContractClient
+from src.interfaces.contracts.asset_manager import AssetManager
+from src.interfaces.contracts.collateral_pool_token import CollateralPoolToken
+if TYPE_CHECKING:
+    from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+    from src.interfaces.network.tokens import TokenFAsset
+    from src.utils.data_structures import UserCredentials
+    from src.flow.fee_tracker import FeeTracker
 
 
 class CollateralPool(ContractClient):
     min_nat_to_enter = Decimal(1)
     def __init__(
             self, 
-            network: NativeNetwork,
+            network: "NativeNetwork",
             pool_address: str, 
-            sender_data: Optional[UserCredentials]  = None, 
-            fee_tracker: Optional[FeeTracker]  = None
+            sender_credentials: Optional["UserCredentials"]  = None, 
+            fee_tracker: Optional["FeeTracker"]  = None
         ):
         names = get_contract_names(self)
-        super().__init__(names, network, pool_address, sender_data=sender_data, fee_tracker=fee_tracker)
+        super().__init__(names, network, pool_address, sender_credentials=sender_credentials, fee_tracker=fee_tracker)
 
     def agent_vault(self) -> str:
         return self.read("agentVault")
@@ -55,7 +56,7 @@ class CollateralPool(ContractClient):
     def fAsset_fees_of(self, address: str) -> int:
         return self.read("fAssetFeesOf", [address])
     
-    def max_amount_to_stay_above_exit_CR(self, token_fasset: TokenFAsset) -> Decimal:
+    def max_amount_to_stay_above_exit_CR(self, token_fasset: "TokenFAsset") -> Decimal:
         """
         Returns the maximum amount of collateral that can be exited from the pool.
         """
@@ -67,4 +68,4 @@ class CollateralPool(ContractClient):
         # from (N - n) q >= F p cr
         amount_UBA = self.total_collateral() - backed_fAssets * exit_cr * asset_price["mul"] / asset_price["div"]
         amount = cpt.from_uba(amount_UBA)
-        return max(amount, Decimal(0)) 
+        return max(amount, Decimal(0))

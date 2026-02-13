@@ -1,16 +1,18 @@
 from decimal import Decimal
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
 from src.interfaces.network.attestation import Attestation
 from src.utils.data_storage import DataStorageClient
 from src.utils.encoding import pad_0x, unpad_0x
-from src.utils.data_structures import RedemptionStatus, UserData
-from src.flow.fee_tracker import FeeTracker
+from src.utils.data_structures import RedemptionStatus
+if TYPE_CHECKING:
+    from src.utils.data_structures import UserData
+    from src.flow.fee_tracker import FeeTracker
 
 
 class Redeemer(User):
-    def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
+    def __init__(self, user_data : "UserData", fee_tracker : Optional["FeeTracker"]  = None):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "redeem")
 
@@ -116,7 +118,7 @@ class Redeemer(User):
         self.dsc.remove_record(redemption_id)
         self.log_step(f"Redemption data removed from storage.", log_steps)
 
-    def redemption_status(self) -> RedemptionStatus:
+    def redemption_status(self) -> "RedemptionStatus":
         """
         Get statuses of all saved redemptions.
         """

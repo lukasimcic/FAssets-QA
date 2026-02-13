@@ -1,10 +1,13 @@
 from decimal import Decimal
 import random
 import time
+from typing import TYPE_CHECKING
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_enter_pool, collateral_to_tokens, random_decimal_between, tokens_to_collateral
 from src.interfaces.contracts import *
-from src.utils.data_structures import FlowState, PoolHolding, RelevantInfo
+from src.utils.data_structures import PoolHolding, RelevantInfo
+if TYPE_CHECKING:
+    from src.utils.data_structures import FlowState
 
 
 class Scenario2(ActionBundle):
@@ -76,7 +79,7 @@ class Scenario2(ActionBundle):
 
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         # balances
         new_balances = self.balances.copy()
         new_balances[self.token_native] -= self.enter_amount_collateral
@@ -99,7 +102,7 @@ class Scenario2(ActionBundle):
     
 
     @property
-    def partner_expected_state(self) -> FlowState:
+    def partner_expected_state(self) -> "FlowState":
         # balances
         new_balances = self.partner_balances.copy()
         new_balances[self.token_native] += tokens_to_collateral(self.native_network, self.pool_address, self.exit_amount_tokens)
@@ -124,7 +127,7 @@ class Scenario2(ActionBundle):
         return self.partner_flow_state.replace([new_balances, new_pool_holdings])
     
 
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         return RelevantInfo(
             tokens=[self.token_native, self.token_fasset],
             pool_holdings=True

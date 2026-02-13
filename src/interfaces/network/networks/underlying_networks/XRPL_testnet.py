@@ -8,13 +8,14 @@ from xrpl.transaction import sign, autofill, submit
 import requests
 from decimal import Decimal
 from src.interfaces.network.networks.underlying_networks.underlying_network import UnderlyingNetwork
-from src.flow.fee_tracker import FeeTracker
 if TYPE_CHECKING:
     from src.utils.data_structures import UserCredentials
+    from src.flow.fee_tracker import FeeTracker
+    from src.interfaces.network.tokens import TokenUnderlying
 
 
 class XRPL_testnet(UnderlyingNetwork):
-    def __init__(self, credentials: Optional["UserCredentials"] = None, fee_tracker: Optional[FeeTracker]  = None):
+    def __init__(self, credentials: Optional["UserCredentials"] = None, fee_tracker: Optional["FeeTracker"]  = None):
         super().__init__(fee_tracker=fee_tracker)
         self.client = JsonRpcClient(self.rpc_url())
         if credentials:
@@ -30,7 +31,9 @@ class XRPL_testnet(UnderlyingNetwork):
             }
         return secrets
 
-    def get_balance(self) -> Decimal:
+    def get_balance(self, token: "TokenUnderlying") -> Decimal:
+        if token.network != type(self):
+            raise ValueError(f"Token {token.name} does not belong to network {type(self).__name__}.")
         # full balance
         acct_info = AccountInfo(
             account=self.wallet.classic_address, 

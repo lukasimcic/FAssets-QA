@@ -1,10 +1,10 @@
 from decimal import Decimal
 from abc import ABC, abstractmethod
-from src.flow.fee_tracker import FeeTracker
 from typing import TYPE_CHECKING
-from src.interfaces.network.tokens import Token
-from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus
+from src.flow.fee_tracker import FeeTracker
 if TYPE_CHECKING:
+    from src.interfaces.network.tokens import Token
+    from src.utils.data_structures import AgentInfo, Balances, Pool, PoolHolding, RedemptionStatus, MintStatus
     from src.actions.core_actions.core_actions_cli import CoreActionsCLI
     from src.actions.core_actions.core_actions_manual import CoreActionsManual
 
@@ -16,29 +16,29 @@ class CoreActions(ABC):
     # state (user-specific) retrieval
 
     @abstractmethod
-    def get_balances(self, tokens: list[Token], log_steps: bool = False) -> Balances:
+    def get_balances(self, tokens: list["Token"], log_steps: bool = False) -> "Balances":
         pass
 
     @abstractmethod
-    def get_mint_status(self, log_steps: bool = False) -> MintStatus:
+    def get_mint_status(self, log_steps: bool = False) -> "MintStatus":
         pass
 
     @abstractmethod
-    def get_redemption_status(self, log_steps: bool = False) -> RedemptionStatus:
+    def get_redemption_status(self, log_steps: bool = False) -> "RedemptionStatus":
         pass
 
     @abstractmethod
-    def get_pool_holdings(self, log_steps: bool = False) -> list[PoolHolding]:
+    def get_pool_holdings(self, log_steps: bool = False) -> list["PoolHolding"]:
         pass
 
     # info (system-specific) retrieval
 
     @abstractmethod
-    def get_agents(self, log_steps: bool = False) -> list[AgentInfo]:
+    def get_agents(self, log_steps: bool = False) -> list["AgentInfo"]:
         pass
 
     @abstractmethod
-    def get_pools(self, log_steps: bool = False) -> list[Pool]:
+    def get_pools(self, log_steps: bool = False) -> list["Pool"]:
         pass
 
     # logging

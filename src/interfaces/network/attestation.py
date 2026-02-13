@@ -1,15 +1,16 @@
 import functools
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 import random
 import requests
 import json
 import time
 from src.interfaces.network.tokens import TokenUnderlying
-from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
-from src.flow.fee_tracker import FeeTracker
 from src.interfaces.contracts import *
 from src.utils.encoding import pad_right_to_64_hex, to_utf8_hex_string, keccak256_text
-from src.utils.data_structures import UserCredentials
+if TYPE_CHECKING:
+    from src.flow.fee_tracker import FeeTracker
+    from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+    from src.utils.data_structures import UserCredentials
 
 
 def retry_on_exception(max_attempts=20, min_wait=10, max_wait=15):
@@ -29,17 +30,17 @@ def retry_on_exception(max_attempts=20, min_wait=10, max_wait=15):
 class Attestation():
     def __init__(
             self, 
-            native_network: NativeNetwork, 
-            token_underlying: TokenUnderlying, 
-            user_native_credentials: UserCredentials, 
+            native_network: "NativeNetwork", 
+            token_underlying: "TokenUnderlying", 
+            user_native_credentials: "UserCredentials", 
             indexer_api_key: str, 
-            fee_tracker: Optional[FeeTracker]  = None
+            fee_tracker: Optional["FeeTracker"]  = None
         ):
         self.native_network = native_network
         self.token_underlying = token_underlying
         self.contract_inputs = {
             "network": native_network,
-            "sender_data": user_native_credentials,
+            "sender_credentials": user_native_credentials,
             "fee_tracker": fee_tracker
         }
         self.headers = {
@@ -91,10 +92,6 @@ class Attestation():
             last_block: int,
             last_timestamp: int
             ) -> dict:
-        print({
-            "payment_reference": payment_reference,
-            "standardPaymentReference": pad_right_to_64_hex(payment_reference),
-        })
         return {
             "minimalBlockNumber": str(first_block),
             "deadlineBlockNumber": str(last_block),

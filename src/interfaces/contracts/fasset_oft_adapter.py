@@ -1,23 +1,25 @@
-from typing import Optional
-from src.interfaces.network.tokens import TokenFAsset
-from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
-from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
-from src.utils.data_structures import UserCredentials
-from src.flow.fee_tracker import FeeTracker
+from typing import Optional, TYPE_CHECKING
 from .contract_client import ContractClient
 from src.utils.contracts import get_contract_names
+if TYPE_CHECKING:
+    from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
+    from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+    from src.utils.data_structures import UserCredentials
+    from src.interfaces.network.tokens import TokenFAsset
+    from src.flow.fee_tracker import FeeTracker
+
 
 
 class FAssetOFTAdapter(ContractClient):
     def __init__(
             self,
-            network: NativeNetwork | ExternalNetwork,
-            token_fasset: TokenFAsset,
-            sender_data: Optional[UserCredentials] = None,
-            fee_tracker: Optional[FeeTracker] = None
+            network: "NativeNetwork | ExternalNetwork",
+            token_fasset: "TokenFAsset",
+            sender_credentials: Optional["UserCredentials"] = None,
+            fee_tracker: Optional["FeeTracker"] = None
         ):
         names = get_contract_names(self, token_fasset)
-        super().__init__(names, network, sender_data=sender_data, fee_tracker=fee_tracker)
+        super().__init__(names, network, sender_credentials=sender_credentials, fee_tracker=fee_tracker)
 
     def combine_options(self, dst_eid: int, msg_type: int = 1, extra_options: str = "0x") -> str:
         return self.read("combineOptions", inputs=[dst_eid, msg_type, extra_options])

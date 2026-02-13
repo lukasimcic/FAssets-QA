@@ -1,7 +1,5 @@
 import time
 from typing import Optional, TYPE_CHECKING
-from web3 import Web3
-from web3.middleware import ExtraDataToPOAMiddleware
 from eth_account import Account
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -14,18 +12,7 @@ if TYPE_CHECKING:
 
 class Coston2(NativeNetwork):
     def __init__(self, credentials: Optional["UserCredentials"] = None):
-        super().__init__()
-        self.web3 = Web3(Web3.HTTPProvider(self.rpc_url()))
-        self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-        if credentials:
-            self.address = credentials.address
-            self.private_key = credentials.private_key
-
-    def get_balance(self) -> int:
-        time.sleep(2) # avoid rate limiting
-        balance_uba = self.web3.eth.get_balance(self.address)
-        balance = self.web3.from_wei(balance_uba, 'ether')
-        return balance
+        super().__init__(credentials)
     
     def send_transaction(self, to_address: str, amount_uba: int) -> dict:
         nonce = self.web3.eth.get_transaction_count(self.address)

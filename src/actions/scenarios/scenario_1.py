@@ -1,11 +1,14 @@
 from decimal import Decimal
 import random
 import time
+from typing import TYPE_CHECKING
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_mint, can_enter_pool, collateral_to_tokens, random_decimal_between, tokens_to_collateral
 from src.interfaces.contracts import *
 from src.utils.data_storage import DataStorageClient
-from src.utils.data_structures import FlowState, RelevantInfo
+from src.utils.data_structures import RelevantInfo
+if TYPE_CHECKING:
+    from src.utils.data_structures import FlowState
 
 
 class Scenario1(ActionBundle):
@@ -65,7 +68,7 @@ class Scenario1(ActionBundle):
 
 
     @property
-    def expected_state(self) -> list[FlowState]:
+    def expected_state(self) -> list["FlowState"]:
         new_balances = self.balances.copy()
         new_balances.subtract_fees(self.ca.fee_tracker)
 
@@ -107,7 +110,7 @@ class Scenario1(ActionBundle):
             ]
     
     
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         return RelevantInfo(
             tokens=[self.token_underlying, self.token_native, self.token_fasset],
             mint_status=True,

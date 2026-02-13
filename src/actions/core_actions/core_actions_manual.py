@@ -1,17 +1,19 @@
 from decimal import Decimal
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 from src.actions.core_actions.core_actions import CoreActions
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.state_manager import StateManager
 from src.interfaces.user.minter import Minter
 from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
-from src.interfaces.network.tokens import Token
-from src.utils.data_structures import AgentInfo, Balances, MintStatus, RedemptionStatus, UserData, Pool, PoolHolding
+from src.utils.data_structures import AgentInfo
+if TYPE_CHECKING:
+    from src.utils.data_structures import Balances, MintStatus, RedemptionStatus, UserData, Pool, PoolHolding
+    from src.interfaces.network.tokens import Token
 
 
 class CoreActionsManual(CoreActions):
-    def __init__(self, user_data : UserData):
+    def __init__(self, user_data : "UserData"):
         super().__init__()
         self.sm = StateManager(user_data, fee_tracker=self.fee_tracker)
         self.minter = Minter(user_data, fee_tracker=self.fee_tracker)
@@ -21,37 +23,37 @@ class CoreActionsManual(CoreActions):
 
     # state retrieval
 
-    def get_balances(self, tokens: list[Token], log_steps: bool = False) -> Balances:
+    def get_balances(self, tokens: list["Token"], log_steps: bool = False) -> "Balances":
         balances = self.sm.get_balances(tokens, log_steps=log_steps)
         if log_steps:
             self.logger.info(f"Balances: {balances}")
         return balances
 
-    def get_pools(self, log_steps: bool = False) -> list[Pool]:
+    def get_pools(self, log_steps: bool = False) -> list["Pool"]:
         pools = self.pool_manager.pools(log_steps=log_steps)
         if log_steps:
             self.logger.info(f"Pools: {pools}")
         return pools
 
-    def get_pool_holdings(self, log_steps: bool = False) -> list[PoolHolding]:
+    def get_pool_holdings(self, log_steps: bool = False) -> list["PoolHolding"]:
         pool_holdings = self.pool_manager.pool_holdings(log_steps=log_steps)
         if log_steps:
             self.logger.info(f"Pool holdings: {pool_holdings}")
         return pool_holdings
     
-    def get_mint_status(self, log_steps: bool = False) -> MintStatus:
+    def get_mint_status(self, log_steps: bool = False) -> "MintStatus":
         mint_status = self.minter.mint_status()
         if log_steps:
             self.logger.info(f"Mint status: {mint_status}")
         return mint_status
 
-    def get_redemption_status(self, log_steps: bool = False) -> RedemptionStatus:
+    def get_redemption_status(self, log_steps: bool = False) -> "RedemptionStatus":
         redemption_status = self.redeemer.redemption_status()
         if log_steps:
             self.logger.info(f"Redemption status: {redemption_status}")
         return redemption_status
     
-    def get_agents(self, chunk_size: int = 10, log_steps: bool = False) -> list[AgentInfo]:
+    def get_agents(self, chunk_size: int = 10, log_steps: bool = False) -> list["AgentInfo"]:
         agent_list = []
         start = 0
         am = AssetManager(self.sm.native_network, self.sm.token_fasset)

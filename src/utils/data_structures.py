@@ -1,16 +1,17 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from decimal import Decimal
 import math
-from src.flow.fee_tracker import FeeTracker
-from src.interfaces.network.tokens import Token, TokenExternalNative, TokenNative, TokenUnderlying
+if TYPE_CHECKING:
+    from src.flow.fee_tracker import FeeTracker
+    from src.interfaces.network.tokens import Token, TokenExternalNative, TokenNative, TokenUnderlying
 
 
 @dataclass
 class UserData:
-    token_native: TokenNative
-    token_underlying: TokenUnderlying
-    tokens_external: Optional[list[TokenExternalNative]] = field(default_factory=list)
+    token_native: "TokenNative"
+    token_underlying: "TokenUnderlying"
+    tokens_external: Optional[list["TokenExternalNative"]] = field(default_factory=list)
     num: Optional[int]  = None
     partner: Optional[bool]  = False
     funder: Optional[bool]  = False
@@ -27,24 +28,24 @@ class UserData:
 @dataclass
 class UserCredentials:
     address: str
-    private_key: str
+    private_key: Optional[str] = None
     public_key: Optional[str] = None
 
 
 @dataclass
 class Balances:
-    data: Dict[Token, Decimal] = field(default_factory=dict)
+    data: Dict["Token", Decimal] = field(default_factory=dict)
 
-    def __getitem__(self, key: Token) -> Decimal:
+    def __getitem__(self, key: "Token") -> Decimal:
         return self.data[key]
     
-    def get(self, key: Token, default=None) -> Decimal:
+    def get(self, key: "Token", default=None) -> Decimal:
         return self.data.get(key, default)
     
-    def __setitem__(self, key: Token, value: Decimal) -> None:
+    def __setitem__(self, key: "Token", value: Decimal) -> None:
         self.data[key] = value
 
-    def __contains__(self, key: Token) -> bool:
+    def __contains__(self, key: "Token") -> bool:
         return key in self.data
     
     def copy(self) -> "Balances":
@@ -68,7 +69,7 @@ class Balances:
             items.append(f"{k.name}: {v:.{int(-math.log10(k.compare_tolerance))}f}")
         return f"Balances({{{', '.join(items)}}})"
     
-    def subtract_fees(self, fee_tracker: FeeTracker) -> None:
+    def subtract_fees(self, fee_tracker: "FeeTracker") -> None:
         for token in self.data:
             self.data[token] -= fee_tracker.get_fees(token)
 
@@ -256,7 +257,7 @@ class FlowState:
 
 @dataclass
 class RelevantInfo:
-    tokens: list[Token]
+    tokens: list["Token"]
     mint_status: bool = False
     redemption_status: bool = False
     pool_holdings: bool = False

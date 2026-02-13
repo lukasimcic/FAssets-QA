@@ -3,12 +3,14 @@ import os
 import requests
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 import toml
-from src.interfaces.network.tokens import TokenNative, TokenUnderlying, TokenFAsset
 from src.utils.secrets import load_user_secrets
-from src.utils.data_structures import UserCredentials, UserData
-from src.flow.fee_tracker import FeeTracker
+from src.utils.data_structures import UserCredentials
+from src.interfaces.network.tokens import TokenFAsset
+if TYPE_CHECKING:
+    from src.flow.fee_tracker import FeeTracker
+    from src.utils.data_structures import UserData
 
 config = toml.load("config.toml")
 log_folder = Path(config["folder"]["log"])
@@ -19,7 +21,7 @@ BOT_CHANNEL_ID = int(os.environ["BOT_CHANNEL_ID"])
 
 
 class User(ABC):
-    def __init__(self, user_data: UserData, fee_tracker : FeeTracker = None):
+    def __init__(self, user_data: "UserData", fee_tracker : "FeeTracker" = None):
         token_native, token_underlying, num, partner, funder = (
             user_data.token_native,
             user_data.token_underlying,
@@ -33,9 +35,9 @@ class User(ABC):
         self.fee_tracker = fee_tracker
 
         # tokens
-        self.token_native : TokenNative = token_native
-        self.token_underlying : TokenUnderlying = token_underlying
-        self.token_fasset : TokenFAsset = TokenFAsset.from_underlying(token_underlying)
+        self.token_native = token_native
+        self.token_underlying = token_underlying
+        self.token_fasset = TokenFAsset.from_underlying(token_underlying)
 
         # networks
         self.native_network = token_native.network

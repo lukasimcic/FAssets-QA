@@ -1,11 +1,14 @@
 import traceback
 import random
 import time
-from typing import Literal, Optional
-from src.actions.action_bundle import ActionBundle
-from src.actions.core_actions.core_actions import CoreActions, core_actions
+from typing import TYPE_CHECKING, Literal, Optional
+from src.actions.core_actions.core_actions import core_actions
 from src.actions import ACTION_BUNDLE_CLASSES
-from src.utils.data_structures import RelevantInfo, UserData, FlowState
+from src.utils.data_structures import RelevantInfo, FlowState
+if TYPE_CHECKING:
+    from src.actions.action_bundle import ActionBundle
+    from src.actions.core_actions.core_actions import CoreActions
+    from src.utils.data_structures import UserData
 
 
 class Flow():
@@ -28,7 +31,7 @@ class Flow():
     """
     def __init__(
         self,
-        user_data: UserData,
+        user_data: "UserData",
         actions: list[str],
         cli: bool = False,
         total_time: Optional[int]  = None, 
@@ -59,7 +62,7 @@ class Flow():
             self.ca_partner.log(message, level)
 
     @staticmethod
-    def _flow_state(ca: CoreActions, relevant_info: RelevantInfo, log_steps: bool) -> FlowState:
+    def _flow_state(ca: "CoreActions", relevant_info: "RelevantInfo", log_steps: bool) -> "FlowState":
         flow_state = FlowState(ca.get_balances(relevant_info.tokens, log_steps))
         if relevant_info.mint_status:
             flow_state.mint_status = ca.get_mint_status(log_steps)
@@ -72,7 +75,7 @@ class Flow():
     def _update_flow_state(self, log_steps: bool = True) -> None:
         self.flow_state = self._flow_state(self.ca, self.relevant_info, log_steps)
 
-    def _get_partner_flow_state(self, log_steps: bool = True) -> FlowState:
+    def _get_partner_flow_state(self, log_steps: bool = True) -> "FlowState":
         return self._flow_state(self.ca_partner, self.relevant_info, log_steps)
     
     def _step(self) -> Optional[bool] :
@@ -94,7 +97,7 @@ class Flow():
             return None
 
         else:
-            bundle : ActionBundle = random.choice(action_bundles)
+            bundle : "ActionBundle" = random.choice(action_bundles)
             self._log(f"-- Executing action {bundle.__class__.__name__} --", level="info")
             
             successful = True

@@ -1,30 +1,32 @@
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from src.interfaces.user.user_bot import UserBot
 from src.actions.core_actions.core_actions import CoreActions
-from src.interfaces.network.tokens import Token
-from src.utils.data_structures import Balances, MintStatus, RedemptionStatus, Pool, UserData, PoolHolding, AgentInfo
+if TYPE_CHECKING: 
+    from src.interfaces.network.tokens import Token
+    from src.utils.data_structures import Balances, MintStatus, RedemptionStatus, Pool, UserData, PoolHolding, AgentInfo
 
 
 class CoreActionsCLI(CoreActions):
-    def __init__(self, user_data : UserData):
+    def __init__(self, user_data : "UserData"):
         super().__init__()
         self.user_bot = UserBot(user_data)
 
     # state retrieval
 
-    def get_balances(self, tokens: list[Token], log_steps: bool = False) -> Balances:
+    def get_balances(self, tokens: list["Token"], log_steps: bool = False) -> "Balances":
         return self.user_bot.get_balances(log_steps=log_steps)
 
-    def get_pools(self, log_steps: bool = False) -> list[Pool]:
+    def get_pools(self, log_steps: bool = False) -> list["Pool"]:
         return self.user_bot.get_pools(log_steps=log_steps)
 
-    def get_pool_holdings(self, log_steps: bool = False) -> list[PoolHolding]:
+    def get_pool_holdings(self, log_steps: bool = False) -> list["PoolHolding"]:
         return self.user_bot.get_pool_holdings(log_steps=log_steps)
 
-    def get_mint_status(self, log_steps: bool = False) -> MintStatus:
+    def get_mint_status(self, log_steps: bool = False) -> "MintStatus":
         return self.user_bot.get_mint_status(log_steps=log_steps)
     
-    def get_redemption_status(self, log_steps: bool = False) -> RedemptionStatus:
+    def get_redemption_status(self, log_steps: bool = False) -> "RedemptionStatus":
         return self.user_bot.get_redemption_status(log_steps=log_steps)
     
     # logging
@@ -46,7 +48,7 @@ class CoreActionsCLI(CoreActions):
     def exit_pool(self, pool_address: str, amount: Decimal, log_steps: bool = False) -> None:
         self.user_bot.exit_pool(pool_address, amount, log_steps=log_steps)
 
-    def get_agents(self, log_steps: bool = False) -> list[AgentInfo]:
+    def get_agents(self, log_steps: bool = False) -> list["AgentInfo"]:
         return self.user_bot.get_agents(log_steps=log_steps)
 
     def withdraw_pool_fees(self, pool_address: str, fees: Decimal, log_steps: bool = False) -> None:

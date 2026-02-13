@@ -1,11 +1,12 @@
 from decimal import Decimal
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from requests import Response
 import toml
 from src.interfaces.network.networks.network import Network
-from src.flow.fee_tracker import FeeTracker
+if TYPE_CHECKING:
+    from src.flow.fee_tracker import FeeTracker
 
 config = toml.load(Path("config.toml"))
 rpc_url = config["network"]["rpc_url"]
@@ -13,15 +14,15 @@ faucet_url = config["network"]["faucet_url"]
 
 
 class UnderlyingNetwork(Network):
-    def __init__(self, fee_tracker: Optional[FeeTracker]  = None):
+    def __init__(self, fee_tracker: Optional["FeeTracker"]  = None):
         self.fee_tracker = fee_tracker
 
     @classmethod
-    def rpc_url(cls):
+    def rpc_url(cls) -> str:
         return rpc_url[cls.__name__]
     
     @classmethod
-    def faucet_url(cls):
+    def faucet_url(cls) -> str:
         return faucet_url[cls.__name__]
 
     @abstractmethod

@@ -1,15 +1,16 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.interfaces.network.networks.underlying_networks.underlying_network import UnderlyingNetwork
 from src.interfaces.network.attestation import Attestation
 from src.utils.data_storage import DataStorageClient
-from src.utils.data_structures import MintStatus, UserData
-from src.flow.fee_tracker import FeeTracker
+from src.utils.data_structures import MintStatus
+if TYPE_CHECKING:
+    from src.utils.data_structures import UserData
+    from src.flow.fee_tracker import FeeTracker
 
 
 class Minter(User):
-    def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
+    def __init__(self, user_data : "UserData", fee_tracker : Optional["FeeTracker"]  = None):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "mint")
 
@@ -148,7 +149,7 @@ class Minter(User):
         self.dsc.remove_record(collateral_reservation_id)
         self.log_step(f"Minting executed in transaction: {tx.blockHash.hex()}.", log_steps)
 
-    def mint_status(self) -> MintStatus:
+    def mint_status(self) -> "MintStatus":
         """
         Returns the status of all mint requests in storage.
         """

@@ -1,14 +1,16 @@
 import json
 import os
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 import toml
 from src.actions.core_actions.core_actions import core_actions
 from src.interfaces.user.state_manager import StateManager
-from src.utils.data_structures import TokenNative, TokenUnderlying, UserData
+from src.utils.data_structures import UserData
 from src.utils.secrets import get_user_nums
 from src.interfaces.user.funder import Funder
 from src.utils.data_storage import remove_inactive_records_for_user
+if TYPE_CHECKING:
+    from src.utils.data_structures import TokenNative, TokenUnderlying
 
 config = toml.load("config.toml")
 secrets_folder = Path(config["folder"]["secrets"])
@@ -16,7 +18,7 @@ secrets_folder = Path(config["folder"]["secrets"])
 
 # TODO: unify naming in secrets, check usage in fasset-bots
 class UserManager():
-    def __init__(self, token_native: TokenNative, token_underlying: TokenUnderlying, user_nums: Optional[list[int]]  = None):
+    def __init__(self, token_native: "TokenNative", token_underlying: "TokenUnderlying", user_nums: Optional[list[int]]  = None):
         self.token_native = token_native
         self.token_underlying = token_underlying
         self.wallet_data = {

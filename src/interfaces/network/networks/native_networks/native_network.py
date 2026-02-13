@@ -1,8 +1,16 @@
 from decimal import Decimal
 from abc import abstractmethod
 from pathlib import Path
+from typing import TYPE_CHECKING, Optional
+import time
 import toml
+from web3 import Web3
+from web3.middleware import ExtraDataToPOAMiddleware
 from src.interfaces.network.networks.network import Network
+from src.interfaces.contracts.fasset import FAsset
+if TYPE_CHECKING:
+    from src.interfaces.network.tokens import TokenFAsset, TokenNative
+    from src.utils.data_structures import UserCredentials
 
 config = toml.load(Path("config.toml"))
 contracts_file : dict[str, str] = config["file"]["contract_addresses"]
@@ -16,42 +24,62 @@ eid : dict[str, int] = config["network"]["eid"]
 
 
 class NativeNetwork(Network):
+    def __init__(self, credentials: Optional["UserCredentials"] = None):
+        self.web3 = Web3(Web3.HTTPProvider(self.rpc_url()))
+        self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+        if credentials:
+            self.credentials = credentials
+            self.address = credentials.address
+            self.private_key = credentials.private_key
 
     @classmethod
-    def rpc_url(cls):
+    def rpc_url(cls) -> str:
         return rpc_url[cls.__name__]
     
     @classmethod
-    def faucet_url(cls):
+    def faucet_url(cls) -> str:
         return faucet_url[cls.__name__]
 
     @classmethod
-    def contracts_file(cls):
+    def contracts_file(cls) -> str:
         return contracts_file[cls.__name__]
 
     @classmethod
-    def fdc_url(cls):
+    def fdc_url(cls) -> str:
         return fdc_url[cls.__name__]
 
     @classmethod
-    def da_url(cls):
+    def da_url(cls) -> str:
         return da_url[cls.__name__]
 
     @classmethod
-    def zero_address(cls):
+    def zero_address(cls) -> str:
         return zero_address[cls.__name__]
 
     @classmethod
-    def composer_address(cls):
+    def composer_address(cls) -> str:
         return composer_address[cls.__name__]
     
     @classmethod
-    def eid(cls):
+    def eid(cls) -> int:
         return eid[cls.__name__]
 
-    @abstractmethod
-    def get_balance(self) -> Decimal:
-        pass
+    def get_balance(self, token: "TokenNative | TokenFAsset") -> int:
+        time.sleep(2) # avoid rate limiting
+        from src.interfaces.network.tokens import TokenNative, TokenFAsset
+        if isinstance(token, TokenNative):
+            if token.network != type(self):
+                raise ValueError(f"Token {token.name} does not belong to network {type(self).__name__}.")
+            balance_uba = self.web3.eth.get_balance(self.address)
+            balance = self.web3.from_wei(balance_uba, 'ether')
+        elif isinstance(token, TokenFAsset):
+            f = FAsset(
+                    self,
+                    token,
+                    self.credentials
+                )
+            balance = f.get_balance()
+        return balance
 
     @abstractmethod
     def send_transaction(self, to_address: str, amount: Decimal) -> dict:

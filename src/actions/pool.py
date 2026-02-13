@@ -1,9 +1,12 @@
 import random
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from src.interfaces.contracts.collateral_pool import CollateralPool
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import random_decimal_between, add_max_amount_to_stay_above_exit_CR, can_enter_pool, collateral_to_tokens, tokens_to_collateral
-from src.utils.data_structures import FlowState, PoolHolding, RelevantInfo
+from src.utils.data_structures import PoolHolding, RelevantInfo
+if TYPE_CHECKING:
+    from src.utils.data_structures import FlowState
 
 
 class EnterRandomPoolRandomAmount(ActionBundle):
@@ -25,7 +28,7 @@ class EnterRandomPoolRandomAmount(ActionBundle):
         self.amount = amount
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         # balances
         new_balances = self.balances.copy()
         new_balances[self.token_native] -= self.amount
@@ -46,7 +49,7 @@ class EnterRandomPoolRandomAmount(ActionBundle):
             ))
         return self.flow_state.replace([new_balances, new_pool_holdings])
 
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         return RelevantInfo(
             tokens=[self.token_native, self.token_fasset],
             pool_holdings=True
@@ -74,7 +77,7 @@ class ExitRandomPoolRandomAmount(ActionBundle):
         self.amount = amount 
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         # balances
         new_balances = self.balances.copy()
         new_balances[self.token_native] += tokens_to_collateral(self.native_network, self.pool_holding.pool_address, self.amount)
@@ -91,7 +94,7 @@ class ExitRandomPoolRandomAmount(ActionBundle):
                 pool_holding.max_amount_to_exit = None
         return self.flow_state.replace([new_balances, new_pool_holdings])
 
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         return RelevantInfo(
             tokens=[self.token_native, self.token_fasset],
             pool_holdings=True
@@ -118,7 +121,7 @@ class WithdrawPoolFeesRandomPool(ActionBundle):
         self.amount = amount
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         # balances
         new_balances = self.balances.copy()
         new_balances[self.token_fasset] += self.amount
@@ -130,7 +133,7 @@ class WithdrawPoolFeesRandomPool(ActionBundle):
                 pool_holding.fasset_fees -= self.amount
         return self.flow_state.replace([new_balances, new_pool_holdings])
 
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         return RelevantInfo(
             tokens=[self.token_native, self.token_fasset],
             pool_holdings=True

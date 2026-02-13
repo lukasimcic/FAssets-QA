@@ -1,8 +1,11 @@
 import random
+from typing import TYPE_CHECKING
 from src.utils.data_storage import DataStorageClient
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.action_bundle import ActionBundle
-from src.utils.data_structures import FlowState, RelevantInfo
+from src.utils.data_structures import RelevantInfo
+if TYPE_CHECKING:
+    from src.utils.data_structures import FlowState
 
 
 class RedeemRandomAmount(ActionBundle):
@@ -24,7 +27,7 @@ class RedeemRandomAmount(ActionBundle):
         self.remaining_lots = remaining_lots
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         # balances
         new_balances = self.balances.copy()
         new_balances[self.token_fasset] -= self.lot_size * (self.lot_amount - self.remaining_lots)
@@ -36,7 +39,7 @@ class RedeemRandomAmount(ActionBundle):
         new_redemption_status.pending.extend(redemption_ids)
         return self.flow_state.replace([new_balances, new_redemption_status])
 
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         return RelevantInfo(
             tokens=[self.token_underlying, self.token_native, self.token_fasset],
             redemption_status=True
@@ -60,7 +63,7 @@ class RedeemDefaultRandomRedemption(ActionBundle):
         self.ca.redeem_default(redemption_id, log_steps=True)
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         # balances
         lot_amount = self.record["lots"]
         redemption_fee = AssetManager(self.native_network, self.token_fasset).redemption_fee()
@@ -72,7 +75,7 @@ class RedeemDefaultRandomRedemption(ActionBundle):
         new_redemption_status.default.remove(self.redemption_id)
         return self.flow_state.replace([new_balances, new_redemption_status])
     
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         return RelevantInfo(
             tokens=[self.token_underlying, self.token_native, self.token_fasset],
             redemption_status=True
@@ -93,7 +96,7 @@ class RedeemDefaultRandomRedemptionBlockUnderlying(RedeemDefaultRandomRedemption
             sm.unblock_underlying_deposits()
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         normal_expected_state = super().expected_state
         redemption_fee = AssetManager(self.native_network, self.token_fasset).redemption_fee()
         lot_amount = self.record["lots"]
@@ -101,7 +104,7 @@ class RedeemDefaultRandomRedemptionBlockUnderlying(RedeemDefaultRandomRedemption
         new_balances[self.token_underlying] += self.lot_size * lot_amount * (1 - redemption_fee)
         return normal_expected_state.replace([new_balances])
     
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         return RelevantInfo(
             tokens=[self.token_underlying, self.token_native, self.token_fasset],
             redemption_status=True

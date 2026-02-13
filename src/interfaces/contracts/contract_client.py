@@ -1,32 +1,32 @@
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 import warnings
 import time
-from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
-from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
 from src.utils.contracts import get_contract_abi, get_contract_address
-from src.flow.fee_tracker import FeeTracker
-from src.utils.data_structures import UserCredentials
-
+if TYPE_CHECKING:
+    from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+    from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
+    from src.utils.data_structures import UserCredentials
+    from src.flow.fee_tracker import FeeTracker
 
 class ContractClient:
     def __init__(
             self, 
             contract_names: dict[str, str],
-            network: NativeNetwork | ExternalNetwork, 
+            network: "NativeNetwork | ExternalNetwork",
             address: Optional[str] = None,
-            sender_data: Optional[UserCredentials]  = None,
-            fee_tracker: Optional[FeeTracker]  = None,
+            sender_credentials: Optional["UserCredentials"]  = None,
+            fee_tracker: Optional["FeeTracker"]  = None,
             timeout: Optional[int]  = None
         ):
         self.interface_name = contract_names["interface"]
         self.instance_name = contract_names["instance"]
         self.network = network
         self.address = address
-        self.sender_data = sender_data
-        self.sender_address = sender_data.address if sender_data else None
-        self.sender_private_key = sender_data.private_key if sender_data else None
+        self.sender_credentials = sender_credentials
+        self.sender_address = sender_credentials.address if sender_credentials else None
+        self.sender_private_key = sender_credentials.private_key if sender_credentials else None
         self.fee_tracker = fee_tracker
         
         kwargs = {}

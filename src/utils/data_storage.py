@@ -1,13 +1,14 @@
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 import json
 import os
 from datetime import datetime, timezone
 import toml
 from src.interfaces.network.tokens import TokenFAsset
 from src.interfaces.contracts.asset_manager_controller import AssetManagerController
-from src.actions.core_actions.core_actions import CoreActions
-from src.utils.data_structures import UserData
+if TYPE_CHECKING:
+    from src.actions.core_actions.core_actions import CoreActions
+    from src.utils.data_structures import UserData
 
 
 config = toml.load("config.toml")
@@ -15,7 +16,7 @@ data_storage_folder = Path(config["folder"]["data_storage"])
 
 
 class DataStorageClient():
-    def __init__(self, user_data : UserData, action_type: Literal["redeem", "mint"]):
+    def __init__(self, user_data : "UserData", action_type: Literal["redeem", "mint"]):
         if action_type not in ["redeem", "mint"]:
             raise ValueError("action_type must be either 'redeem' or 'mint'")
         # set file name to match fasset-bots project format
@@ -81,7 +82,7 @@ class DataStorageClient():
         return list(set(existing_ids).difference(set(previous_ids)))
     
 
-def remove_inactive_records_for_user(user_data: UserData, ca: CoreActions) -> None:
+def remove_inactive_records_for_user(user_data: "UserData", ca: "CoreActions") -> None:
     # redemptions
     redemption_status = ca.get_redemption_status()
     inactive_ids = redemption_status.success + redemption_status.expired

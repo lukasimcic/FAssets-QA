@@ -1,16 +1,18 @@
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.actions.core_actions.core_actions import core_actions
 from src.interfaces.user.user_bot import UserBot
 from src.interfaces.user.state_manager import StateManager
-from src.utils.data_structures import FlowState, RelevantInfo, UserData
+if TYPE_CHECKING:
+    from src.utils.data_structures import FlowState, RelevantInfo, UserData
 
 
 class ActionBundle(ABC):
     def __init__(
             self,
-            user_data: UserData,
-            flow_state : FlowState,
+            user_data: "UserData",
+            flow_state : "FlowState",
             cli: bool
         ):
 
@@ -66,14 +68,14 @@ class ActionBundle(ABC):
 
     @property
     @abstractmethod
-    def expected_state(self) -> FlowState | list[FlowState]:
+    def expected_state(self) -> "FlowState | list[FlowState]":
         pass
 
     def general_conditions(self) -> bool:
         enough_native = self.balances[self.token_native] > 10  # to avoid gas issues
         return enough_native
     
-    def update_partner_flow_state(self, partner_flow_state : FlowState) -> None:
+    def update_partner_flow_state(self, partner_flow_state : "FlowState") -> None:
         self.partner_flow_state = partner_flow_state
         self.partner_balances = partner_flow_state.balances
         self.partner_mint_status = partner_flow_state.mint_status
@@ -81,5 +83,5 @@ class ActionBundle(ABC):
         self.partner_pool_holdings = partner_flow_state.pool_holdings
 
     @abstractmethod
-    def relevant_info(self) -> RelevantInfo:
+    def relevant_info(self) -> "RelevantInfo":
         pass

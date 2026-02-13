@@ -1,13 +1,15 @@
 from decimal import Decimal
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.utils.data_structures import Pool, PoolHolding, UserData
-from src.flow.fee_tracker import FeeTracker
+from src.utils.data_structures import Pool, PoolHolding
+if TYPE_CHECKING:
+    from src.utils.data_structures import UserData
+    from src.flow.fee_tracker import FeeTracker
 
 
 class PoolManager(User):
-    def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
+    def __init__(self, user_data : "UserData", fee_tracker : Optional["FeeTracker"]  = None):
         super().__init__(user_data, fee_tracker)
         self.native_address = self.native_credentials.address
         
@@ -40,7 +42,7 @@ class PoolManager(User):
         fees_UBA = self.token_fasset.to_uba(fees)
         cp.withdraw_fees(fees_UBA)
 
-    def pools(self, chunk_size: int = 10, log_steps: bool = False) -> list[Pool]:
+    def pools(self, chunk_size: int = 10, log_steps: bool = False) -> list["Pool"]:
         """
         Get dictionary of collateral pools and their details.
         """
@@ -60,7 +62,7 @@ class PoolManager(User):
             result.append(Pool(**pool_dict))
         return result
     
-    def pool_holdings(self, log_steps: bool = False) -> list[PoolHolding]:
+    def pool_holdings(self, log_steps: bool = False) -> list["PoolHolding"]:
         """
         Get the user's holdings and fasset fees of all pools.
         """

@@ -1,22 +1,23 @@
 from decimal import Decimal
-from typing import Optional
-from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
-from src.utils.data_structures import UserCredentials
-from src.flow.fee_tracker import FeeTracker
+from typing import Optional, TYPE_CHECKING
 from src.utils.contracts import get_contract_names
 from .contract_client import ContractClient
+if TYPE_CHECKING:
+    from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+    from src.utils.data_structures import UserCredentials
+    from src.flow.fee_tracker import FeeTracker
 
 
 class CollateralPoolToken(ContractClient):
     def __init__(
             self, 
-            network: NativeNetwork,
+            network: "NativeNetwork",
             pool_address: str,
-            sender_data: Optional[UserCredentials]  = None, 
-            fee_tracker: Optional[FeeTracker]  = None
+            sender_credentials: Optional["UserCredentials"]  = None, 
+            fee_tracker: Optional["FeeTracker"]  = None
         ):
         names = get_contract_names(self)
-        super().__init__(names, network, pool_address, sender_data=sender_data, fee_tracker=fee_tracker)
+        super().__init__(names, network, pool_address, sender_credentials=sender_credentials, fee_tracker=fee_tracker)
 
     def debt_free_balance_of(self, address: str) -> int:
         return self.read("debtFreeBalanceOf", inputs=[address])

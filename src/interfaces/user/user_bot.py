@@ -1,13 +1,15 @@
 from decimal import Decimal
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 import toml
 import re
 from contextlib import suppress
 import subprocess
 from src.utils.data_storage import DataStorageClient
 from src.utils.secrets import secrets_file
-from src.utils.data_structures import AgentInfo, Balances, MintStatus, PoolHolding, Pool, RedemptionStatus, UserData
+from src.utils.data_structures import AgentInfo, Balances, MintStatus, PoolHolding, Pool, RedemptionStatus
 from src.interfaces.user.user import User
+if TYPE_CHECKING:
+    from src.utils.data_structures import UserData
 
 config = toml.load("config.toml")
 fasset_bots_folder = config["folder"]["fasset_bots"]
@@ -18,7 +20,7 @@ class UserBot(User):
     A class to interact with the user bot command line interface.
     It provides methods to execute commands and parse their output.
     """
-    def __init__(self, user_data: UserData, config=None, timeout=None):
+    def __init__(self, user_data: "UserData", config=None, timeout=None):
         super().__init__(user_data)
         self.user_data = user_data
         self.timeout = timeout
@@ -61,7 +63,7 @@ class UserBot(User):
 
     # Info commands
 
-    def get_balances(self, log_steps: bool = False) -> Balances:
+    def get_balances(self, log_steps: bool = False) -> "Balances":
         """
         Returns the balance of the user bot.
         """
@@ -72,7 +74,7 @@ class UserBot(User):
             balances[token] = Decimal(amount)
         return Balances(data=balances)
 
-    def get_agents(self, log_steps: bool = False) -> list[AgentInfo]:
+    def get_agents(self, log_steps: bool = False) -> list["AgentInfo"]:
         """
         Returns a list of parsed agent dicts.
         Each dict contains the agent's address, max_lots and fee.
@@ -109,7 +111,7 @@ class UserBot(User):
                 data[key] = value
         return data
 
-    def get_pools(self, log_steps: bool = False) -> list[Pool]:
+    def get_pools(self, log_steps: bool = False) -> list["Pool"]:
         """
         Returns a list of pools available.
         Each pool is represented as a dictionary with keys like 'Pool address', 'Token symbol' and other pool data.
@@ -135,7 +137,7 @@ class UserBot(User):
             pools.append(Pool(**pool))
         return pools
 
-    def get_pool_holdings(self, log_steps: bool = False) -> list[PoolHolding]:
+    def get_pool_holdings(self, log_steps: bool = False) -> list["PoolHolding"]:
         """
         Returns a list of pool holdings.
         Each holding is represented as a dictionary with keys 'Pool address', 'Token symbol', 'Pool tokens'.
@@ -210,7 +212,7 @@ class UserBot(User):
         command = f"redemptionDefault {redemption_id}"
         return self._execute(command, log_steps)
 
-    def get_mint_status(self, log_steps: bool = False) -> MintStatus:
+    def get_mint_status(self, log_steps: bool = False) -> "MintStatus":
         """
         Returns a dictionary describing mint status of the user bot.
         """
@@ -224,7 +226,7 @@ class UserBot(User):
                     mint_status[status] = mint_status[status] + [mint_id]
         return MintStatus(**mint_status)
 
-    def get_redemption_status(self, log_steps: bool = False) -> RedemptionStatus:
+    def get_redemption_status(self, log_steps: bool = False) -> "RedemptionStatus":
         """
         Returns a dictionary describing remeption status of the user bot.
         """
