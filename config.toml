@@ -23,7 +23,7 @@ contract_interfaces = "contracts/interfaces"
 
 [file.contract_addresses]
 Coston2 = "contracts/addresses/Coston2.json"
-HyperEVM_testnet = "contracts/addresses/hyperliquid_testnet.json"
+HyperEVM_testnet = "contracts/addresses/HyperEVM_testnet.json"
 
 # networks
 
@@ -47,6 +47,7 @@ Coston2 = "0x0000000000000000000000000000000000000000"
 
 [network.composer_address]
 Coston2 = "0xF32eB6bf2Bc005Fa85eb61dBdc55Fcd60054B281"
+HyperEVM_testnet = "0x51fEFdD6Df806062634c253F605A270AF4Ab62Db"
 
 [network.eid]
 Coston2 = 40294

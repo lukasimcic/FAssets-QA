@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from web3 import Web3
 from src.interfaces.contracts.oft_upgradeable import OFTUpgradeable
 from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from src.interfaces.network.tokens import TokenExternalFAsset, TokenExternalNative
 
 class HyperEVM_testnet(ExternalNetwork):
-    def __init__(self, address: str):
+    def __init__(self, address: Optional[str] = None):
         super().__init__()
         self.web3 = Web3(Web3.HTTPProvider(self.rpc_url()))
         self.address = address

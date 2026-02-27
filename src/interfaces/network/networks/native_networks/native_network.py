@@ -6,8 +6,10 @@ import time
 import toml
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
+from src.interfaces.contracts.fasset_oft_adapter import FAssetOFTAdapter
 from src.interfaces.network.networks.network import Network
 from src.interfaces.contracts.fasset import FAsset
+from src.utils.encoding import pad_left_to_64_hex, pad_0x, unpad_0x
 if TYPE_CHECKING:
     from src.interfaces.network.tokens import TokenFAsset, TokenNative
     from src.utils.data_structures import UserCredentials
@@ -96,3 +98,31 @@ class NativeNetwork(Network):
     @abstractmethod
     def request_funds(self) -> int:
         pass
+
+    def prepare_for_bridge(
+            self, 
+            to_eid: int, 
+            to_address: str, 
+            token_fasset: "TokenFAsset",
+            amount_uba: int
+            ) -> dict:
+        foa = FAssetOFTAdapter(
+            self, 
+            token_fasset, 
+            self.credentials
+            )
+        # approve tokens for bridge
+        f = FAsset(self, token_fasset, self.credentials, self.ft)
+        f.approve(foa.address, amount_uba)
+        f.approve(self.composer_address(), amount_uba)
+        # prepare send params
+        send_params = {
+            "dstEid": to_eid,
+            "to": pad_0x(pad_left_to_64_hex(unpad_0x(to_address))),
+            "amountLD": amount_uba,
+            "minAmountLD": amount_uba,
+            "extraOptions": foa.combine_options(to_eid),
+            "composeMsg": "0x",
+            "oftCmd": "0x",
+        }
+        return send_params

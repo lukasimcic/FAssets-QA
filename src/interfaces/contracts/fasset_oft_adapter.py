@@ -21,10 +21,10 @@ class FAssetOFTAdapter(ContractClient):
         names = get_contract_names(self, token_fasset)
         super().__init__(names, network, sender_credentials=sender_credentials, fee_tracker=fee_tracker)
 
-    def combine_options(self, dst_eid: int, msg_type: int = 1, extra_options: str = "0x") -> str:
+    def combine_options(self, dst_eid: int, msg_type: int = 1, extra_options: str = "0x") -> bytes:
         return self.read("combineOptions", inputs=[dst_eid, msg_type, extra_options])
 
-    def quote_native_fee(self, send_params: dict, pay_in_lz_token: bool) -> int:
+    def quote_fee(self, send_params: dict, pay_in_lz_token: bool) -> int:
         return self.read("quoteSend", inputs=[send_params, pay_in_lz_token])[0]
     
     def send(self, send_params: dict, native_fee: int, lz_token_fee: int, refund_address: str) -> dict:

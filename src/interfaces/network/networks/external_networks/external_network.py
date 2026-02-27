@@ -11,6 +11,7 @@ config = toml.load(Path("config.toml"))
 contracts_file = config["file"]["contract_addresses"]
 rpc_url = config["network"]["rpc_url"]
 eid = config["network"]["eid"]
+composer_address = config["network"]["composer_address"]
 
 
 class ExternalNetwork(Network):
@@ -27,6 +28,10 @@ class ExternalNetwork(Network):
     @classmethod
     def eid(cls) -> int:
         return eid[cls.__name__] if getattr(cls, "evm") else None
+    
+    @classmethod
+    def composer_address(cls) -> str:
+        return composer_address[cls.__name__] if getattr(cls, "evm") else None
 
     @abstractmethod
     def get_balance(self, token: "TokenExternalNative | TokenExternalFAsset") -> Decimal:
