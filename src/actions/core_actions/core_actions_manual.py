@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING, Literal, Optional
+from src.interfaces.user.bridger import Bridger
 from src.actions.core_actions.core_actions import CoreActions
 from src.interfaces.contracts.asset_manager import AssetManager
 from src.interfaces.user.state_manager import StateManager
@@ -8,6 +9,7 @@ from src.interfaces.user.redeemer import Redeemer
 from src.interfaces.user.pool_manager import PoolManager
 from src.utils.data_structures import AgentInfo
 if TYPE_CHECKING:
+    from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
     from src.utils.data_structures import Balances, MintStatus, RedemptionStatus, UserData, Pool, PoolHolding
     from src.interfaces.network.tokens import Token
 
@@ -19,6 +21,7 @@ class CoreActionsManual(CoreActions):
         self.minter = Minter(user_data, fee_tracker=self.fee_tracker)
         self.redeemer = Redeemer(user_data, fee_tracker=self.fee_tracker)
         self.pool_manager = PoolManager(user_data, fee_tracker=self.fee_tracker)
+        self.bridger = Bridger(user_data, fee_tracker=self.fee_tracker)
         self.logger = self.sm.logger
 
     # state retrieval
@@ -135,3 +138,15 @@ class CoreActionsManual(CoreActions):
     def redeem_default(self, redemption_id: int, log_steps: bool = False) -> None:
         self.logger.info(f"Executing redemption for redemption ID {redemption_id}.")
         self.redeemer.redeem_default(redemption_id, log_steps=log_steps)
+
+    def bridge_to(self, to_network: type["ExternalNetwork"], lots: int, log_steps: bool = False) -> None:
+        self.logger.info(f"Bridging to {to_network.__name__} with {lots} lots.")
+        self.bridger.bridge_to(to_network, lots, log_steps=log_steps)
+
+    def bridge_from(self, from_network: type["ExternalNetwork"], lots: int, log_steps: bool = False) -> None:
+        self.logger.info(f"Bridging from {from_network.__name__} with {lots} lots.")
+        self.bridger.bridge_from(from_network, lots, log_steps=log_steps)
+    
+    def auto_redeem_from(self, from_network: type["ExternalNetwork"], lots: int, log_steps: bool = False) -> None:
+        self.logger.info(f"Auto-redeeming from {from_network.__name__} with {lots} lots.")
+        self.bridger.auto_redeem_from(from_network, lots, log_steps=log_steps)

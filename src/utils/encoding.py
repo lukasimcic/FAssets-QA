@@ -74,4 +74,4 @@ def decode_revert_reason(data: str) -> str:
     error_data = data[10:] # remove '0x' and selector (8 chars after '0x')
     error_bytes = binascii.unhexlify(error_data)
     decoded = decode(['string'], error_bytes)
-    print(decoded[0])
+    return decoded[0]

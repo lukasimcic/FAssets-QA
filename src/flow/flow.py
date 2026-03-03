@@ -108,7 +108,7 @@ class Flow():
                 bundle.action()
             except Exception as e:
                 self._log(
-                    f"Action {bundle.__class__.__name__} failed with exception: {e}\n{traceback.format_exc()}",
+                    f"-- Action {bundle.__class__.__name__} failed with exception: {e} --\n{traceback.format_exc()}",
                     level="error"
                 )
                 successful = False
@@ -124,7 +124,7 @@ class Flow():
                 else:
                     partner_state_mismatches = [{}]
                 if min(len(m) for m in state_mismatches) == min(len(m) for m in partner_state_mismatches) == 0:
-                    self._log("Action successfully executed.", level="info")
+                    self._log("-- Action successfully executed. --", level="info")
                 else:
                     successful = False
                     for user, state_mismatches in zip(["", "Partner "], [state_mismatches, partner_state_mismatches]):
@@ -135,7 +135,7 @@ class Flow():
                                     for field, (actual, expected) in state_mismatche.items()
                                 )
                                 self._log(
-                                    f"State mismatch after action execution!\n{mismatch_str}", level="warning"
+                                    f"-- State mismatch after action execution! --\n{mismatch_str}", level="warning"
                                 )
             return successful
 
