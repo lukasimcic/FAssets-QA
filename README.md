@@ -72,6 +72,11 @@ Each user repeatedly selects a random action from the following:
 | AutoRedeemFromHyperEVM | Redeem a random amount of lots of fassets from HyperEVM directly to the underlying network. | No |
 | Scenario1 | - Enter a random pool with a random amount. <br>- Mint a random amount of lots against the agent that owns the entered collateral pool. <br>- Redeem the amount minted. <br>- Wait for the collateral pool token timelock period to expire. <br>- If possible, exit pool with all tokens. <br>- If possible, withdraw pool fees. | Yes |
 | Scenario2 | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Transfer debt-free pool tokens (up to the amount originally entered) to the partner user bot. <br>- Exit pool from the partner user bot. |  No  |
+| Scenario3 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. |  No  |
+| Scenario4 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperCore. |  No  |
+| Scenario5 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Bridge this amount back to the native network. |  No  |
+| Scenario6 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Bridge this amount back to the native network. <br>- Redeem the amount bridged. |  No  |
+| Scenario7 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Redeem the amount bridged directly from HyperEVM. |  No  |
 
 Each action is implemented as an "action bundle" class in `src/actions/`. Each bundle consists of:
 - condition: Checks to determine if the action can be executed.
