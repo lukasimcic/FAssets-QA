@@ -1,96 +1,20 @@
-from enum import Enum
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from decimal import Decimal
 import math
-import toml
-from src.flow.fee_tracker import FeeTracker
-
-config = toml.load(Path("config.toml"))
-contracts_file_coston2 = config["contract"]["file"]["coston2"]
-asset_manager_testxrp_name = config["contract"]["name"]["asset_manager_testxrp"]
-fasset_testxrp_name = config["contract"]["name"]["fasset_testxrp"]
-rpc_url = config["network"]["rpc_url"]
-faucet_url = config["network"]["faucet_url"]
-fdc_url = config["network"]["fdc_url"]
-da_url = config["network"]["da_url"]
-
-
-# TODO C2FLR -> coston2
-class TokenNative(Enum):
-    C2FLR = ("C2FLR", contracts_file_coston2, 18)
-    def __init__(self, name: str, contracts_file: Path, decimals: int):
-        self._name_ = name
-        self.contracts_file = contracts_file
-        self.decimals = decimals
-        self.compare_tolerance = 10 ** (-decimals + 6)
-        self.rpc_url = rpc_url[name]
-        self.faucet_url = faucet_url[name]
-        self.fdc_url = fdc_url[name]
-        self.da_url = da_url[name]
-
-    def to_uba(self, amount: Decimal) -> int:
-        return int(amount * 10 ** self.decimals)
-    
-    def from_uba(self, amount_uba: int) -> Decimal:
-        return Decimal(amount_uba) / Decimal(10) ** self.decimals
-
-
-class TokenUnderlying(Enum):
-    testXRP = ("testXRP", asset_manager_testxrp_name, fasset_testxrp_name, 6)
-    def __init__(self, name: str, asset_manager_name: str, fasset_name: str, decimals: int):
-        self._name_ = name
-        self.asset_manager_name = asset_manager_name
-        self.fasset_name = fasset_name
-        self.decimals = decimals
-        self.compare_tolerance = 10 ** (-decimals + 1)
-        self.rpc_url = rpc_url[name]
-        self.faucet_url = faucet_url[name]
-
-    def to_uba(self, amount: Decimal) -> int:
-        return int(amount * 10 ** self.decimals)
-    
-    def from_uba(self, amount_uba: int) -> Decimal:
-        return Decimal(amount_uba) / Decimal(10) ** self.decimals
-
-
-class TokenFasset(Enum):
-    testXRP_fasset = ("FTestXRP", TokenUnderlying.testXRP)
-    def __init__(self, name: str, token_underlying: TokenUnderlying):
-        self._name_ = name
-        self.token_underlying = token_underlying
-        self.decimals = token_underlying.decimals
-        self.compare_tolerance = 10 ** -self.decimals
-
-    @classmethod
-    def from_underlying(cls, underlying: TokenUnderlying):
-        name = f"{underlying.name}_fasset"
-        return cls[name]
-    
-    def to_uba(self, amount: Decimal) -> int:
-        return int(amount * 10 ** self.decimals)
-    
-    def from_uba(self, amount_uba: int) -> Decimal:
-        return Decimal(amount_uba) / Decimal(10) ** self.decimals
-    
-
-Token = Union[TokenNative, TokenUnderlying, TokenFasset]
+if TYPE_CHECKING:
+    from src.flow.fee_tracker import FeeTracker
+    from src.interfaces.network.tokens import Token, TokenExternalNative, TokenNative, TokenUnderlying
 
 
 @dataclass
 class UserData:
-    token_native: TokenNative
-    token_underlying: TokenUnderlying
+    token_native: "TokenNative"
+    token_underlying: "TokenUnderlying"
+    tokens_external: Optional[list["TokenExternalNative"]] = field(default_factory=list)
     num: Optional[int]  = None
     partner: Optional[bool]  = False
     funder: Optional[bool]  = False
-
-    def __post_init__(self):
-        if not isinstance(self.token_native, TokenNative):
-            self.token_native = TokenNative(self.token_native)
-        if not isinstance(self.token_underlying, TokenUnderlying):
-            self.token_underlying = TokenUnderlying(self.token_underlying)
 
     def partner_data(self) -> "UserData":
         return UserData(
@@ -102,32 +26,26 @@ class UserData:
     
 
 @dataclass
-class UserUnderlyingData:
+class UserCredentials:
     address: str
-    private_key: str
-    public_key: str
-
-
-@dataclass
-class UserNativeData:
-    address: str
-    private_key: str
+    private_key: Optional[str] = None
+    public_key: Optional[str] = None
 
 
 @dataclass
 class Balances:
-    data: Dict[Token, Decimal] = field(default_factory=dict)
+    data: Dict["Token", Decimal] = field(default_factory=dict)
 
-    def __getitem__(self, key: Token) -> Decimal:
+    def __getitem__(self, key: "Token") -> Decimal:
         return self.data[key]
     
-    def get(self, key: Token, default=None) -> Decimal:
+    def get(self, key: "Token", default=None) -> Decimal:
         return self.data.get(key, default)
     
-    def __setitem__(self, key: Token, value: Decimal) -> None:
+    def __setitem__(self, key: "Token", value: Decimal) -> None:
         self.data[key] = value
 
-    def __contains__(self, key: Token) -> bool:
+    def __contains__(self, key: "Token") -> bool:
         return key in self.data
     
     def copy(self) -> "Balances":
@@ -151,12 +69,9 @@ class Balances:
             items.append(f"{k.name}: {v:.{int(-math.log10(k.compare_tolerance))}f}")
         return f"Balances({{{', '.join(items)}}})"
     
-    def subtract_fees(self, fee_tracker: FeeTracker) -> None:   
+    def subtract_fees(self, fee_tracker: "FeeTracker") -> None:
         for token in self.data:
-            if isinstance(token, TokenNative):
-                self.data[token] -= fee_tracker.native_fees()
-            elif isinstance(token, TokenUnderlying):
-                self.data[token] -= fee_tracker.underlying_fees()
+            self.data[token] -= fee_tracker.get_fees(token)
 
 
 @dataclass
@@ -277,12 +192,13 @@ class PoolHolding:
 @dataclass
 class FlowState:
     balances: Balances
-    mint_status: MintStatus
-    redemption_status: RedemptionStatus
-    pool_holdings: list[PoolHolding]
+    mint_status: Optional[MintStatus] = None
+    redemption_status: Optional[RedemptionStatus] = None
+    pool_holdings: Optional[list[PoolHolding]] = None
 
     def __post_init__(self):
-        self.pool_holdings = sorted(self.pool_holdings, key=lambda ph: ph.pool_address)
+        if self.pool_holdings:
+            self.pool_holdings = sorted(self.pool_holdings, key=lambda ph: ph.pool_address)
 
     def replace(self, changes : list) -> "FlowState":
         new_flow_state = self.copy()
@@ -295,7 +211,8 @@ class FlowState:
                 new_flow_state.redemption_status = change
             elif type(change) is list:
                 new_flow_state.pool_holdings = change
-        new_flow_state.pool_holdings = sorted(new_flow_state.pool_holdings, key=lambda ph: ph.pool_address)
+        if new_flow_state.pool_holdings:
+            new_flow_state.pool_holdings = sorted(new_flow_state.pool_holdings, key=lambda ph: ph.pool_address)
         return new_flow_state
     
     def fields(self) -> list[str]:
@@ -305,12 +222,14 @@ class FlowState:
         return getattr(self, key)
     
     def copy(self) -> "FlowState":
-        return FlowState(
-            balances=self.balances.copy(),
-            mint_status=self.mint_status.copy(),
-            redemption_status=self.redemption_status.copy(),
-            pool_holdings=self.pool_holdings.copy()
-        )
+        flow_state = FlowState(balances=self.balances.copy())
+        if self.mint_status:
+            flow_state.mint_status = self.mint_status.copy()
+        if self.redemption_status:
+            flow_state.redemption_status = self.redemption_status.copy()
+        if self.pool_holdings:
+            flow_state.pool_holdings = [ph.copy() for ph in self.pool_holdings]
+        return flow_state
     
     def compare(self, others: Union[list["FlowState"], "FlowState"]) -> list[dict]:
         if not isinstance(others, list):
@@ -326,6 +245,44 @@ class FlowState:
             all_mismatches.append(mismatches)
         return all_mismatches
     
+    @classmethod
+    def new(cls) -> "FlowState":
+        return cls(
+            balances=Balances(),
+            mint_status=MintStatus(),
+            redemption_status=RedemptionStatus(),
+            pool_holdings=[]
+        )  
+    
+
+@dataclass
+class RelevantInfo:
+    tokens: list["Token"]
+    mint_status: bool = False
+    redemption_status: bool = False
+    pool_holdings: bool = False
+
+    @classmethod
+    def union(cls, objs: list["RelevantInfo"]) -> "RelevantInfo":
+        tokens = set()
+        mint_status = False
+        redemption_status = False
+        pool_holdings = False
+        for obj in objs:
+            tokens.update(obj.tokens)
+            mint_status = mint_status or obj.mint_status
+            redemption_status = redemption_status or obj.redemption_status
+            pool_holdings = pool_holdings or obj.pool_holdings
+        return RelevantInfo(
+            tokens=list(tokens),
+            mint_status=mint_status,
+            redemption_status=redemption_status,
+            pool_holdings=pool_holdings
+        )
+    
+    def __repr__(self) -> str:
+        return _repr_none_filtered(self)
+
 
 @dataclass
 class AgentInfo:

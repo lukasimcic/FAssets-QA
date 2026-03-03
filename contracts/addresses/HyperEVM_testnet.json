@@ -1,0 +1,12 @@
+[
+  {
+    "name": "OFTUpgradeable_FTestXRP",
+    "contractName": "OFTUpgradeable.sol",
+    "address": "0x14bfb521e318fc3d5e92A8462C65079BC7d4284c"
+  },
+  {
+    "name": "FAssetOFTAdapter_FTestXRP",
+    "contractName": "OFTAdapterFeeUpgradeable.sol",
+    "address": "0x14bfb521e318fc3d5e92A8462C65079BC7d4284c"
+  }
+]

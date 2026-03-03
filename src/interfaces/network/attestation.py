@@ -1,27 +1,46 @@
-from src.flow.fee_tracker import FeeTracker
-from src.interfaces.contracts import *
-from src.utils.encoding import pad_to_64_hex, to_utf8_hex_string, keccak256_text
-from src.utils.data_structures import TokenNative, TokenUnderlying, UserNativeData
-from typing import Literal, Optional
+import functools
+from typing import TYPE_CHECKING, Literal, Optional
+import random
 import requests
 import json
 import time
+from src.interfaces.network.tokens import TokenUnderlying
+from src.interfaces.contracts import *
+from src.utils.encoding import pad_right_to_64_hex, to_utf8_hex_string, keccak256_text
+if TYPE_CHECKING:
+    from src.flow.fee_tracker import FeeTracker
+    from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+    from src.utils.data_structures import UserCredentials
 
+
+def retry_on_exception(max_attempts=20, min_wait=10, max_wait=15):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_attempts - 1:
+                        raise RuntimeError("Failed after multiple attempts. Most recent error: " + str(e))
+                    time.sleep(random.uniform(min_wait, max_wait))
+        return wrapper
+    return decorator
 
 class Attestation():
     def __init__(
             self, 
-            token_native: TokenNative, 
-            token_underlying: TokenUnderlying, 
-            user_native_data: UserNativeData, 
+            native_network: "NativeNetwork", 
+            token_underlying: "TokenUnderlying", 
+            user_native_credentials: "UserCredentials", 
             indexer_api_key: str, 
-            fee_tracker: Optional[FeeTracker]  = None
+            fee_tracker: Optional["FeeTracker"]  = None
         ):
-        self.token_native = token_native
+        self.native_network = native_network
         self.token_underlying = token_underlying
         self.contract_inputs = {
-            "token_native": token_native,
-            "sender_data": user_native_data,
+            "network": native_network,
+            "sender_credentials": user_native_credentials,
             "fee_tracker": fee_tracker
         }
         self.headers = {
@@ -36,9 +55,9 @@ class Attestation():
         if self.token_underlying == TokenUnderlying.testXRP:
             token_underlying = "xrp"
         if attestation_type is None:
-            return f"{self.token_native.fdc_url}/verifier/{token_underlying}/api/indexer/{endpoint}"
+            return f"{self.native_network.fdc_url()}/verifier/{token_underlying}/api/indexer/{endpoint}"
         else:
-            return f"{self.token_native.fdc_url}/verifier/{token_underlying}/{attestation_type}/{endpoint}"
+            return f"{self.native_network.fdc_url()}/verifier/{token_underlying}/{attestation_type}/{endpoint}"
         
     def _generate_source_id(self) -> str:
         return to_utf8_hex_string(self.token_underlying.name)
@@ -46,19 +65,15 @@ class Attestation():
     def _generate_attestation_type(self, attestation_type: str) -> str:
         return to_utf8_hex_string(attestation_type)
         
+    @retry_on_exception()
     def _get_transaction_id(self, tx_hash: str) -> str:
         url_transaction = self._generate_fdc_url("transaction")
         response = requests.get(url_transaction + f'/{tx_hash}', headers=self.headers).json()
-        for _ in range(5):
-            if response['status'] == 'ERROR':
-                time.sleep(10)
-                response = requests.get(url_transaction + f'/{tx_hash}', headers=self.headers).json()
-            else:
-                return response['data']['transactionId']
-        raise ValueError("Transaction not found or still pending after multiple attempts")
+        return response['data']['transactionId']
         
+    @retry_on_exception()
     def _current_round_id(self) -> int:
-        response = requests.get(self.token_native.da_url + '/api/v0/fsp/status').json()
+        response = requests.get(self.native_network.da_url() + '/api/v0/fsp/status').json()
         return response["latest_fdc"]["voting_round_id"]
 
     def request_body_payment(self, tx_hash: str) -> dict:
@@ -83,7 +98,7 @@ class Attestation():
             "deadlineTimestamp": str(last_timestamp),
             "destinationAddressHash": keccak256_text(destination_address),
             "amount": str(amount),
-            "standardPaymentReference": pad_to_64_hex(payment_reference),
+            "standardPaymentReference": pad_right_to_64_hex(payment_reference),
             "checkSourceAddresses": False,
             "sourceAddressesRoot": "0x" + "00" * 32
         }
@@ -126,7 +141,7 @@ class Attestation():
         Returns response data.
         """
         for _ in range(10):
-            time.sleep(5)
+            time.sleep(15)
             if self._current_round_id() >= round_id:
                 break
         response = {}
@@ -134,7 +149,7 @@ class Attestation():
             if len(response.get("proof", [])) == 0:
                 time.sleep(15)
                 response = requests.post(
-                    url=self.token_native.da_url + "/api/v0/fdc/get-proof-round-id-bytes",
+                    url=self.native_network.da_url() + "/api/v0/fdc/get-proof-round-id-bytes",
                     headers=self.headers,
                     data=json.dumps({
                         "votingRoundId": round_id,

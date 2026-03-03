@@ -1,10 +1,15 @@
 from web3 import Web3
 from pathlib import Path
 import json
+from eth_abi import decode
+import binascii
 
 # padding
 
-def pad_to_64_hex(data: str) -> str:
+def pad_left_to_64_hex(data: str) -> str:
+    return data.rjust(64, "0")
+
+def pad_right_to_64_hex(data: str) -> str:
     return data.ljust(64, "0")
 
 def pad_0x(data: str) -> str:
@@ -23,7 +28,7 @@ def to_hex(data: str) -> str:
     result = ""
     for char in data:
         result += format(ord(char), "x")
-    return pad_to_64_hex(result)
+    return pad_right_to_64_hex(result)
 
 def to_utf8_hex_string(data: str) -> str:
     return pad_0x(to_hex(data))
@@ -37,7 +42,7 @@ def keccak256_text(data: str) -> str:
 # error decoding
 
 def error_encode(error_name: str) -> str:
-    return keccak256_text(f"{error_name}()")[:10]
+    return pad_0x(keccak256_text(f"{error_name}()")[:8])
 
 def get_error(error_names: list[str], encoded_error: str) -> str:
     for name in error_names:
@@ -55,16 +60,18 @@ def save_errors(folder: Path) -> None:
     else:
         errors = {}
     for subfolder in folder.iterdir():
-        if subfolder.is_dir():
-            subfolder_name = subfolder.name
-            if subfolder_name.endswith(".sol"):
-                contract_name = subfolder_name[:-4]
-                with open(subfolder / f"{contract_name}.json", "r") as f:
-                    contract_abi = json.load(f)["abi"]
-                    for item in contract_abi:
-                        if item["type"] == "error":
-                            error_name = item["name"]
-                            encoded_error = error_encode(error_name)
-                            errors[error_name] = encoded_error
+        with open(subfolder, "r") as f:
+            contract_abi = json.load(f)["abi"]
+            for item in contract_abi:
+                if item["type"] == "error":
+                    error_name = item["name"]
+                    encoded_error = error_encode(error_name)
+                    errors[error_name] = encoded_error
     with open(error_file, "w") as f:
         json.dump(errors, f, indent=4)
+
+def decode_revert_reason(data: str) -> str:
+    error_data = data[10:] # remove '0x' and selector (8 chars after '0x')
+    error_bytes = binascii.unhexlify(error_data)
+    decoded = decode(['string'], error_bytes)
+    return decoded[0]

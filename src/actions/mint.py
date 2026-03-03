@@ -1,8 +1,11 @@
 import random
+from typing import TYPE_CHECKING
 from src.actions.action_bundle import ActionBundle
-from src.actions.helper_functions import can_mint, max_lots_available
+from src.actions.helper_functions import can_mint
 from src.utils.data_storage import DataStorageClient
-from src.utils.data_structures import FlowState
+from src.utils.data_structures import RelevantInfo
+if TYPE_CHECKING:
+    from src.utils.data_structures import FlowState
 
 
 class MintLowestFeeAgentRandomAmount(ActionBundle):
@@ -33,12 +36,18 @@ class MintLowestFeeAgentRandomAmount(ActionBundle):
         self.agent = agent
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         new_balances = self.balances.copy()
         new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount
         new_balances.subtract_fees(self.ca.fee_tracker)
         return self.flow_state.replace([new_balances])
+    
+    def relevant_info(self) -> "RelevantInfo":
+        return RelevantInfo(
+            tokens=[self.token_underlying, self.token_native, self.token_fasset],
+            mint_status=True
+        )
 
 
 class MintRandomAgentRandomAmount(ActionBundle):
@@ -62,13 +71,18 @@ class MintRandomAgentRandomAmount(ActionBundle):
         self.agent = agent
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         new_balances = self.balances.copy()
         new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee)
         new_balances[self.token_fasset] += self.lot_size * self.lot_amount
         new_balances.subtract_fees(self.ca.fee_tracker)
         return self.flow_state.replace([new_balances])
-
+    
+    def relevant_info(self) -> "RelevantInfo":
+        return RelevantInfo(
+            tokens=[self.token_underlying, self.token_native, self.token_fasset],
+            mint_status=True
+        )
 
 class MintExecuteRandomMinting(ActionBundle):
     def __init__(self, user_data, flow_state, cli):
@@ -88,7 +102,7 @@ class MintExecuteRandomMinting(ActionBundle):
         self.ca.mint_execute(mint_id, log_steps=True)
 
     @property
-    def expected_state(self) -> FlowState:
+    def expected_state(self) -> "FlowState":
         # balances
         new_balances = self.balances.copy()
         new_balances[self.token_fasset] += self.lot_size * self.record["lots"]
@@ -98,6 +112,12 @@ class MintExecuteRandomMinting(ActionBundle):
         new_mint_status.pending.remove(self.mint_id)
         return self.flow_state.replace([new_balances, new_mint_status])
 
+    def relevant_info(self) -> "RelevantInfo":
+        return RelevantInfo(
+            tokens=[self.token_underlying, self.token_fasset, self.token_native],
+            mint_status=True
+        )
+    
 
 class MintRandomAgentRandomAmountBlockUnderlying(MintRandomAgentRandomAmount):
     def __init__(self, user_data, flow_state, cli):

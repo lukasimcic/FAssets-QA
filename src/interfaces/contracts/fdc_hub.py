@@ -1,24 +1,20 @@
-from typing import Optional
-import toml
-from src.utils.data_structures import TokenNative, UserNativeData
-from src.flow.fee_tracker import FeeTracker
+from typing import Optional, TYPE_CHECKING
 from .contract_client import ContractClient
-from src.utils.contracts import get_contract_address
-
-config = toml.load("config.toml")
-fdc_hub_name = config["contract"]["name"]["fdc_hub"]
-fdc_hub_path = config["contract"]["abi_path"]["fdc_hub"]
-
+from src.utils.contracts import get_contract_names
+if TYPE_CHECKING:
+    from src.interfaces.network.networks.native_networks.native_network import NativeNetwork 
+    from src.utils.data_structures import UserCredentials 
+    from src.flow.fee_tracker import FeeTracker
 
 class FdcHub(ContractClient):
     def __init__(
             self, 
-            token_native: TokenNative,
-            sender_data: Optional[UserNativeData]  = None,
-            fee_tracker: Optional[FeeTracker]  = None
+            network: "NativeNetwork",
+            sender_credentials: Optional["UserCredentials"]  = None,
+            fee_tracker: Optional["FeeTracker"]  = None
         ):
-        fdc_hub_address =  get_contract_address(fdc_hub_name, token_native)
-        super().__init__(token_native, fdc_hub_path, fdc_hub_address, sender_data, fee_tracker)
+        names = get_contract_names(self)
+        super().__init__(names, network, sender_credentials=sender_credentials, fee_tracker=fee_tracker)
 
     def request_attestation(self, abi_encoded: bytes, required_fee: int) -> int:
         """

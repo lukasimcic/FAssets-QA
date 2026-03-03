@@ -1,7 +1,7 @@
 import toml
 import typer
 from src.flow.user_manager import UserManager
-from src.utils.data_structures import TokenNative, TokenUnderlying
+from src.interfaces.network.tokens import TokenNative, TokenUnderlying
 
 config = toml.load("config.toml")
 token_native = TokenNative[config["token"]["native"]]

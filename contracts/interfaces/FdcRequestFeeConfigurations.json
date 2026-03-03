@@ -1,0 +1,74 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "FdcRequestFeeConfigurationsMock",
+  "sourceName": "contracts/fdc/mock/FdcRequestFeeConfigurationsMock.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "attestationType",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "source",
+          "type": "bytes32"
+        }
+      ],
+      "name": "TypeAndSourceFeeRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "attestationType",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "source",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        }
+      ],
+      "name": "TypeAndSourceFeeSet",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "getRequestFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600f57600080fd5b5060f78061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c80630a0f247614602d575b600080fd5b604060383660046052565b600092915050565b60405190815260200160405180910390f35b60008060208385031215606457600080fd5b823567ffffffffffffffff811115607a57600080fd5b8301601f81018513608a57600080fd5b803567ffffffffffffffff81111560a057600080fd5b85602082840101111560b157600080fd5b602091909101959094509250505056fea2646970667358221220441fc2922ae130987260183aff2a567e7781349476691b2ca0453f0fa4f7456b64736f6c634300081b0033",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060285760003560e01c80630a0f247614602d575b600080fd5b604060383660046052565b600092915050565b60405190815260200160405180910390f35b60008060208385031215606457600080fd5b823567ffffffffffffffff811115607a57600080fd5b8301601f81018513608a57600080fd5b803567ffffffffffffffff81111560a057600080fd5b85602082840101111560b157600080fd5b602091909101959094509250505056fea2646970667358221220441fc2922ae130987260183aff2a567e7781349476691b2ca0453f0fa4f7456b64736f6c634300081b0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

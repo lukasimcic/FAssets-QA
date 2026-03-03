@@ -1,11 +1,14 @@
 import traceback
 import random
 import time
-from typing import Literal, Optional
-from src.actions.action_bundle import ActionBundle
+from typing import TYPE_CHECKING, Literal, Optional
 from src.actions.core_actions.core_actions import core_actions
 from src.actions import ACTION_BUNDLE_CLASSES
-from src.utils.data_structures import UserData, FlowState
+from src.utils.data_structures import RelevantInfo, FlowState
+if TYPE_CHECKING:
+    from src.actions.action_bundle import ActionBundle
+    from src.actions.core_actions.core_actions import CoreActions
+    from src.utils.data_structures import UserData
 
 
 class Flow():
@@ -28,7 +31,7 @@ class Flow():
     """
     def __init__(
         self,
-        user_data: UserData,
+        user_data: "UserData",
         actions: list[str],
         cli: bool = False,
         total_time: Optional[int]  = None, 
@@ -44,6 +47,10 @@ class Flow():
         # core actions for logging and state retrieval
         self.ca = core_actions(user_data, cli)
         self.ca_partner = core_actions(self.partner_data, cli)
+        self.relevant_info = RelevantInfo.union([
+            ab(self.user_data, FlowState.new(), self.cli).relevant_info()
+            for ab in ACTION_BUNDLE_CLASSES if ab.__name__ in actions
+            ])
 
     def _log(
             self, 
@@ -54,21 +61,22 @@ class Flow():
         if partner:
             self.ca_partner.log(message, level)
 
-    def _update_flow_state(self, log_steps: bool = True) -> None:
-        self.flow_state = FlowState(
-            self.ca.get_balances(log_steps=log_steps),
-            self.ca.get_mint_status(log_steps=log_steps),
-            self.ca.get_redemption_status(log_steps=log_steps),
-            self.ca.get_pool_holdings(log_steps=log_steps)
-        )
+    @staticmethod
+    def _flow_state(ca: "CoreActions", relevant_info: "RelevantInfo", log_steps: bool) -> "FlowState":
+        flow_state = FlowState(ca.get_balances(relevant_info.tokens, log_steps))
+        if relevant_info.mint_status:
+            flow_state.mint_status = ca.get_mint_status(log_steps)
+        if relevant_info.redemption_status:
+            flow_state.redemption_status = ca.get_redemption_status(log_steps)
+        if relevant_info.pool_holdings:
+            flow_state.pool_holdings = ca.get_pool_holdings(log_steps)
+        return flow_state
 
-    def _get_partner_flow_state(self, log_steps: bool = True) -> FlowState:
-        return FlowState(
-            self.ca_partner.get_balances(log_steps=log_steps),
-            self.ca_partner.get_mint_status(log_steps=log_steps),
-            self.ca_partner.get_redemption_status(log_steps=log_steps),
-            self.ca_partner.get_pool_holdings(log_steps=log_steps)
-        )
+    def _update_flow_state(self, log_steps: bool = True) -> None:
+        self.flow_state = self._flow_state(self.ca, self.relevant_info, log_steps)
+
+    def _get_partner_flow_state(self, log_steps: bool = True) -> "FlowState":
+        return self._flow_state(self.ca_partner, self.relevant_info, log_steps)
     
     def _step(self) -> Optional[bool] :
         self._update_flow_state()
@@ -89,7 +97,7 @@ class Flow():
             return None
 
         else:
-            bundle : ActionBundle = random.choice(action_bundles)
+            bundle : "ActionBundle" = random.choice(action_bundles)
             self._log(f"-- Executing action {bundle.__class__.__name__} --", level="info")
             
             successful = True
@@ -100,7 +108,7 @@ class Flow():
                 bundle.action()
             except Exception as e:
                 self._log(
-                    f"Action {bundle.__class__.__name__} failed with exception: {e}\n{traceback.format_exc()}",
+                    f"-- Action {bundle.__class__.__name__} failed with exception: {e} --\n{traceback.format_exc()}",
                     level="error"
                 )
                 successful = False
@@ -116,7 +124,7 @@ class Flow():
                 else:
                     partner_state_mismatches = [{}]
                 if min(len(m) for m in state_mismatches) == min(len(m) for m in partner_state_mismatches) == 0:
-                    self._log("Action successfully executed.", level="info")
+                    self._log("-- Action successfully executed. --", level="info")
                 else:
                     successful = False
                     for user, state_mismatches in zip(["", "Partner "], [state_mismatches, partner_state_mismatches]):
@@ -127,12 +135,17 @@ class Flow():
                                     for field, (actual, expected) in state_mismatche.items()
                                 )
                                 self._log(
-                                    f"State mismatch after action execution!\n{mismatch_str}", level="warning"
+                                    f"-- State mismatch after action execution! --\n{mismatch_str}", level="warning"
                                 )
             return successful
 
     def run(self) -> None:
         self._log(f"----- Starting flow. -----", level="info", partner=True)
+        all_actions = len(ACTION_BUNDLE_CLASSES) == len(self.actions)
+        if all_actions:
+            self._log("----- All actions available. -----", level="info")
+        else:
+            self._log(f"----- Available actions: {', '.join(self.actions)}. -----", level="info")
         successful_steps = 0
         all_steps = 0
         t = time.time()

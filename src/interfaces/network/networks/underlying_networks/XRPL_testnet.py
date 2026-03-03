@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from xrpl.clients import JsonRpcClient
 from xrpl.wallet import Wallet
 from xrpl.models.transactions import Payment, Memo, AccountSet
@@ -7,19 +7,20 @@ from xrpl.models.requests import AccountInfo, ServerInfo, Tx
 from xrpl.transaction import sign, autofill, submit
 import requests
 from decimal import Decimal
-from src.interfaces.network.underlying_networks.underlying_network import UnderlyingBaseNetwork
-from src.utils.data_structures import TokenUnderlying
-from src.flow.fee_tracker import FeeTracker
+from src.interfaces.network.networks.underlying_networks.underlying_network import UnderlyingNetwork
+if TYPE_CHECKING:
+    from src.utils.data_structures import UserCredentials
+    from src.flow.fee_tracker import FeeTracker
+    from src.interfaces.network.tokens import TokenUnderlying
 
 
-class TestXRP(UnderlyingBaseNetwork):
-    def __init__(self, public_key: str, private_key: str, fee_tracker: Optional[FeeTracker]  = None):
+class XRPL_testnet(UnderlyingNetwork):
+    def __init__(self, credentials: Optional["UserCredentials"] = None, fee_tracker: Optional["FeeTracker"]  = None):
         super().__init__(fee_tracker=fee_tracker)
-        self.token_underlying = TokenUnderlying.testXRP
-        self.client = JsonRpcClient(self.token_underlying.rpc_url)
-        if public_key and private_key: # otherwise this class is used for address-non-specific operations
-            self.wallet = Wallet(public_key, private_key)
-
+        self.client = JsonRpcClient(self.rpc_url())
+        if credentials:
+            self.wallet = Wallet(credentials.public_key, credentials.private_key)
+            
     @staticmethod
     def generate_address() -> dict:
         wallet = Wallet.create()
@@ -30,7 +31,9 @@ class TestXRP(UnderlyingBaseNetwork):
             }
         return secrets
 
-    def get_balance(self) -> Decimal:
+    def get_balance(self, token: "TokenUnderlying") -> Decimal:
+        if token.network != type(self):
+            raise ValueError(f"Token {token.name} does not belong to network {type(self).__name__}.")
         # full balance
         acct_info = AccountInfo(
             account=self.wallet.classic_address, 
@@ -64,7 +67,7 @@ class TestXRP(UnderlyingBaseNetwork):
         signed_tx = sign(autofilled_tx, self.wallet)
         response = submit(signed_tx, self.client)
         if self.fee_tracker:
-            self.fee_tracker.underlying_gas_fees += drops_to_xrp(response.result["tx_json"]["Fee"])
+            self.fee_tracker.update_fees(self.coin, gas_fees=drops_to_xrp(response.result["tx_json"]["Fee"]))
         return {
             "tx_hash": response.result["tx_json"]["hash"],
             "amount": amount
@@ -92,7 +95,7 @@ class TestXRP(UnderlyingBaseNetwork):
     
     def request_funds(self) -> int:
         response = requests.post(
-            self.token_underlying.faucet_url, 
+            self.faucet_url(),
             json={"destination": self.wallet.classic_address}
             )
         if response.status_code != 200:
@@ -107,7 +110,7 @@ class TestXRP(UnderlyingBaseNetwork):
         signed_tx = sign(autofill(tx, self.client), self.wallet)
         response = submit(signed_tx, self.client)
         if self.fee_tracker:
-            self.fee_tracker.underlying_gas_fees += drops_to_xrp(response.result["tx_json"]["Fee"])
+            self.fee_tracker.update_fees(self.coin, gas_fees=drops_to_xrp(response.result["tx_json"]["Fee"]))
     
     def unblock_all_deposits(self) -> None:
         tx = AccountSet(
@@ -117,4 +120,4 @@ class TestXRP(UnderlyingBaseNetwork):
         signed_tx = sign(autofill(tx, self.client), self.wallet)
         response = submit(signed_tx, self.client)
         if self.fee_tracker:
-            self.fee_tracker.underlying_gas_fees += drops_to_xrp(response.result["tx_json"]["Fee"])
+            self.fee_tracker.update_fees(self.coin, gas_fees=drops_to_xrp(response.result["tx_json"]["Fee"]))

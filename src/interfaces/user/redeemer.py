@@ -1,39 +1,37 @@
 from decimal import Decimal
-from typing import Optional
-import toml
+from typing import TYPE_CHECKING, Optional
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
-from src.interfaces.network.underlying_networks.underlying_network import UnderlyingNetwork
-from src.interfaces.network.native_networks.native_network import NativeNetwork
 from src.interfaces.network.attestation import Attestation
 from src.utils.data_storage import DataStorageClient
 from src.utils.encoding import pad_0x, unpad_0x
-from src.utils.data_structures import RedemptionStatus, UserData
-from src.flow.fee_tracker import FeeTracker
-
-config = toml.load("config.toml")
-zero_address = config["network"]["zero_address"]
+from src.utils.data_structures import RedemptionStatus
+if TYPE_CHECKING:
+    from src.utils.data_structures import UserData
+    from src.flow.fee_tracker import FeeTracker
 
 
 class Redeemer(User):
-    def __init__(self, user_data : UserData, fee_tracker : Optional[FeeTracker]  = None):
+    def __init__(self, user_data : "UserData", fee_tracker : Optional["FeeTracker"]  = None):
         super().__init__(user_data, fee_tracker)
         self.dsc = DataStorageClient(user_data, "redeem")
 
-    def redeem(self, lots: int, executor: str = zero_address, executor_fee: Decimal = Decimal(0), log_steps: bool = False) -> int:
+    def redeem(self, lots: int, executor: Optional[str] = None, executor_fee: Decimal = Decimal(0), log_steps: bool = False) -> int:
         """
         Redeem underlying asset by calling the AssetManager contract.
         Saves redemption data for potential later default redemptions.
         Returns lots remaining to be redeemed if redemption request is incomplete.
         """
         self.log_step(f"Starting redemption of {lots} lots.", log_steps)
-        am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
+        am = AssetManager(self.native_network, self.token_fasset, self.native_credentials, self.fee_tracker)
+        if not executor:
+            executor = self.native_network.zero_address()
         executor_fee_uba = self.token_native.to_uba(executor_fee)
-        events = am.redeem(lots, self.underlying_data.address, executor, executor_fee_uba)
+        events = am.redeem(lots, self.underlying_credentials.address, executor, executor_fee_uba)
         requested_redemptions, redemption_request_incomplete = events["RedemptionRequested"], events["RedemptionRequestIncomplete"]
         self.log_step(f"Redemption request submitted. Got {len(requested_redemptions)} requested redemptions.", log_steps)
         for requested_redemption in requested_redemptions:
-            current_timestamp = NativeNetwork(self.token_native).get_current_timestamp()
+            current_timestamp = self.token_native.network().get_current_timestamp()
             request_data = {
                 "type" : "redeem",
                 "requestId": str(requested_redemption.requestId),
@@ -87,9 +85,9 @@ class Redeemer(User):
         """
         Get attestation proof for referenced payment non-existence.
         """
-        a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key, self.fee_tracker)
+        a = Attestation(self.native_network, self.token_underlying, self.native_credentials, self.indexer_api_key, self.fee_tracker)
         request_body = a.request_body_referenced_payment_nonexistence(
-            self.underlying_data.address,
+            self.underlying_credentials.address,
             unpad_0x(redemption_data["paymentReference"]),
             redemption_data["amountUBA"],
             redemption_data["firstUnderlyingBlock"],
@@ -114,28 +112,28 @@ class Redeemer(User):
         self.log_step("Got proof.", log_steps)
         redemption_id = int(redemption_data["requestId"])
         self.log_step(f"Submitting redemption default payment.", log_steps)
-        am = AssetManager(self.token_native, self.token_underlying, self.native_data, self.fee_tracker)
+        am = AssetManager(self.native_network, self.token_fasset, self.native_credentials, self.fee_tracker)
         am.redemption_payment_default(proof, redemption_id)
         self.log_step(f"Redemption default executed.", log_steps)
         self.dsc.remove_record(redemption_id)
         self.log_step(f"Redemption data removed from storage.", log_steps)
 
-    def redemption_status(self) -> RedemptionStatus:
+    def redemption_status(self) -> "RedemptionStatus":
         """
         Get statuses of all saved redemptions.
         """
         statuses = ["ACTIVE", "DEFAULTED_UNCONFIRMED", "SUCCESSFUL", "DEFAULTED_FAILED", "BLOCKED", "REJECTED"] # from RedemptionRequestInfo.sol
         result = {"pending": [], "default": [], "expired": [], "success": []}
         redemptions = self.dsc.get_records()
-        am = AssetManager(self.token_native, self.token_underlying)
+        am = AssetManager(self.native_network, self.token_fasset)
         for redemption in redemptions:
             redemption_id = int(redemption["requestId"])
             request_info = am.redemption_request_info(redemption_id)
             status = statuses[request_info[1]]
             if status == "ACTIVE":
                 block = int(redemption["lastUnderlyingBlock"])
-                current_underlying_block = UnderlyingNetwork(self.token_underlying).get_current_block()
-                a = Attestation(self.token_native, self.token_underlying, self.native_data, self.indexer_api_key)
+                current_underlying_block = self.token_underlying.network().get_current_block()
+                a = Attestation(self.native_network, self.token_underlying, self.native_credentials, self.indexer_api_key)
                 first_block, _ = a.get_block_range()
                 if current_underlying_block > block:
                     status = "default"

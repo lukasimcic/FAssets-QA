@@ -1,14 +1,16 @@
 from abc import ABC
 import os
 import requests
-from telegram import Bot
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 import toml
 from src.utils.secrets import load_user_secrets
-from src.utils.data_structures import TokenFasset, TokenNative, TokenUnderlying, UserData, UserNativeData, UserUnderlyingData
-from src.flow.fee_tracker import FeeTracker
+from src.utils.data_structures import UserCredentials
+from src.interfaces.network.tokens import TokenFAsset
+if TYPE_CHECKING:
+    from src.flow.fee_tracker import FeeTracker
+    from src.utils.data_structures import UserData
 
 config = toml.load("config.toml")
 log_folder = Path(config["folder"]["log"])
@@ -19,7 +21,7 @@ BOT_CHANNEL_ID = int(os.environ["BOT_CHANNEL_ID"])
 
 
 class User(ABC):
-    def __init__(self, user_data: UserData, fee_tracker : FeeTracker = None):
+    def __init__(self, user_data: "UserData", fee_tracker : "FeeTracker" = None):
         token_native, token_underlying, num, partner, funder = (
             user_data.token_native,
             user_data.token_underlying,
@@ -33,14 +35,18 @@ class User(ABC):
         self.fee_tracker = fee_tracker
 
         # tokens
-        self.token_native : TokenNative = token_native
-        self.token_underlying : TokenUnderlying = token_underlying
-        self.token_fasset : TokenFasset = TokenFasset.from_underlying(token_underlying)
+        self.token_native = token_native
+        self.token_underlying = token_underlying
+        self.token_fasset = TokenFAsset.from_underlying(token_underlying)
+
+        # networks
+        self.native_network = token_native.network
+        self.underlying_network = token_underlying.network
         
         # secrets
         secrets = load_user_secrets(num, partner, funder)
-        self.native_data = UserNativeData(**secrets["user"]["native"])
-        self.underlying_data = UserUnderlyingData(**secrets["user"][token_underlying.name])
+        self.native_credentials = UserCredentials(**secrets["user"]["native"])
+        self.underlying_credentials = UserCredentials(**secrets["user"][token_underlying.name])
         self.indexer_api_key = secrets["apiKey"]["indexer"][0]
         
         # logger
