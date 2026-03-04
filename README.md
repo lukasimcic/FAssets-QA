@@ -40,6 +40,11 @@ In `.env` file, set the given environment variables to configure the Telegram bo
 
 When running the `run_flow.py` script, additional parameters can be set via command line arguments:
 - `--request-funds`: The funder should request new funds at the start of the flow.
+- `--action-params`: List of action parameters in the format 
+```
+--action-params ActionNameA:param1=value1,param2=value2 --action-params ActionNameB:param1=value1
+```
+For example: `--action-params MintSpecificAgentRandomAmount:agent_address=0x123`. These parameters will be passed to the corresponding action bundles and can be used in the action logic. See below for details on which parameters to use in action bundles.
 - `--cli`: Run the flow in CLI mode. CLI mode uses bots defined in fasset-bots submodule. Not all actions are supported in CLI mode. See below for details.
 
 If `request_funds` is set to True, new funds for both native and underlying tokens will be requested from faucets at the start of the flow. Because Coston2 faucet has no API support, manual intervention is needed to complete the funding process. For this, follow the instructions printed in the console to complete the funding process.
@@ -55,28 +60,29 @@ When running `python -m scripts.run_flow`, the following occurs:
 
 Each user repeatedly selects a random action from the following:
 
-| Action name | Procedure       | CLI supported |
-|-------------|-----------------|---------------|
-| MintRandomAgentRandomAmount | Mint a random amount of lots against a random agent. | Yes |
-| MintLowestFeeAgentRandomAmount | Mint a random amount of lots against an agent with lowest fee. | Yes |
-| MintExecuteRandomMinting | Execute a random pending mint. | Yes |
-| MintRandomAgentRandomAmountBlockUnderlying | - Block all underlying deposits. <br>- Mint a random amount of lots against a random agent. <br>- Unblock all underlying deposits. | No |
-| RedeemRandomAmount | Redeem a random amount of lots. | Yes |
-| RedeemDefaultRandomRedemption | Redeem a random default redemption. | Yes |
-| RedeemDefaultRandomRedemptionBlockUnderlying | - Block all underlying deposits. <br>- Redeem a random amount of lots. <br>- Unblock all underlying deposits. | No |
-| EnterRandomPoolRandomAmount | Enter a random pool with a random amount. | Yes |
-| ExitRandomPoolRandomAmount | Exit a random (valid) pool with a random amount. | Yes |
-| BridgeToHyperEVM | Bridge a random amount of lots of fassets to HyperEVM. | No |
-| BridgeToHyperCore | Bridge a random amount of lots of fassets to HyperCore. | No |
-| BridgeFromHyperEVM | Bridge a random amount of lots of fassets from HyperEVM. | No |
-| AutoRedeemFromHyperEVM | Redeem a random amount of lots of fassets from HyperEVM directly to the underlying network. | No |
-| Scenario1 | - Enter a random pool with a random amount. <br>- Mint a random amount of lots against the agent that owns the entered collateral pool. <br>- Redeem the amount minted. <br>- Wait for the collateral pool token timelock period to expire. <br>- If possible, exit pool with all tokens. <br>- If possible, withdraw pool fees. | Yes |
-| Scenario2 | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Transfer debt-free pool tokens (up to the amount originally entered) to the partner user bot. <br>- Exit pool from the partner user bot. |  No  |
-| Scenario3 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. |  No  |
-| Scenario4 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperCore. |  No  |
-| Scenario5 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Bridge this amount back to the native network. |  No  |
-| Scenario6 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Bridge this amount back to the native network. <br>- Redeem the amount bridged. |  No  |
-| Scenario7 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Redeem the amount bridged directly from HyperEVM. |  No  |
+| Action name | Procedure       | Parameters | CLI supported |
+|-------------|-----------------|------------|---------------|
+| MintRandomAgentRandomAmount | Mint a random amount of lots against a random agent. | / | Yes |
+| MintLowestFeeAgentRandomAmount | Mint a random amount of lots against an agent with lowest fee. | / | Yes |
+| MintSpecificAgentRandomAmount | Mint a random amount of lots against a specific agent. | `agent_address` | Yes |
+| MintExecuteRandomMinting | Execute a random pending mint. | / | Yes |
+| MintRandomAgentRandomAmountBlockUnderlying | - Block all underlying deposits. <br>- Mint a random amount of lots against a random agent. <br>- Unblock all underlying deposits. | / | No |
+| RedeemRandomAmount | Redeem a random amount of lots. | / | Yes |
+| RedeemDefaultRandomRedemption | Redeem a random default redemption. | / | Yes |
+| RedeemDefaultRandomRedemptionBlockUnderlying | - Block all underlying deposits. <br>- Redeem a random amount of lots. <br>- Unblock all underlying deposits. | / | No |
+| EnterRandomPoolRandomAmount | Enter a random pool with a random amount. | / | Yes |
+| ExitRandomPoolRandomAmount | Exit a random (valid) pool with a random amount. | / | Yes |
+| BridgeToHyperEVM | Bridge a random amount of lots of fassets to HyperEVM. | / | No |
+| BridgeToHyperCore | Bridge a random amount of lots of fassets to HyperCore. | / | No |
+| BridgeFromHyperEVM | Bridge a random amount of lots of fassets from HyperEVM. | / | No |
+| AutoRedeemFromHyperEVM | Redeem a random amount of lots of fassets from HyperEVM directly to the underlying network. | / | No |
+| Scenario1 | - Enter a random pool with a random amount. <br>- Mint a random amount of lots against the agent that owns the entered collateral pool. <br>- Redeem the amount minted. <br>- Wait for the collateral pool token timelock period to expire. <br>- If possible, exit pool with all tokens. <br>- If possible, withdraw pool fees. | / | Yes |
+| Scenario2 | - Enter a random pool with a random amount. <br>- Wait for the collateral pool token timelock period to expire. <br>- Transfer debt-free pool tokens (up to the amount originally entered) to the partner user bot. <br>- Exit pool from the partner user bot. | / | No  |
+| Scenario3 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. | / |  No  |
+| Scenario4 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperCore. | / |  No  |
+| Scenario5 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Bridge this amount back to the native network. | / |  No  |
+| Scenario6 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Bridge this amount back to the native network. <br>- Redeem the amount bridged. | / |  No  |
+| Scenario7 | - Mint a random amount of lots against a random agent. <br>- Bridge this amount of lots of fassets to HyperEVM. <br>- Redeem the amount bridged directly from HyperEVM. | / |  No  |
 
 Each action is implemented as an "action bundle" class in `src/actions/`. Each bundle consists of:
 - condition: Checks to determine if the action can be executed.

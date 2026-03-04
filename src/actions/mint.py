@@ -1,91 +1,80 @@
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+from src.actions.core_actions.core_actions import core_actions
 from src.actions.action_bundle import ActionBundle
 from src.actions.helper_functions import can_mint
 from src.utils.data_storage import DataStorageClient
 from src.utils.data_structures import RelevantInfo
 if TYPE_CHECKING:
     from src.utils.data_structures import FlowState
+    from src.utils.data_structures import AgentInfo, UserData
 
 
-class MintLowestFeeAgentRandomAmount(ActionBundle):
-    def __init__(self, user_data, flow_state, cli):
+class _MintRandomAmount(ActionBundle):
+    def __init__(self, user_data: "UserData", flow_state: "FlowState", cli: bool, agent_list: Optional[list["AgentInfo"]] = None):
         super().__init__(user_data, flow_state, cli)
-        self.agents_dict = self.ca.get_agents()
+        self.agent_list = agent_list if agent_list is not None else self.ca.get_agents()
+        self.agent = random.choice(self.agent_list) if self.agent_list else None
 
     def condition(self) -> bool:
-        return can_mint(self.balances, self.token_underlying, self.lot_size, self.agents_dict)
-    
+        return can_mint(self.balances, self.token_underlying, self.lot_size, self.agent_list)
+
     def action(self) -> None:
         # action logic
+        possible_lots = int(self.balances[self.token_underlying] // self.lot_size)
+        max_lots = min(self.agent.max_lots, possible_lots)
+        lot_amount = random.randint(1, max_lots)
+        self.ca.mint(lot_amount, agent=self.agent.address, log_steps=True)
+        # data for expected_state
+        self.lot_amount = lot_amount
+
+    @property
+    def expected_state(self) -> "FlowState":
+        new_balances = self.balances.copy()
+        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee)
+        new_balances[self.token_fasset] += self.lot_size * self.lot_amount
+        new_balances.subtract_fees(self.ca.fee_tracker)
+        return self.flow_state.replace([new_balances])
+
+    def relevant_info(self) -> "RelevantInfo":
+        return RelevantInfo(
+            tokens=[self.token_underlying, self.token_native, self.token_fasset],
+            mint_status=True
+        )
+
+
+class MintRandomAgentRandomAmount(_MintRandomAmount):
+    def __init__(self, user_data: "UserData", flow_state: "FlowState", cli: bool):
+        super().__init__(user_data, flow_state, cli)
+
+
+class MintLowestFeeAgentRandomAmount(_MintRandomAmount):
+    def __init__(self, user_data: "UserData", flow_state: "FlowState", cli: bool):
+        ca = core_actions(user_data, cli)
+        agent_list = ca.get_agents()
         agent_fees_dict = {
             agent_fee: [
-                agent for agent in self.agents_dict if agent.fee == agent_fee and agent.max_lots >= 1
+                agent for agent in agent_list if agent.fee == agent_fee and agent.max_lots >= 1
                 ] 
-                for agent_fee in set(agent.fee for agent in self.agents_dict)
+                for agent_fee in set(agent.fee for agent in agent_list)
             }
         lowest_fee = min(fee for fee, agents in agent_fees_dict.items() if agents)
-        agents = agent_fees_dict[lowest_fee]
-        agent = random.choice(agents)
-        possible_lots = int(self.balances[self.token_underlying] // self.lot_size)
-        max_lots = min(agent.max_lots, possible_lots)
-        lot_amount = random.randint(1, max_lots)
-        self.ca.mint(lot_amount, agent=agent.address, log_steps=True)
-        # data for expected_state
-        self.lot_amount = lot_amount
-        self.agent = agent
-
-    @property
-    def expected_state(self) -> "FlowState":
-        new_balances = self.balances.copy()
-        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee)
-        new_balances[self.token_fasset] += self.lot_size * self.lot_amount
-        new_balances.subtract_fees(self.ca.fee_tracker)
-        return self.flow_state.replace([new_balances])
-    
-    def relevant_info(self) -> "RelevantInfo":
-        return RelevantInfo(
-            tokens=[self.token_underlying, self.token_native, self.token_fasset],
-            mint_status=True
-        )
+        self.agent_list = agent_fees_dict[lowest_fee]
+        super().__init__(user_data, flow_state, cli, agent_list=self.agent_list)
 
 
-class MintRandomAgentRandomAmount(ActionBundle):
-    def __init__(self, user_data, flow_state, cli):
-        super().__init__(user_data, flow_state, cli)
+class MintSpecificAgentRandomAmount(_MintRandomAmount):
+    def __init__(self, user_data: "UserData", flow_state: "FlowState", cli: bool, agent_address: str):
+        ca = core_actions(user_data, cli)
+        agent_list = ca.get_agents()
+        specific_agent = next((agent for agent in agent_list if agent.address == agent_address), None)
+        if not specific_agent:
+            raise ValueError(f"Agent with address {agent_address} not found.")
+        super().__init__(user_data, flow_state, cli, agent_list=[specific_agent])
     
-    def condition(self) -> bool:
-        self.agents_dict = self.ca.get_agents()
-        return can_mint(self.balances, self.token_underlying, self.lot_size, self.agents_dict)
-    
-    def action(self) -> None:
-        # action logic
-        agents = [agent for agent in self.agents_dict if agent.max_lots >= 1]
-        agent = random.choice(agents)
-        possible_lots = int(self.balances[self.token_underlying] // self.lot_size)
-        max_lots = min(agent.max_lots, possible_lots)
-        lot_amount = random.randint(1, max_lots)
-        self.ca.mint(lot_amount, agent=agent.address, log_steps=True)
-        # data for expected_state
-        self.lot_amount = lot_amount
-        self.agent = agent
-
-    @property
-    def expected_state(self) -> "FlowState":
-        new_balances = self.balances.copy()
-        new_balances[self.token_underlying] -= self.lot_size * self.lot_amount * (1 + self.agent.fee)
-        new_balances[self.token_fasset] += self.lot_size * self.lot_amount
-        new_balances.subtract_fees(self.ca.fee_tracker)
-        return self.flow_state.replace([new_balances])
-    
-    def relevant_info(self) -> "RelevantInfo":
-        return RelevantInfo(
-            tokens=[self.token_underlying, self.token_native, self.token_fasset],
-            mint_status=True
-        )
 
 class MintExecuteRandomMinting(ActionBundle):
-    def __init__(self, user_data, flow_state, cli):
+    def __init__(self, user_data: "UserData", flow_state: "FlowState", cli: bool):
         super().__init__(user_data, flow_state, cli)
 
     def condition(self) -> bool:
@@ -120,7 +109,7 @@ class MintExecuteRandomMinting(ActionBundle):
     
 
 class MintRandomAgentRandomAmountBlockUnderlying(MintRandomAgentRandomAmount):
-    def __init__(self, user_data, flow_state, cli):
+    def __init__(self, user_data: "UserData", flow_state: "FlowState", cli: bool):
         if cli:
             raise Exception("MintRandomAgentRandomAmountBlockUnderlying is not available in CLI mode.")
         super().__init__(user_data, flow_state, cli)

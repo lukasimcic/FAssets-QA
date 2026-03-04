@@ -33,6 +33,7 @@ class Flow():
         self,
         user_data: "UserData",
         actions: list[str],
+        action_params: dict[str, tuple],
         cli: bool = False,
         total_time: Optional[int]  = None, 
         time_wait: int = 60
@@ -40,6 +41,7 @@ class Flow():
         self.user_data = user_data
         self.partner_data = user_data.partner_data()
         self.actions = actions
+        self.action_params = action_params
         self.cli = cli
         self.total_time = total_time
         self.time_wait = time_wait
@@ -47,9 +49,22 @@ class Flow():
         # core actions for logging and state retrieval
         self.ca = core_actions(user_data, cli)
         self.ca_partner = core_actions(self.partner_data, cli)
+
+        # relevant info for state retrieval
+        action_bunldes : list["ActionBundle"] = []
+        for cls in ACTION_BUNDLE_CLASSES:
+            if cls.__name__ in self.actions:
+                action_params = self.action_params.get(cls.__name__, {})
+                bundle = cls(
+                        self.user_data,
+                        FlowState.new(),
+                        self.cli,
+                        **action_params
+                    )
+                action_bunldes.append(bundle)
         self.relevant_info = RelevantInfo.union([
-            ab(self.user_data, FlowState.new(), self.cli).relevant_info()
-            for ab in ACTION_BUNDLE_CLASSES if ab.__name__ in actions
+            ab.relevant_info()
+            for ab in action_bunldes if ab.__class__.__name__ in actions
             ])
 
     def _log(
@@ -84,10 +99,12 @@ class Flow():
         action_bundles = []
         for cls in ACTION_BUNDLE_CLASSES:
             if cls.__name__ in self.actions:
+                action_params = self.action_params.get(cls.__name__, {})
                 bundle = cls(
                         self.user_data,
                         self.flow_state,
-                        self.cli
+                        self.cli,
+                        **action_params
                     )
                 if bundle.general_conditions() and bundle.condition():
                     action_bundles.append(bundle)
