@@ -1,0 +1,12 @@
+services:
+  scenarios:
+    container_name: fassets-qa
+    image: fassets-qa
+    command: ["--request-funds"]
+    restart: unless-stopped
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      BOT_CHANNEL_ID: ${BOT_CHANNEL_ID}
+    volumes:
+      - ./config.toml:/app/config.toml
+      - ./user_data:/app/user_data

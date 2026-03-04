@@ -7,3 +7,4 @@ toml==0.10.2
 typer==0.21.1
 web3==7.14.0
 xrpl-py==4.4.0
+python-telegram-bot==22.6
