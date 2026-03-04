@@ -22,7 +22,7 @@ log = "user_data/logs"
 contract_interfaces = "contracts/interfaces"
 
 [file.contract_addresses]
-Coston2 = "contracts/addresses/Coston2.json"
+Coston2 = "contracts/addresses/coston2.json"
 HyperEVM_testnet = "contracts/addresses/HyperEVM_testnet.json"
 
 # networks
