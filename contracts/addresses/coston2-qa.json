@@ -187,7 +187,7 @@
     "address": "0x4e5a8DFC0c37ee469d2242f5D64813ee3A755C3E"
   },
   {
-    "name": "AssetManagerController",
+    "name": "AssetManagerController_FTestXRP",
     "contractName": "AssetManagerControllerProxy.sol",
     "address": "0x4741f1DfC58dF2169F88fe8c6bEb94FdAb6fF5ba",
     "mustSwitchToProduction": true
@@ -344,7 +344,7 @@
     "mustSwitchToProduction": true
   },
   {
-    "name": "FTestXRP",
+    "name": "FAsset_FTestXRP",
     "contractName": "FAssetProxy.sol",
     "address": "0x47e2edB147e79D6eab9c85A42cb13055f2938ed5"
   },
