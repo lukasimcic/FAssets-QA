@@ -1,20 +1,28 @@
 import json
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, TYPE_CHECKING
 import toml
 from src.actions.core_actions.core_actions import core_actions
 from src.interfaces.user.state_manager import StateManager
 from src.utils.data_structures import UserData
+from src.interfaces.network.tokens import TokenNative, TokenUnderlying
 from src.utils.secrets import get_user_nums
 from src.interfaces.user.funder import Funder
 from src.utils.data_storage import remove_inactive_records_for_user
 if TYPE_CHECKING:
-    from src.utils.data_structures import TokenNative, TokenUnderlying
+    from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
+    from src.interfaces.network.networks.underlying_networks.underlying_network import UnderlyingNetwork
 
 config = toml.load("config.toml")
 secrets_folder = Path(config["folder"]["secrets"])
 
+ENCRYPTION_PASSWORD : str = os.environ["ENCRYPTION_PASSWORD"]
+INDEXER : str = os.environ["INDEXER"]
+API_KEYS : dict["NativeNetwork | UnderlyingNetwork", str] = {
+    TokenNative.C2FLR.network: os.environ["COSTON2_API_KEY"],
+    TokenUnderlying.testXRP.network: os.environ["XRPL_TESTNET_API_KEY"]
+}
 
 # TODO: unify naming in secrets, check usage in fasset-bots
 class UserManager():
@@ -22,22 +30,28 @@ class UserManager():
         self.token_native = token_native
         self.token_underlying = token_underlying
         self.wallet_data = {
-            "encryption_password": "muilebA0!muilebA0!"
+            "encryption_password": ENCRYPTION_PASSWORD,
         }
         self.api_key_data = {
-            "indexer": ["123456"],
-            "xrp_rpc": "4tg3AxysaZodxTqsCtcMnBdBIEkR6KDKGTdqBEA8g9MKq4bH",
-            "native_rpc": "96526d46-91d8-4a1b-8ea7-80b2179ea840",
+            "indexer": [INDEXER],
+            "xrp_rpc": API_KEYS[self.token_underlying.network],
+            "native_rpc": API_KEYS[self.token_native.network],
         }
         self.user_nums = user_nums
         if self.funder_exists():
             self.funder = Funder(self.token_native, self.token_underlying, user_nums)
 
-    def _generate_credentials(self) -> dict[str, dict[str, str]]:
-        un = self.token_underlying.network()
-        secrets_underlying = un.generate_new_address()
-        nn = self.token_native.network()
-        secrets_native = nn.generate_new_address()
+    def _generate_credentials(
+            self, 
+            secrets_underlying: Optional[dict[str, str]], 
+            secrets_native: Optional[dict[str, str]]
+            ) -> dict[str, dict[str, str]]:
+        if not secrets_underlying:
+            un = self.token_underlying.network()
+            secrets_underlying = un.generate_new_address()
+        if not secrets_native:
+            nn = self.token_native.network()
+            secrets_native = nn.generate_new_address()
         return {
             "native": secrets_native,  
             self.token_underlying.name: secrets_underlying
@@ -50,7 +64,12 @@ class UserManager():
             user_nums = self.user_nums
         return max(user_nums + [-1]) + 1
     
-    def generate(self, funder=False) -> None:
+    def generate(
+            self, 
+            funder=False, 
+            secrets_underlying: Optional[dict[str, str]] = None, 
+            secrets_native: Optional[dict[str, str]] = None
+            ) -> None:
         if funder:
             folders = [secrets_folder]
             files = ["funder.json"]
@@ -64,7 +83,10 @@ class UserManager():
         for folder, file in zip(folders, files):
             if not folder.exists():
                 os.makedirs(folder)
-            credentials = self._generate_credentials()
+            if "partner" in file:
+                credentials = self._generate_credentials(None, None)
+            else:
+                credentials = self._generate_credentials(secrets_underlying, secrets_native)
             secrets = {
                 "wallet": self.wallet_data,
                 "apiKey": self.api_key_data,

@@ -1,5 +1,6 @@
 from abc import ABC
 import os
+from dotenv import load_dotenv
 import requests
 import logging
 from pathlib import Path
@@ -16,6 +17,7 @@ config = toml.load("config.toml")
 log_folder = Path(config["folder"]["log"])
 bot_level = config["bot"]["level"]
 
+load_dotenv()
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 BOT_CHANNEL_ID = int(os.environ["BOT_CHANNEL_ID"])
 

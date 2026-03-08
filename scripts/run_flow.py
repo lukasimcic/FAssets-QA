@@ -2,8 +2,6 @@ import random
 import threading
 import time
 from typing_extensions import Annotated
-from dotenv import load_dotenv
-load_dotenv()
 import toml
 import typer
 from src.interfaces.network.tokens import TokenNative, TokenUnderlying
