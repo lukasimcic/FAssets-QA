@@ -1,5 +1,6 @@
 from abc import ABC
 import os
+import re
 from dotenv import load_dotenv
 import requests
 import logging
@@ -54,7 +55,7 @@ class User(ABC):
         # logger
         if not funder:
             user_name = f"user{'_partner' if partner else ''}_{num}"
-            log_file = log_folder / user_name[:-2] / f"{user_name}.log"
+            log_file = log_folder / re.sub(r'\d+$', '', user_name).strip('_') / f"{user_name}.log"
         else:
             user_name = "funder"
             log_file = log_folder / f"{user_name}.log"

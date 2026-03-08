@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from typing import TYPE_CHECKING, Literal
 import json
 import os
@@ -27,7 +28,7 @@ class DataStorageClient():
         user_name = f"user{'_partner' if user_data.partner else ''}_{user_data.num}"
         token_fasset = TokenFAsset.from_underlying(user_data.token_underlying)
         folder_name = f"{asset_manager_controller_snippet}-{token_fasset.name}-{action_type}"
-        self.folder = data_storage_folder / user_name[:-2] / user_name / folder_name
+        self.folder = data_storage_folder / re.sub(r'\d+$', '', user_name).strip('_') / user_name / folder_name
         if not self.folder.exists():
             os.makedirs(self.folder)
 

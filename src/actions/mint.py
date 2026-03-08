@@ -14,7 +14,8 @@ class _MintRandomAmount(ActionBundle):
     def __init__(self, user_data: "UserData", flow_state: "FlowState", cli: bool, agent_list: Optional[list["AgentInfo"]] = None):
         super().__init__(user_data, flow_state, cli)
         self.agent_list = agent_list if agent_list is not None else self.ca.get_agents()
-        self.agent = random.choice(self.agent_list) if self.agent_list else None
+        available_agents = [agent for agent in self.agent_list if agent.max_lots >= 1]
+        self.agent = random.choice(available_agents) if available_agents else None
 
     def condition(self) -> bool:
         return can_mint(self.balances, self.token_underlying, self.lot_size, self.agent_list)
