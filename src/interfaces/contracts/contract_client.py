@@ -11,9 +11,6 @@ if TYPE_CHECKING:
     from src.utils.data_structures import UserCredentials
     from src.flow.fee_tracker import FeeTracker
 
-load_dotenv()
-NATIVE_API_KEY = os.environ["COSTON2_API_KEY"] # TODO get from user data 
-
 
 class ContractClient:
     def __init__(
@@ -37,10 +34,6 @@ class ContractClient:
         kwargs = {}
         if timeout is not None:
             kwargs['timeout'] = timeout
-        kwargs["headers"] = {
-            "x-api-key": NATIVE_API_KEY,
-            "Content-Type": "application/json"
-        }
         self.web3 = Web3(Web3.HTTPProvider(self.network.rpc_url(), request_kwargs=kwargs))
         self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         assert self.web3.is_connected()

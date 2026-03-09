@@ -26,19 +26,10 @@ zero_address : dict[str, str] = config["network"]["zero_address"]
 composer_address : dict[str, str] = config["network"]["composer_address"]
 eid : dict[str, int] = config["network"]["eid"]
 
-load_dotenv()
-NATIVE_API_KEY = os.environ["COSTON2_API_KEY"] # TODO get from user data 
-
 
 class NativeNetwork(Network):
     def __init__(self, credentials: Optional["UserCredentials"] = None):
-        kwargs = {
-            "headers": {
-                "x-api-key": NATIVE_API_KEY,
-                "Content-Type": "application/json"
-            }
-        }
-        self.web3 = Web3(Web3.HTTPProvider(self.rpc_url(), request_kwargs=kwargs))
+        self.web3 = Web3(Web3.HTTPProvider(self.rpc_url()))
         self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         if credentials:
             self.credentials = credentials
@@ -78,7 +69,6 @@ class NativeNetwork(Network):
         return eid[cls.__name__]
 
     def get_balance(self, token: "TokenNative | TokenFAsset") -> int:
-        time.sleep(2) # avoid rate limiting
         from src.interfaces.network.tokens import TokenNative, TokenFAsset
         if isinstance(token, TokenNative):
             if token.network != type(self):
