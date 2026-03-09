@@ -1,14 +1,19 @@
 from typing import TYPE_CHECKING, Any, Optional
+from dotenv import load_dotenv
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 import warnings
-import time
+import os
 from src.utils.contracts import get_contract_abi, get_contract_address
 if TYPE_CHECKING:
     from src.interfaces.network.networks.native_networks.native_network import NativeNetwork
     from src.interfaces.network.networks.external_networks.external_network import ExternalNetwork
     from src.utils.data_structures import UserCredentials
     from src.flow.fee_tracker import FeeTracker
+
+load_dotenv()
+NATIVE_API_KEY = os.environ["COSTON2_API_KEY"] # TODO get from user data 
+
 
 class ContractClient:
     def __init__(
@@ -32,6 +37,10 @@ class ContractClient:
         kwargs = {}
         if timeout is not None:
             kwargs['timeout'] = timeout
+        kwargs["headers"] = {
+            "x-api-key": NATIVE_API_KEY,
+            "Content-Type": "application/json"
+        }
         self.web3 = Web3(Web3.HTTPProvider(self.network.rpc_url(), request_kwargs=kwargs))
         self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         assert self.web3.is_connected()
@@ -90,7 +99,6 @@ class ContractClient:
         return result
     
     def write(self, method: str, inputs: list = [], events: list = [], value: int = 0) -> dict:
-        time.sleep(2)
         tx = self._build_transaction(method, inputs, value)
         receipt = self._sign_and_send_transaction(tx)
         events = self._get_events_from_receipt(receipt, events)
@@ -100,7 +108,6 @@ class ContractClient:
         return {"receipt": receipt, "events": events}
     
     def read(self, method: str, inputs: list = []) -> Any:
-        time.sleep(2)
         return self.contract.functions[method](*inputs).call()
 
     

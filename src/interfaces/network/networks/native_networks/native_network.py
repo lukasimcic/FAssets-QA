@@ -1,8 +1,10 @@
 from decimal import Decimal
 from abc import abstractmethod
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 import time
+from dotenv import load_dotenv
 import toml
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
@@ -24,10 +26,19 @@ zero_address : dict[str, str] = config["network"]["zero_address"]
 composer_address : dict[str, str] = config["network"]["composer_address"]
 eid : dict[str, int] = config["network"]["eid"]
 
+load_dotenv()
+NATIVE_API_KEY = os.environ["COSTON2_API_KEY"] # TODO get from user data 
+
 
 class NativeNetwork(Network):
     def __init__(self, credentials: Optional["UserCredentials"] = None):
-        self.web3 = Web3(Web3.HTTPProvider(self.rpc_url()))
+        kwargs = {
+            "headers": {
+                "x-api-key": NATIVE_API_KEY,
+                "Content-Type": "application/json"
+            }
+        }
+        self.web3 = Web3(Web3.HTTPProvider(self.rpc_url(), request_kwargs=kwargs))
         self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         if credentials:
             self.credentials = credentials
