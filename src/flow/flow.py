@@ -175,6 +175,7 @@ class Flow():
                 all_steps += 1
             if self.total_time:
                 self.total_time -= time.time() - t
+                t = time.time()
                 if self.total_time <= 0:
                     self._log("--- Total time reached, stopping flow. ---", level="info", partner=True)
                     self._log(f"----- Flow finished. Successful steps: {successful_steps}/{all_steps} -----", level="info")
