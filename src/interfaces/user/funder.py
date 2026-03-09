@@ -86,15 +86,19 @@ class Funder(User):
                     self._send_underlying_funds_to_user(num, amount_to_send)
                     self.logger.info(f"Sent {amount_to_send} {self.token_underlying.name} to {'partner ' if partner else ''}user {num} to meet reserve.")
 
-    def distribute_funds(self, max_to_send : Decimal = Decimal(300)) -> None:
+    def distribute_funds(
+            self, 
+            max_native_to_send : Decimal = Decimal(300),
+            max_underlying_to_send : Decimal = Decimal(50)
+            ) -> None:
         self._check_reserves()
         sm = StateManager(self.user_data)
         balances = sm.get_balances()
         self.logger.info(f"Funder balances before fund distribution: {balances}.")
         native_to_send = (balances.get(self.token_native) - self.funder_reserve) / len(self.user_nums)
-        native_to_send = min(native_to_send, max_to_send)
+        native_to_send = min(native_to_send, max_native_to_send)
         underlying_to_send = (balances.get(self.token_underlying) - self.funder_reserve) / len(self.user_nums)
-        underlying_to_send = min(underlying_to_send, max_to_send)
+        underlying_to_send = min(underlying_to_send, max_underlying_to_send)
         for num in self.user_nums:
             if native_to_send > 0:
                 self._send_native_funds_to_user(num, native_to_send)
