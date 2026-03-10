@@ -51,14 +51,14 @@ class Balances:
     def copy(self) -> "Balances":
         return Balances(data=self.data.copy())
     
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Balances):
+    def matches(self, expected: object) -> bool:
+        if not isinstance(expected, Balances):
             return False
-        if self.data.keys() != other.data.keys():
+        if self.data.keys() != expected.data.keys():
             return False
         for k in self.data:
             v1 = self.data[k]
-            v2 = other.data[k]
+            v2 = expected.data[k]
             if not math.isclose(v1, v2, rel_tol=0, abs_tol=k.compare_tolerance):
                 return False
         return True
@@ -88,12 +88,12 @@ class MintStatus:
     def get_all_ids(self) -> list:
         return self.pending + self.expired
     
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, MintStatus):
+    def matches(self, expected: object) -> bool:
+        if not isinstance(expected, MintStatus):
             return False
         for field in self.__dataclass_fields__:
             l1 = getattr(self, field)
-            l2 = getattr(other, field)
+            l2 = getattr(expected, field)
             if sorted(l1) != sorted(l2):
                 return False
         return True
@@ -116,15 +116,24 @@ class RedemptionStatus:
     
     def get_all_ids(self) -> list:
         return self.pending + self.success + self.default + self.expired
-    
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, RedemptionStatus):
+     
+    def matches(self, expected: object) -> bool:
+        if not isinstance(expected, RedemptionStatus):
             return False
         for field in self.__dataclass_fields__:
             l1 = getattr(self, field)
-            l2 = getattr(other, field)
-            if sorted(l1) != sorted(l2):
-                return False
+            l2 = getattr(expected, field)
+            # it can happen that an (expected) pending redemption becomes an (actual) success redemption
+            if field == "success":
+                if not set(l2).issubset(set(l1)):
+                    return False
+            elif field == "pending":
+                l1_success = getattr(self, "success")
+                if not set(l2).issubset(set(l1) | set(l1_success)):
+                    return False
+            else:
+                if sorted(l1) != sorted(l2):
+                    return False
         return True
 
 
@@ -158,12 +167,12 @@ class PoolHolding:
             setattr(obj, field, f"{value:.{int(-math.log10(tolerances[field]))}f}")
         return _repr_none_filtered(obj)
     
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, PoolHolding):
+    def matches(self, expected: object) -> bool:
+        if not isinstance(expected, PoolHolding):
             return False
         for field in self.__dataclass_fields__:
             v1 = getattr(self, field)
-            v2 = getattr(other, field)
+            v2 = getattr(expected, field)
             if field in ["pool_tokens", "fasset_fees"]:
                 tolerance = self.compare_tolerances()[field]
                 if not math.isclose(v1, v2, rel_tol=0, abs_tol=tolerance):
@@ -231,16 +240,20 @@ class FlowState:
             flow_state.pool_holdings = [ph.copy() for ph in self.pool_holdings]
         return flow_state
     
-    def compare(self, others: Union[list["FlowState"], "FlowState"]) -> list[dict]:
-        if not isinstance(others, list):
-            others = [others]
+    def compare(self, expected: Union[list["FlowState"], "FlowState"]) -> list[dict]:
+        if not isinstance(expected, list):
+            expected = [expected]
         all_mismatches = []
-        for other in others:
+        for other in expected:
             mismatches = {}
             for field in self.fields():
                 v1 = self[field]
                 v2 = other[field]
-                if v1 != v2:
+                if v1 is None and v2 is None:
+                    continue
+                elif (v1 is None and v2 is not None) or (v1 is not None and v2 is None):
+                    mismatches[field] = (v1, v2)
+                elif not v1.matches(v2):
                     mismatches[field] = (v1, v2)
             all_mismatches.append(mismatches)
         return all_mismatches

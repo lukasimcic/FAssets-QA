@@ -156,7 +156,10 @@ class Attestation():
                         "requestBytes": abi_encoded_request
                     })
                 )
-                response = response.json()
+                if response.status_code == 200:
+                    response = response.json()
+                else:
+                    response = {}
             else:
                 return response
         raise ValueError("Proof not found after multiple attempts")

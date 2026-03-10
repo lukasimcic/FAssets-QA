@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 from dotenv import load_dotenv
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
@@ -67,6 +67,8 @@ class ContractClient:
         signed_tx = self.web3.eth.account.sign_transaction(tx, self.sender_private_key)
         tx_hash = self.web3.eth.send_raw_transaction(signed_tx.raw_transaction)
         receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
+        if receipt.status != 1:
+            raise Exception(f"Transaction 0x{tx_hash.hex()} failed.")
         return receipt
     
     def _get_events_from_receipt(self, receipt: dict, events: list[str]) -> dict:
@@ -91,7 +93,7 @@ class ContractClient:
                 result[event_name] = []
         return result
     
-    def write(self, method: str, inputs: list = [], events: list = [], value: int = 0) -> dict:
+    def write(self, method: str, inputs: list = [], events: list = [], value: int = 0) -> dict[Literal["receipt", "events"], dict]:
         tx = self._build_transaction(method, inputs, value)
         receipt = self._sign_and_send_transaction(tx)
         events = self._get_events_from_receipt(receipt, events)
