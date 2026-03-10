@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
+from src.flow.fee_tracker import FeeTracker
 from src.interfaces.user.state_manager import StateManager
 from src.interfaces.user.user import User
 from src.interfaces.contracts import *
@@ -118,12 +119,21 @@ class Funder(User):
             )
             balances = user_sm.get_balances()
             self.logger.info(f"User {num} balances before collection: {balances}.")
+            
             native_to_send = balances.get(self.token_native) - self.user_reserve * Decimal(1.01)
             if native_to_send > 0:
                 native_to_send_uba = self.token_native.to_uba(native_to_send)
                 nn = self.token_native.network(user_sm.native_credentials)
                 nn.send_transaction(self.native_credentials.address, native_to_send_uba)
                 self.logger.info(f"Collected {native_to_send} {self.token_native.name} from user {num}.")
+            
+            fasset_to_send = balances.get(self.token_fasset)
+            if fasset_to_send > 0:
+                fasset_to_send_uba = self.token_fasset.to_uba(fasset_to_send)
+                f = FAsset(self.token_native.network, self.token_fasset, user_sm.native_credentials, FeeTracker())
+                f.transfer(self.native_credentials.address, fasset_to_send_uba)
+                self.logger.info(f"Collected {fasset_to_send} {self.token_fasset.name} from user {num}.")
+            
             underlying_to_send = balances.get(self.token_underlying) - self.user_reserve * Decimal(1.01)
             if underlying_to_send > 0:
                 un = self.token_underlying.network(user_sm.underlying_credentials)

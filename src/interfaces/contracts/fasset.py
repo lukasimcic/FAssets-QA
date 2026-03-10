@@ -33,3 +33,6 @@ class FAsset(ContractClient):
     
     def allowance(self, owner: str, spender: str) -> int:
         return self.read("allowance", inputs=[owner, spender])
+    
+    def transfer(self, to: str, amount: int):
+        return self.write("transfer", inputs=[to, amount])
